@@ -9,6 +9,7 @@ import (
     "unicode"
     "bytes"
     "math/big"
+    "encoding/binary"
 )
 
 type OrientationType  int8
@@ -19,11 +20,11 @@ const FORWARD OrientationType =   1
 const REVERSE OrientationType =  -1
 
 type Alignment struct {
-    EditStop       int
-    JuncStart      int
-    JuncEnd        int
-    JuncLen        int
-    HasMutation    bool
+    EditStop       uint64
+    JuncStart      uint64
+    JuncEnd        uint64
+    JuncLen        uint64
+    HasMutation    uint8
 }
 
 type Template struct {
@@ -172,7 +173,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
         if aln1[ai] == '-' {
             fi++
             // insertion
-            alignment.HasMutation = true
+            alignment.HasMutation = uint8(1)
             continue
         }
 
@@ -182,11 +183,11 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
 
             if frag.Bases[fi] != template.Bases[ti] {
                 // SNP
-                alignment.HasMutation = true
+                alignment.HasMutation = uint8(1)
             }
         } else {
             // deletion
-            alignment.HasMutation = true
+            alignment.HasMutation = uint8(1)
         }
 
         for i := range(template.EditSite) {
@@ -209,19 +210,19 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
 
     for j := ti; j >= 0; j-- {
         if m[0].Bit(j) == 0 {
-            alignment.JuncStart = ti-j
+            alignment.JuncStart = uint64(ti-j)
             break
         }
     }
     for j := 0; j <= ti; j++ {
         if m[1].Bit(j) == 0 {
-            alignment.JuncEnd = ti-j
+            alignment.JuncEnd = uint64(ti-j)
             break
         }
     }
 
     if alignment.JuncStart > 0 {
-        alignment.EditStop = alignment.JuncStart-1
+        alignment.EditStop = alignment.JuncStart-uint64(1)
     }
 
     if alignment.JuncEnd > alignment.JuncStart {
@@ -229,6 +230,61 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
     }
 
     return alignment
+}
+
+func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
+    var a Alignment
+    buf := bytes.NewReader(data)
+
+    err := binary.Read(buf, binary.BigEndian, &a.EditStop)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.JuncStart)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.JuncEnd)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.JuncLen)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.HasMutation)
+    if err != nil {
+        return nil, err
+    }
+
+    return &a, nil
+}
+
+func (a *Alignment) Bytes() ([]byte, error) {
+    data := new(bytes.Buffer)
+
+    err := binary.Write(data, binary.BigEndian, a.EditStop)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.JuncStart)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.JuncEnd)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.JuncLen)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.HasMutation)
+    if err != nil {
+        return nil, err
+    }
+
+    return data.Bytes(), nil
 }
 
 func Align(frag *Fragment, template *Template) {

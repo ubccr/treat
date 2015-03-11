@@ -7,7 +7,7 @@ import (
     "strings"
     "strconv"
     "github.com/boltdb/bolt"
-    "encoding/binary"
+    "github.com/ubccr/treat"
 )
 
 type SearchFields struct {
@@ -16,6 +16,7 @@ type SearchFields struct {
     Replicate     int
     EditStop      int
     JuncEnd       int
+    HasMutation   bool
 }
 
 func Search(dbpath string, fields *SearchFields) {
@@ -47,20 +48,18 @@ func Search(dbpath string, fields *SearchFields) {
                     continue
                 }
 
-                var stop,end uint64
-                buf := bytes.NewReader(v)
-                //buf.Seek(int64(binary.Size(end)), 0)
-
-                err = binary.Read(buf, binary.BigEndian, &stop)
-                if err != nil {
-                    return err
-                }
-                err = binary.Read(buf, binary.BigEndian, &end)
+                a, err := treat.NewAlignmentFromBytes(v)
                 if err != nil {
                     return err
                 }
 
-                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", stop),fmt.Sprintf("%d", end)}, "\t"))
+                if fields.HasMutation && a.HasMutation == 0 {
+                    continue
+                } else if !fields.HasMutation && a.HasMutation == 1 {
+                    continue
+                }
+
+                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd)}, "\t"))
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
@@ -75,27 +74,26 @@ func Search(dbpath string, fields *SearchFields) {
                         return nil
                     }
 
-                    var stop,end uint64
-                    buf := bytes.NewReader(v)
-                    //buf.Seek(int64(binary.Size(end)), 0)
 
-                    err = binary.Read(buf, binary.BigEndian, &stop)
-                    if err != nil {
-                        return err
-                    }
-                    err = binary.Read(buf, binary.BigEndian, &end)
+                    a, err := treat.NewAlignmentFromBytes(v)
                     if err != nil {
                         return err
                     }
 
-                    if fields.EditStop > 0 && uint64(fields.EditStop) != stop {
+                    if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
                         return nil
                     }
-                    if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != end {
+                    if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
                         return nil
                     }
 
-                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", stop),fmt.Sprintf("%d", end)}, "\t"))
+                    if fields.HasMutation && a.HasMutation == 0 {
+                        return nil
+                    } else if a.HasMutation == 1 {
+                        return nil
+                    }
+
+                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd)}, "\t"))
 
                     return nil
                 })

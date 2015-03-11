@@ -4,12 +4,10 @@ import (
     "fmt"
     "os"
     "log"
-    "bytes"
     "path/filepath"
     "github.com/aebruno/gofasta"
     "github.com/ubccr/treat"
     "github.com/boltdb/bolt"
-    "encoding/binary"
 )
 
 func Load(dbpath, gene, templates string, fragments []string, replicate int, norm float64) {
@@ -80,17 +78,12 @@ func Load(dbpath, gene, templates string, fragments []string, replicate int, nor
 
             key := fmt.Sprintf("%s;%s;%d;%d", gene, sample, replicate, id)
 
-            data := new(bytes.Buffer)
-            err = binary.Write(data, binary.BigEndian, uint64(aln.EditStop))
-            if err != nil {
-                log.Fatal(err)
-            }
-            err = binary.Write(data, binary.BigEndian, uint64(aln.JuncEnd))
+            data, err := aln.Bytes()
             if err != nil {
                 log.Fatal(err)
             }
 
-            err = bucket.Put([]byte(key), data.Bytes())
+            err = bucket.Put([]byte(key), data)
             if err != nil {
                 log.Fatal(err)
             }

@@ -43,6 +43,7 @@ func main() {
                 &cli.IntFlag{Name: "replicate, r", Value: 0, Usage: "Biological replicate number"},
                 &cli.IntFlag{Name: "edit-stop", Value: 0, Usage: "Edit stop"},
                 &cli.IntFlag{Name: "junc-end", Value: 0, Usage: "Junction end"},
+                &cli.BoolFlag{Name: "has-mutation", Usage: "Has mutation"},
             },
             Action: func(c *cli.Context) {
                 Search(c.GlobalString("db"), &SearchFields{
@@ -51,6 +52,7 @@ func main() {
                     Replicate:    c.Int("replicate"),
                     EditStop:     c.Int("edit-stop"),
                     JuncEnd:      c.Int("junc-end"),
+                    HasMutation:  c.Bool("has-mutation"),
                 })
             },
         }}
