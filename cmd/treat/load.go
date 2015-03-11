@@ -12,20 +12,31 @@ import (
     "github.com/boltdb/bolt"
 )
 
+type LoadOptions struct {
+    Gene          string
+    TemplatePath  string
+    FragmentPath  []string
+    Primer5       int
+    Primer3       int
+    Replicate     int
+    Norm          float64
+    GrnaPath      string
+}
+
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 
-func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, replicate int, norm float64) {
-    if len(gene) == 0 {
+func Load(dbpath string, options *LoadOptions) {
+    if len(options.Gene) == 0 {
         log.Fatalln("ERROR Gene name is required")
     }
-    if len(templates) == 0 {
+    if len(options.TemplatePath) == 0 {
         log.Fatalln("ERROR Please provide path to templates file")
     }
-    if fragments == nil || len(fragments) == 0 {
+    if options.FragmentPath == nil || len(options.FragmentPath) == 0 {
         log.Fatalln("ERROR Please provide 1 or more fragment files to load")
     }
 
-    tmpl, err := treat.NewTemplateFromFasta(templates, treat.FORWARD, 't')
+    tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, 't')
     if err != nil {
         log.Fatalln(err)
     }
@@ -47,7 +58,7 @@ func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, 
         log.Fatal(err)
     }
 
-    for _,path := range(fragments) {
+    for _,path := range(options.FragmentPath) {
         f, err := os.Open(path)
         if err != nil {
             log.Fatal(err)
@@ -83,13 +94,13 @@ func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, 
             }
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, treat.ReadCountType(mergeCount), 't')
-            aln := treat.NewAlignment(frag, tmpl, primer5, primer3)
+            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3)
 
 
             bucket := tx.Bucket([]byte("alignments"))
             id, _ := bucket.NextSequence()
 
-            key := fmt.Sprintf("%s;%s;%d;%d", gene, sample, replicate, id)
+            key := fmt.Sprintf("%s;%s;%d;%d", options.Gene, sample, options.Replicate, id)
 
             data, err := aln.Bytes()
             if err != nil {

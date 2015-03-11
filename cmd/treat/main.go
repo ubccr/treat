@@ -19,23 +19,25 @@ func main() {
             Usage: "Load samples into database",
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "gene, g", Usage: "Gene Name"},
-                &cli.StringFlag{Name: "templates, t", Usage: "Path to templates file in FASTA format"},
-                &cli.StringSliceFlag{Name: "fragments, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
+                &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
+                &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
+                &cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
                 &cli.IntFlag{Name: "replicate, r", Value: 0, Usage: "Biological replicate number"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
                 &cli.Float64Flag{Name: "normalize, n", Usage: "Normalize to read count"},
             },
             Action: func(c *cli.Context) {
-                Load(
-                    c.GlobalString("db"),
-                    c.String("gene"),
-                    c.String("templates"),
-                    c.StringSlice("fragments"),
-                    c.Int("primer5"),
-                    c.Int("primer3"),
-                    c.Int("replicate"),
-                    c.Float64("normalize"))
+                Load(c.GlobalString("db"), &LoadOptions{
+                    Gene:         c.String("gene"),
+                    TemplatePath: c.String("template"),
+                    FragmentPath: c.StringSlice("fragment"),
+                    Primer5:      c.Int("primer5"),
+                    Primer3:      c.Int("primer3"),
+                    Replicate:    c.Int("replicate"),
+                    Norm:         c.Float64("normalize"),
+                    GrnaPath:     c.String("grna"),
+                })
             },
         },
         {
