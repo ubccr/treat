@@ -22,13 +22,13 @@ Installation
 
 Fetch from github::
 
-  $ go get install github.com/ubccr/treat ...
+  $ go get install github.com/ubccr/treat/...
 
 Install from source::
 
   $ git clone https://github.com/ubccr/treat.git treat
   $ cd treat
-  $ go build ...
+  $ go build ./...
 
 ------------------------------------------------------------------------
 Alignment Example
