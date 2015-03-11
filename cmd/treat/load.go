@@ -10,7 +10,7 @@ import (
     "github.com/boltdb/bolt"
 )
 
-func Load(dbpath, gene, templates string, fragments []string, replicate int, norm float64) {
+func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, replicate int, norm float64) {
     if len(gene) == 0 {
         log.Fatalln("ERROR Gene name is required")
     }
@@ -70,7 +70,7 @@ func Load(dbpath, gene, templates string, fragments []string, replicate int, nor
             }
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 100, 't')
-            aln := treat.NewAlignment(frag, tmpl, 0, 0)
+            aln := treat.NewAlignment(frag, tmpl, primer5, primer3)
 
 
             bucket := tx.Bucket([]byte("alignments"))

@@ -22,6 +22,8 @@ func main() {
                 &cli.StringFlag{Name: "templates, t", Usage: "Path to templates file in FASTA format"},
                 &cli.StringSliceFlag{Name: "fragments, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
                 &cli.IntFlag{Name: "replicate, r", Value: 0, Usage: "Biological replicate number"},
+                &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
+                &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
                 &cli.Float64Flag{Name: "normalize, n", Usage: "Normalize to read count"},
             },
             Action: func(c *cli.Context) {
@@ -30,6 +32,8 @@ func main() {
                     c.String("gene"),
                     c.String("templates"),
                     c.StringSlice("fragments"),
+                    c.Int("primer5"),
+                    c.Int("primer3"),
                     c.Int("replicate"),
                     c.Float64("normalize"))
             },

@@ -209,13 +209,13 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
     }
 
     for j := ti; j >= 0; j-- {
-        if m[0].Bit(j) == 0 {
+        if j <= (ti-primer3) && m[0].Bit(j) == 0 {
             alignment.JuncStart = uint64(ti-j)
             break
         }
     }
     for j := 0; j <= ti; j++ {
-        if m[1].Bit(j) == 0 {
+        if j >= primer5 && m[1].Bit(j) == 0 {
             alignment.JuncEnd = uint64(ti-j)
             break
         }

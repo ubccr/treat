@@ -59,6 +59,13 @@ func Search(dbpath string, fields *SearchFields) {
                     continue
                 }
 
+                if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
+                    continue
+                }
+                if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
+                    continue
+                }
+
                 fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd)}, "\t"))
             }
         } else {
@@ -103,5 +110,4 @@ func Search(dbpath string, fields *SearchFields) {
 
         return nil
     })
-
 }
