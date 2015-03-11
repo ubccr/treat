@@ -66,7 +66,7 @@ func Search(dbpath string, fields *SearchFields) {
                     continue
                 }
 
-                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd)}, "\t"))
+                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount)}, "\t"))
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
@@ -100,7 +100,7 @@ func Search(dbpath string, fields *SearchFields) {
                         return nil
                     }
 
-                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd)}, "\t"))
+                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount)}, "\t"))
 
                     return nil
                 })

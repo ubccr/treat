@@ -24,6 +24,7 @@ type Alignment struct {
     JuncStart      uint64
     JuncEnd        uint64
     JuncLen        uint64
+    ReadCount      ReadCountType
     HasMutation    uint8
 }
 
@@ -60,7 +61,7 @@ func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (
     t := make([]*Fragment, 0, 2)
 
     for rec := range gofasta.SimpleParser(f) {
-        frag := NewFragment(rec.Id, rec.Seq, 1, 0, base)
+        frag := NewFragment(rec.Id, rec.Seq, orientation, 0, base)
         t = append(t, frag)
     }
 
@@ -229,6 +230,8 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
         alignment.JuncLen = alignment.JuncEnd - alignment.EditStop
     }
 
+    alignment.ReadCount = frag.ReadCount
+
     return alignment
 }
 
@@ -249,6 +252,10 @@ func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
         return nil, err
     }
     err = binary.Read(buf, binary.BigEndian, &a.JuncLen)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.ReadCount)
     if err != nil {
         return nil, err
     }
@@ -276,6 +283,10 @@ func (a *Alignment) Bytes() ([]byte, error) {
         return nil, err
     }
     err = binary.Write(data, binary.BigEndian, a.JuncLen)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.ReadCount)
     if err != nil {
         return nil, err
     }

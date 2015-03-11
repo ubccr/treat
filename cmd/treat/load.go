@@ -4,11 +4,15 @@ import (
     "fmt"
     "os"
     "log"
+    "regexp"
+    "strconv"
     "path/filepath"
     "github.com/aebruno/gofasta"
     "github.com/ubccr/treat"
     "github.com/boltdb/bolt"
 )
+
+var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 
 func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, replicate int, norm float64) {
     if len(gene) == 0 {
@@ -69,7 +73,16 @@ func Load(dbpath, gene, templates string, fragments []string, primer5, primer3, 
                 }
             }
 
-            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 100, 't')
+            mergeCount := 0
+            matches := readsPattern.FindStringSubmatch(rec.Id)
+            if len(matches) == 2 {
+                mergeCount, err = strconv.Atoi(matches[1])
+                if err != nil {
+                    mergeCount = 0
+                }
+            }
+
+            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, treat.ReadCountType(mergeCount), 't')
             aln := treat.NewAlignment(frag, tmpl, primer5, primer3)
 
 
