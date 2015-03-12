@@ -13,7 +13,7 @@ func TestAlign(t *testing.T) {
     b := NewFragment("b", pe, FORWARD, 1, 't')
     c := NewFragment("c", cl, FORWARD, 1, 't')
 
-    tmpl, err := NewTemplate(a, b, nil)
+    tmpl, err := NewTemplate(a, b, nil, nil)
     if err != nil {
         t.Errorf("%s", err)
     }
@@ -30,7 +30,7 @@ func TestAlignment(t *testing.T) {
     b := NewFragment("b", pe, FORWARD, 1, 't')
     c := NewFragment("c", cl, FORWARD, 1, 't')
 
-    tmpl, err := NewTemplate(a, b, nil)
+    tmpl, err := NewTemplate(a, b, nil, nil)
     if err != nil {
         t.Errorf("%s", err)
     }

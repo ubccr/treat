@@ -38,7 +38,7 @@ func TestTemplate(t *testing.T) {
     full := NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 0, 't')
     pre := NewFragment("pre", "ttCAATT", FORWARD, 0, 't')
 
-    _, err = NewTemplate(full, pre, nil)
+    _, err = NewTemplate(full, pre, nil, nil)
     if err == nil {
         t.Errorf("Pre and Full templates do not much. Should throw and error")
     }
@@ -46,7 +46,7 @@ func TestTemplate(t *testing.T) {
     full = NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 0, 't')
     pre = NewFragment("pre", "ttttCCAATTTTGCAATTTTT", FORWARD, 0, 't')
 
-    tmpl, err = NewTemplate(full, pre, nil)
+    tmpl, err = NewTemplate(full, pre, nil, nil)
     if err != nil {
         t.Errorf("%s", err)
     }
@@ -62,5 +62,11 @@ func TestTemplate(t *testing.T) {
 
     if pre.String() != buf.String() {
         t.Errorf("%s != %s", full.String(), buf.String())
+    }
+
+    fakeAlt := make([]*AltRegion, 2)
+    tmpl, err = NewTemplate(full, pre, nil, fakeAlt)
+    if err == nil {
+        t.Errorf("Alt region should match alt template length. Should throw and error")
     }
 }
