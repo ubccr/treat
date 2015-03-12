@@ -17,6 +17,7 @@ type SearchFields struct {
     EditStop      int
     JuncEnd       int
     HasMutation   bool
+    HasAlt        bool
 }
 
 func Search(dbpath string, fields *SearchFields) {
@@ -65,8 +66,11 @@ func Search(dbpath string, fields *SearchFields) {
                 if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
                     continue
                 }
+                if fields.HasAlt && a.AltEditing == -1 {
+                    continue
+                }
 
-                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount)}, "\t"))
+                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing)}, "\t"))
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
@@ -99,8 +103,11 @@ func Search(dbpath string, fields *SearchFields) {
                     } else if a.HasMutation == 1 {
                         return nil
                     }
+                    if fields.HasAlt && a.AltEditing == -1 {
+                        return nil
+                    }
 
-                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount)}, "\t"))
+                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing)}, "\t"))
 
                     return nil
                 })

@@ -16,6 +16,7 @@ type Alignment struct {
     JuncLen        uint64
     ReadCount      ReadCountType
     HasMutation    uint8
+    AltEditing     int8
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
@@ -70,18 +71,59 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
         ti++
     }
 
+    // Compute binary matrix
     for i := range(template.EditSite) {
         if template.EditSite[i][ti] == frag.EditSite[fi] {
            m[i].SetBit(m[i], ti, 1)
         }
     }
 
+    // Compute junction start site
     for j := ti; j >= 0; j-- {
         if j <= (ti-primer3) && m[0].Bit(j) == 0 {
             alignment.JuncStart = uint64(ti-j)
             break
         }
     }
+
+    // Compute alt editing
+    // See if junc start matches an alt template
+    alignment.AltEditing = -1
+    shift := ti-int(alignment.JuncStart)
+    alt := -1
+    for i,v := range(m[2:]) {
+        if v.Bit(shift) == 1 {
+            alt = i
+            break
+        }
+    }
+
+    // If we're at start of alt editing
+    if alt > -1 && (ti-shift) == template.AltRegion[alt].Start {
+        // Shift Edit Stop Site to first site that doesn't match alt template
+        for x := shift; x >= 0; x-- {
+            if m[alt+2].Bit(x) == 1 {
+                continue
+            }
+
+            shift = x
+            break
+        }
+
+        // If we're before the end of alt editing
+        if (ti-shift) > template.AltRegion[alt].End {
+            // flag which alt tempalte we matched
+            alignment.AltEditing = int8(alt)
+            // Shift Junc Start to first site that doesn't match FE template
+            for j := shift; j >= 0; j-- {
+                if j <= (ti-primer3) && m[0].Bit(j) == 0 {
+                    alignment.JuncStart = uint64(ti-j)
+                    break
+                }
+            }
+        }
+    }
+
     for j := 0; j <= ti; j++ {
         if j >= primer5 && m[1].Bit(j) == 0 {
             alignment.JuncEnd = uint64(ti-j)
@@ -130,6 +172,10 @@ func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
     if err != nil {
         return nil, err
     }
+    err = binary.Read(buf, binary.BigEndian, &a.AltEditing)
+    if err != nil {
+        return nil, err
+    }
 
     return &a, nil
 }
@@ -158,6 +204,10 @@ func (a *Alignment) Bytes() ([]byte, error) {
         return nil, err
     }
     err = binary.Write(data, binary.BigEndian, a.HasMutation)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.AltEditing)
     if err != nil {
         return nil, err
     }

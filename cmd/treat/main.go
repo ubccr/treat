@@ -50,6 +50,7 @@ func main() {
                 &cli.IntFlag{Name: "edit-stop", Value: 0, Usage: "Edit stop"},
                 &cli.IntFlag{Name: "junc-end", Value: 0, Usage: "Junction end"},
                 &cli.BoolFlag{Name: "has-mutation", Usage: "Has mutation"},
+                &cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
             },
             Action: func(c *cli.Context) {
                 Search(c.GlobalString("db"), &SearchFields{
@@ -59,6 +60,7 @@ func main() {
                     EditStop:     c.Int("edit-stop"),
                     JuncEnd:      c.Int("junc-end"),
                     HasMutation:  c.Bool("has-mutation"),
+                    HasAlt:       c.Bool("has-alt"),
                 })
             },
         }}
