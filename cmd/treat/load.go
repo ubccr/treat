@@ -84,12 +84,12 @@ func Load(dbpath string, options *LoadOptions) {
                 }
             }
 
-            mergeCount := 0
+            mergeCount := 1
             matches := readsPattern.FindStringSubmatch(rec.Id)
             if len(matches) == 2 {
                 mergeCount, err = strconv.Atoi(matches[1])
                 if err != nil {
-                    mergeCount = 0
+                    mergeCount = 1
                 }
             }
 
