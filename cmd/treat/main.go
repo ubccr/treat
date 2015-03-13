@@ -50,6 +50,7 @@ func main() {
                 &cli.IntFlag{Name: "edit-stop", Value: 0, Usage: "Edit stop"},
                 &cli.IntFlag{Name: "junc-end", Value: 0, Usage: "Junction end"},
                 &cli.BoolFlag{Name: "has-mutation", Usage: "Has mutation"},
+                &cli.BoolFlag{Name: "all,a", Usage: "Include all sequences"},
                 &cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
                 &cli.IntSliceFlag{Name: "grna-edit", Value: &cli.IntSlice{}, Usage: "gRNA over edit stop"},
                 &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
@@ -63,6 +64,7 @@ func main() {
                     JuncEnd:      c.Int("junc-end"),
                     HasMutation:  c.Bool("has-mutation"),
                     HasAlt:       c.Bool("has-alt"),
+                    All:          c.Bool("all"),
                     GrnaEdit:     c.IntSlice("grna-edit"),
                     GrnaJunc:     c.IntSlice("grna-junc"),
                 })

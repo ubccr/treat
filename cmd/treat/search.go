@@ -18,8 +18,78 @@ type SearchFields struct {
     JuncEnd       int
     HasMutation   bool
     HasAlt        bool
+    All           bool
     GrnaEdit      []int
     GrnaJunc      []int
+}
+
+func (fields *SearchFields) HasKeyMatch(k string) bool {
+    key := strings.Split(string(k), ";")
+    replicate,_ := strconv.Atoi(key[2])
+
+    if fields.Replicate > 0 && replicate != fields.Replicate {
+        return false
+    }
+
+    if len(fields.Sample) > 0 && fields.Sample != key[1] {
+        return false
+    }
+    if fields.Replicate > 0 && fields.Replicate != replicate {
+        return false
+    }
+
+    return true
+}
+
+func (fields *SearchFields) HasMatch(a *treat.Alignment) bool {
+    if !fields.All {
+        if fields.HasMutation && a.HasMutation == 0 {
+            return false
+        } else if !fields.HasMutation && a.HasMutation == 1 {
+            return false
+        }
+    }
+
+    if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
+        return false
+    }
+    if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
+        return false
+    }
+    if fields.HasAlt && a.AltEditing == -1 {
+        return false
+    }
+    gflag := false
+    for _, g := range(fields.GrnaEdit) {
+        if a.GrnaEdit.Bit(g) == 0 {
+            gflag = true
+        }
+    }
+    for _, g := range(fields.GrnaJunc) {
+        if a.GrnaJunc.Bit(g) == 0 {
+            gflag = true
+        }
+    }
+    if gflag {
+        return false
+    }
+
+    return true
+}
+
+func PrintResult(k string, a *treat.Alignment) {
+    key := strings.Split(string(k), ";")
+
+    fmt.Println(strings.Join([]string{
+        key[0],
+        key[1],
+        key[2],
+        key[3],
+        fmt.Sprintf("%d", a.EditStop),
+        fmt.Sprintf("%d", a.JuncEnd),
+        fmt.Sprintf("%d", a.ReadCount),
+        fmt.Sprintf("%d", a.AltEditing),
+        a.GrnaEditString()}, "\t"))
 }
 
 func Search(dbpath string, fields *SearchFields) {
@@ -44,101 +114,40 @@ func Search(dbpath string, fields *SearchFields) {
 
         if len(prefix) > 0 {
             for k, v := c.Seek([]byte(prefix)); bytes.HasPrefix(k, []byte(prefix)); k, v = c.Next() {
-                key := strings.Split(string(k), ";")
-                replicate,_ := strconv.Atoi(key[2])
-
-                if fields.Replicate > 0 && replicate != fields.Replicate {
+                key := string(k)
+                if !fields.HasKeyMatch(key) {
                     continue
                 }
-
                 a, err := treat.NewAlignmentFromBytes(v)
                 if err != nil {
                     return err
                 }
 
-                if fields.HasMutation && a.HasMutation == 0 {
-                    continue
-                } else if !fields.HasMutation && a.HasMutation == 1 {
+                if !fields.HasMatch(a) {
                     continue
                 }
 
-                if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
-                    continue
-                }
-                if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
-                    continue
-                }
-                if fields.HasAlt && a.AltEditing == -1 {
-                    continue
-                }
-                gflag := false
-                for _, g := range(fields.GrnaEdit) {
-                    if a.GrnaEdit.Bit(g) == 0 {
-                        gflag = true
-                    }
-                }
-                for _, g := range(fields.GrnaJunc) {
-                    if a.GrnaJunc.Bit(g) == 0 {
-                        gflag = true
-                    }
-                }
-                if gflag {
-                    continue
-                }
-
-                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing), a.GrnaEditString()}, "\t"))
+                PrintResult(key, a)
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
                 b := tx.Bucket([]byte("alignments"))
                 b.ForEach(func(k, v []byte) error {
-                    key := strings.Split(string(k), ";")
-                    replicate,_ := strconv.Atoi(key[2])
-                    if len(fields.Sample) > 0 && fields.Sample != key[1] {
+                    key := string(k)
+                    if !fields.HasKeyMatch(key) {
                         return nil
                     }
-                    if fields.Replicate > 0 && fields.Replicate != replicate {
-                        return nil
-                    }
-
 
                     a, err := treat.NewAlignmentFromBytes(v)
                     if err != nil {
                         return err
                     }
 
-                    if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
-                        return nil
-                    }
-                    if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
+                    if !fields.HasMatch(a) {
                         return nil
                     }
 
-                    if fields.HasMutation && a.HasMutation == 0 {
-                        return nil
-                    } else if a.HasMutation == 1 {
-                        return nil
-                    }
-                    if fields.HasAlt && a.AltEditing == -1 {
-                        return nil
-                    }
-
-                    gflag := false
-                    for _, g := range(fields.GrnaEdit) {
-                        if a.GrnaEdit.Bit(g) == 0 {
-                            gflag = true
-                        }
-                    }
-                    for _, g := range(fields.GrnaJunc) {
-                        if a.GrnaJunc.Bit(g) == 0 {
-                            gflag = true
-                        }
-                    }
-                    if gflag {
-                        return nil
-                    }
-
-                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing), a.GrnaEditString()}, "\t"))
+                    PrintResult(key, a)
 
                     return nil
                 })
