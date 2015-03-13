@@ -151,8 +151,8 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     for i, g := range(grna) {
         gstart := g.Start-uint64(11)
         gend := g.End
-        start := template.BaseIndex[ti-int(alignment.EditStop)]
-        end := template.BaseIndex[ti-int(alignment.EditStop)]
+        start := template.BaseIndex[ti-int(alignment.JuncStart)]
+        end := template.BaseIndex[ti-int(alignment.JuncStart)]
         if ( (gend >= end && gstart <= start) ||
                 (end > gend && start < gstart) ||
                 (end <= gstart && end > gend) ||
@@ -165,7 +165,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     for i, g := range(grna) {
         gstart := g.Start
         gend := g.End
-        start := template.BaseIndex[ti-int(alignment.JuncStart)]
+        start := template.BaseIndex[ti-int(alignment.EditStop)]
         end := template.BaseIndex[ti-int(alignment.JuncEnd)]
         if ( (gend >= end && gstart <= start) ||
                 (end > gend && start < gstart) ||
