@@ -1,0 +1,54 @@
+body {
+  padding-top: 70px;
+  padding-bottom: 30px;
+}
+
+.caption {
+    overflow: hidden;
+}
+
+.dt {
+    font-size: 12px;
+    font-family: Inconsolata;
+}
+
+.hilite {
+    font-weight: bold;
+}
+
+.base {
+    background-color: #f5f5f5;
+}
+
+.base-index {
+    color: #ccc;
+}
+
+.tcell {
+    white-space: nowrap;
+}
+
+.FE {
+    background-color: #d9edf7;
+}
+
+.PE {
+    background-color: #dff0d8;
+}
+
+.A0,.A1,.A2,.A3 {
+    background-color: #fcf8e3;
+}
+
+.junction {
+    background-color: #efd6ef;
+}
+
+.mutant {
+    background-color: #EDA6A6;
+    /* background-color: #f2dede; */
+}
+
+.label-junction {
+    background-color: #A3007A;
+}
