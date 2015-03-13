@@ -17,6 +17,8 @@ type SearchFields struct {
     Replicate     int
     EditStop      int
     JuncEnd       int
+    Offset        int
+    Limit         int
     HasMutation   bool
     HasAlt        bool
     All           bool
@@ -112,6 +114,9 @@ func Search(dbpath string, fields *SearchFields) {
         log.Fatal(err)
     }
 
+    count := 0
+    offset := 0
+
     db.View(func(tx *bolt.Tx) error {
         c := tx.Bucket([]byte("alignments")).Cursor()
 
@@ -141,7 +146,18 @@ func Search(dbpath string, fields *SearchFields) {
                     continue
                 }
 
+                if fields.Offset > 0 && offset < fields.Offset {
+                    offset++
+                    continue
+                }
+
+                if fields.Limit > 0 && count >= fields.Limit {
+                    return nil
+                }
+
                 PrintResult(key, a)
+                count++
+                offset++
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
@@ -161,7 +177,18 @@ func Search(dbpath string, fields *SearchFields) {
                         return nil
                     }
 
+                    if fields.Offset > 0 && offset < fields.Offset {
+                        offset++
+                        return nil
+                    }
+
+                    if fields.Limit > 0 && count >= fields.Limit {
+                        return nil
+                    }
+
                     PrintResult(key, a)
+                    count++
+                    offset++
 
                     return nil
                 })
