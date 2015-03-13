@@ -10,8 +10,8 @@ func TestGrna(t *testing.T) {
         t.Errorf("%s", err)
     }
 
-    if len(grna) != 16 {
-        t.Errorf("Wrong grna size. %d != %d", len(grna), 16)
+    if len(grna) != 14 {
+        t.Errorf("Wrong grna size. %d != %d", len(grna), 14)
     }
 
     for _, g := range(grna) {

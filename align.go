@@ -17,6 +17,8 @@ type Alignment struct {
     ReadCount      ReadCountType
     HasMutation    uint8
     AltEditing     int8
+    GrnaEdit       *big.Int
+    GrnaJunc       *big.Int
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
@@ -26,7 +28,7 @@ func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
     }
 }
 
-func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Alignment) {
+func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna []*Grna) (*Alignment) {
     alignment := new(Alignment)
 
     m := make([]*big.Int, template.Size())
@@ -141,6 +143,41 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
 
     alignment.ReadCount = frag.ReadCount
 
+
+    editVect := big.NewInt(int64(0))
+    juncVect := big.NewInt(int64(0))
+
+    // check for gRNA coverage over the edit stop site
+    for i, g := range(grna) {
+        gstart := g.Start-uint64(11)
+        gend := g.End
+        start := template.BaseIndex[ti-int(alignment.EditStop)]
+        end := template.BaseIndex[ti-int(alignment.EditStop)]
+        if ( (gend >= end && gstart <= start) ||
+                (end > gend && start < gstart) ||
+                (end <= gstart && end > gend) ||
+                (start >= gend && start < gstart) ) {
+            editVect.SetBit(editVect, i, 1)
+        }
+    }
+
+     // check for gRNA coverage over the junction region
+    for i, g := range(grna) {
+        gstart := g.Start
+        gend := g.End
+        start := template.BaseIndex[ti-int(alignment.JuncStart)]
+        end := template.BaseIndex[ti-int(alignment.JuncEnd)]
+        if ( (gend >= end && gstart <= start) ||
+                (end > gend && start < gstart) ||
+                (end <= gstart && end > gend) ||
+                (start >= gend && start < gstart) ) {
+            juncVect.SetBit(juncVect, i, 1)
+        }
+    }
+
+    alignment.GrnaEdit = editVect
+    alignment.GrnaJunc = juncVect
+
     return alignment
 }
 
@@ -176,6 +213,19 @@ func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
     if err != nil {
         return nil, err
     }
+    var editVect uint64
+    err = binary.Read(buf, binary.BigEndian, &editVect)
+    if err != nil {
+        return nil, err
+    }
+    var juncVect uint64
+    err = binary.Read(buf, binary.BigEndian, &juncVect)
+    if err != nil {
+        return nil, err
+    }
+
+    a.GrnaEdit = big.NewInt(int64(editVect))
+    a.GrnaJunc = big.NewInt(int64(juncVect))
 
     return &a, nil
 }
@@ -211,8 +261,37 @@ func (a *Alignment) Bytes() ([]byte, error) {
     if err != nil {
         return nil, err
     }
+    err = binary.Write(data, binary.BigEndian, a.GrnaEdit.Uint64())
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Write(data, binary.BigEndian, a.GrnaJunc.Uint64())
+    if err != nil {
+        return nil, err
+    }
 
     return data.Bytes(), nil
+}
+
+func (a *Alignment) GrnaEditString() (string) {
+    s := ""//fmt.Sprintf("%d", a.GrnaEdit.Uint64())
+    for i := 0; i < a.GrnaEdit.BitLen(); i++ {
+        //s += fmt.Sprintf("%d", a.GrnaEdit.Bit(i))
+        if a.GrnaEdit.Bit(i) == 1 {
+            s += fmt.Sprintf("gRNA%d;", i+1)
+        }
+    }
+    return s
+}
+
+func (a *Alignment) GrnaJuncString() (string) {
+    s := ""
+    for i := 0; i < a.GrnaJunc.BitLen(); i++ {
+        if a.GrnaJunc.Bit(i) == 1 {
+            s += fmt.Sprintf("gRNA%d;", i+1)
+        }
+    }
+    return s
 }
 
 func Align(frag *Fragment, template *Template) {

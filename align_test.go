@@ -35,7 +35,12 @@ func TestAlignment(t *testing.T) {
         t.Errorf("%s", err)
     }
 
-    aln := NewAlignment(c, tmpl, 0, 0)
+    grna, err := GrnaFromFile("examples/rps12-guide-rna.csv")
+    if err != nil {
+        t.Errorf("%s", err)
+    }
+
+    aln := NewAlignment(c, tmpl, 0, 0, grna)
     if aln.JuncLen != 6 {
         t.Errorf("%s", err)
         t.Errorf("Wrong junc len. %d != %d", aln.JuncLen, 6)
@@ -47,5 +52,11 @@ func TestAlignment(t *testing.T) {
     if aln.JuncEnd != 143 {
         t.Errorf("%s", err)
         t.Errorf("Wrong edit stop. %d != %d", aln.EditStop, 143)
+    }
+    if aln.GrnaEditString() != "gRNA13;gRNA14;" {
+        t.Errorf("Wrong gnra edit stop. %s != %s", aln.GrnaEditString(), "gRNA13;gRNA14;")
+    }
+    if aln.GrnaJuncString() != "gRNA14;" {
+        t.Errorf("Wrong gnra junc. %s != %s", aln.GrnaJuncString(), "gRNA14;")
     }
 }

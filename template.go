@@ -20,6 +20,7 @@ type Template struct {
     Bases        string
     EditBase     rune
     EditSite     [][]BaseCountType
+    BaseIndex    []uint64
     AltRegion    []*AltRegion
 }
 
@@ -91,7 +92,22 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
         editSite[i+2] = a.EditSite
     }
 
-    return &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion}, nil
+    bi := make([]uint64, len(editSite[0]))
+
+    index := uint64(0)
+    for i := range(editSite[0]) {
+        max := editSite[0][i]
+        if editSite[1][i] > max {
+            max = editSite[1][i]
+        }
+        index += uint64(max)
+        if i != len(editSite[0])-1 {
+            index++
+        }
+        bi[i] = index
+    }
+
+    return &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion, BaseIndex: bi}, nil
 }
 
 func (tmpl *Template) Size() (int) {

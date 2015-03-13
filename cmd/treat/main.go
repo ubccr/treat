@@ -51,6 +51,8 @@ func main() {
                 &cli.IntFlag{Name: "junc-end", Value: 0, Usage: "Junction end"},
                 &cli.BoolFlag{Name: "has-mutation", Usage: "Has mutation"},
                 &cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
+                &cli.IntSliceFlag{Name: "grna-edit", Value: &cli.IntSlice{}, Usage: "gRNA over edit stop"},
+                &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
             },
             Action: func(c *cli.Context) {
                 Search(c.GlobalString("db"), &SearchFields{
@@ -61,6 +63,8 @@ func main() {
                     JuncEnd:      c.Int("junc-end"),
                     HasMutation:  c.Bool("has-mutation"),
                     HasAlt:       c.Bool("has-alt"),
+                    GrnaEdit:     c.IntSlice("grna-edit"),
+                    GrnaJunc:     c.IntSlice("grna-junc"),
                 })
             },
         }}

@@ -36,6 +36,15 @@ func Load(dbpath string, options *LoadOptions) {
         log.Fatalln("ERROR Please provide 1 or more fragment files to load")
     }
 
+    grna := make([]*treat.Grna, 0)
+    if len(options.GrnaPath) != 0 {
+        g, err := treat.GrnaFromFile(options.GrnaPath)
+        if err != nil {
+            log.Fatalln("ERROR parsing grna file: %s", err)
+        }
+        grna = g
+    }
+
     tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, 't')
     if err != nil {
         log.Fatalln(err)
@@ -94,7 +103,7 @@ func Load(dbpath string, options *LoadOptions) {
             }
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, treat.ReadCountType(mergeCount), 't')
-            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3)
+            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3, grna)
 
 
             bucket := tx.Bucket([]byte("alignments"))

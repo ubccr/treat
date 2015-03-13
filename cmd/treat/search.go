@@ -18,6 +18,8 @@ type SearchFields struct {
     JuncEnd       int
     HasMutation   bool
     HasAlt        bool
+    GrnaEdit      []int
+    GrnaJunc      []int
 }
 
 func Search(dbpath string, fields *SearchFields) {
@@ -69,8 +71,22 @@ func Search(dbpath string, fields *SearchFields) {
                 if fields.HasAlt && a.AltEditing == -1 {
                     continue
                 }
+                gflag := false
+                for _, g := range(fields.GrnaEdit) {
+                    if a.GrnaEdit.Bit(g) == 0 {
+                        gflag = true
+                    }
+                }
+                for _, g := range(fields.GrnaJunc) {
+                    if a.GrnaJunc.Bit(g) == 0 {
+                        gflag = true
+                    }
+                }
+                if gflag {
+                    continue
+                }
 
-                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing)}, "\t"))
+                fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing), a.GrnaEditString()}, "\t"))
             }
         } else {
             db.View(func(tx *bolt.Tx) error {
@@ -107,7 +123,22 @@ func Search(dbpath string, fields *SearchFields) {
                         return nil
                     }
 
-                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing)}, "\t"))
+                    gflag := false
+                    for _, g := range(fields.GrnaEdit) {
+                        if a.GrnaEdit.Bit(g) == 0 {
+                            gflag = true
+                        }
+                    }
+                    for _, g := range(fields.GrnaJunc) {
+                        if a.GrnaJunc.Bit(g) == 0 {
+                            gflag = true
+                        }
+                    }
+                    if gflag {
+                        return nil
+                    }
+
+                    fmt.Println(strings.Join([]string{key[0],key[1],key[2],key[3],fmt.Sprintf("%d", a.EditStop),fmt.Sprintf("%d", a.JuncEnd),fmt.Sprintf("%d", a.ReadCount),fmt.Sprintf("%d", a.AltEditing), a.GrnaEditString()}, "\t"))
 
                     return nil
                 })

@@ -10,8 +10,8 @@ import (
 
 type Grna struct {
     Name    string
-    Start   uint32
-    End     uint32
+    Start   uint64
+    End     uint64
 }
 
 func GrnaFromFile(path string) ([]*Grna, error) {
@@ -48,7 +48,7 @@ func GrnaFromFile(path string) ([]*Grna, error) {
             return nil, fmt.Errorf("Error end of grna: %s %s", record[0], record[2])
         }
 
-        grna = append(grna, &Grna{Name: record[0], Start: uint32(start), End: uint32(end)})
+        grna = append(grna, &Grna{Name: record[0], Start: uint64(start), End: uint64(end)})
     }
 
     return grna, nil
