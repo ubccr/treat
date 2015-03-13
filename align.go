@@ -15,6 +15,7 @@ type Alignment struct {
     JuncEnd        uint64
     JuncLen        uint64
     ReadCount      ReadCountType
+    Norm           float64
     HasMutation    uint8
     AltEditing     int8
     GrnaEdit       *big.Int
@@ -142,6 +143,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     }
 
     alignment.ReadCount = frag.ReadCount
+    alignment.Norm = frag.Norm
 
 
     editVect := big.NewInt(int64(0))
@@ -151,8 +153,13 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     for i, g := range(grna) {
         gstart := g.Start-uint64(11)
         gend := g.End
-        start := template.BaseIndex[ti-int(alignment.JuncStart)]
-        end := template.BaseIndex[ti-int(alignment.JuncStart)]
+        sidx := int(alignment.JuncStart)+1
+        if sidx < 0 {
+            sidx = 0
+        }
+        sidx = ti-sidx
+        start := template.BaseIndex[sidx]
+        end := template.BaseIndex[sidx]
         if ( (gend >= end && gstart <= start) ||
                 (end > gend && start < gstart) ||
                 (end <= gstart && end > gend) ||
@@ -165,7 +172,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     for i, g := range(grna) {
         gstart := g.Start
         gend := g.End
-        start := template.BaseIndex[ti-int(alignment.EditStop)]
+        start := template.BaseIndex[ti-int(alignment.JuncStart)]
         end := template.BaseIndex[ti-int(alignment.JuncEnd)]
         if ( (gend >= end && gstart <= start) ||
                 (end > gend && start < gstart) ||
@@ -202,6 +209,10 @@ func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
         return nil, err
     }
     err = binary.Read(buf, binary.BigEndian, &a.ReadCount)
+    if err != nil {
+        return nil, err
+    }
+    err = binary.Read(buf, binary.BigEndian, &a.Norm)
     if err != nil {
         return nil, err
     }
@@ -253,6 +264,10 @@ func (a *Alignment) Bytes() ([]byte, error) {
     if err != nil {
         return nil, err
     }
+    err = binary.Write(data, binary.BigEndian, a.Norm)
+    if err != nil {
+        return nil, err
+    }
     err = binary.Write(data, binary.BigEndian, a.HasMutation)
     if err != nil {
         return nil, err
@@ -274,9 +289,8 @@ func (a *Alignment) Bytes() ([]byte, error) {
 }
 
 func (a *Alignment) GrnaEditString() (string) {
-    s := ""//fmt.Sprintf("%d", a.GrnaEdit.Uint64())
+    s := ""
     for i := 0; i < a.GrnaEdit.BitLen(); i++ {
-        //s += fmt.Sprintf("%d", a.GrnaEdit.Bit(i))
         if a.GrnaEdit.Bit(i) == 1 {
             s += fmt.Sprintf("gRNA%d;", i+1)
         }

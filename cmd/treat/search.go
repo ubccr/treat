@@ -6,6 +6,7 @@ import (
     "bytes"
     "strings"
     "strconv"
+    "math"
     "github.com/boltdb/bolt"
     "github.com/ubccr/treat"
 )
@@ -77,6 +78,16 @@ func (fields *SearchFields) HasMatch(a *treat.Alignment) bool {
     return true
 }
 
+// From: https://gist.github.com/DavidVaini/10308388
+func Round(f float64) float64 {
+    return math.Floor(f + .5)
+}
+
+func RoundPlus(f float64, places int) (float64) {
+    shift := math.Pow(10, float64(places))
+    return Round(f * shift) / shift;
+}
+
 func PrintResult(k string, a *treat.Alignment) {
     key := strings.Split(string(k), ";")
 
@@ -85,10 +96,13 @@ func PrintResult(k string, a *treat.Alignment) {
         key[1],
         key[2],
         key[3],
-        fmt.Sprintf("%d", a.EditStop),
-        fmt.Sprintf("%d", a.JuncEnd),
+        fmt.Sprintf("%.4f", RoundPlus(a.Norm, 4)),
         fmt.Sprintf("%d", a.ReadCount),
         fmt.Sprintf("%d", a.AltEditing),
+        fmt.Sprintf("%d", a.HasMutation),
+        fmt.Sprintf("%d", a.EditStop),
+        fmt.Sprintf("%d", a.JuncEnd),
+        fmt.Sprintf("%d", a.JuncLen),
         a.GrnaEditString()}, "\t"))
 }
 

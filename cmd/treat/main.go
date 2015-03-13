@@ -25,7 +25,7 @@ func main() {
                 &cli.IntFlag{Name: "replicate, r", Value: 0, Usage: "Biological replicate number"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
-                &cli.Float64Flag{Name: "normalize, n", Usage: "Normalize to read count"},
+                &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
             },
             Action: func(c *cli.Context) {
                 Load(c.GlobalString("db"), &LoadOptions{
@@ -38,6 +38,17 @@ func main() {
                     Norm:         c.Float64("normalize"),
                     GrnaPath:     c.String("grna"),
                 })
+            },
+        },
+        {
+            Name: "server",
+            Usage: "Run http server",
+            Flags: []cli.Flag{
+                &cli.StringFlag{Name: "templates, t", Usage: "Path to html templates directory"},
+                &cli.IntFlag{Name: "port, p", Value: 8080, Usage: "Port to listen on"},
+            },
+            Action: func(c *cli.Context) {
+                Server(c.String("templates"), c.Int("port"))
             },
         },
         {

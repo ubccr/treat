@@ -35,7 +35,7 @@ func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (
     alt := make([]*AltRegion, 0)
 
     for rec := range gofasta.SimpleParser(f) {
-        frag := NewFragment(rec.Id, rec.Seq, orientation, 0, base)
+        frag := NewFragment(rec.Id, rec.Seq, orientation, 0, 0, base)
         t = append(t, frag)
 
         if len(t) > 2 {

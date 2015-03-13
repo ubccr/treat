@@ -9,9 +9,9 @@ func TestAlign(t *testing.T) {
     pe := "TTTTTTCTTTTGAGTTTTTTAGTATT"
     cl := "TTTTCTTTGAGTTTAGTATTT"
 
-    a := NewFragment("a", fe, FORWARD, 1, 't')
-    b := NewFragment("b", pe, FORWARD, 1, 't')
-    c := NewFragment("c", cl, FORWARD, 1, 't')
+    a := NewFragment("a", fe, FORWARD, 1, 1, 't')
+    b := NewFragment("b", pe, FORWARD, 1, 1, 't')
+    c := NewFragment("c", cl, FORWARD, 1, 1, 't')
 
     tmpl, err := NewTemplate(a, b, nil, nil)
     if err != nil {
@@ -26,9 +26,9 @@ func TestAlignment(t *testing.T) {
     pe := "CTAATACACTTTTGATAACAAACTAAAGTAAAAAGGCGAGGATTTTTTGAGTGGGACTGGAGAGAAAGAGCCGTTCGAGCCCAGCCGGAACCGACGGAGAGCTTCTTTTGAATAAAAGGGAGGCGGGGAGGAGAGTTTCAAAAAGATTTGGGTGGGGGGAACCCTTTGTTTTGGTTAAAGAAACATCGTTTAGAAGAGATTTTAGAATAAGATATGTTTTT"
     cl := "CTAATACACTTTTGATAACAAACTAAAGATATAATATTTTTGTTTTTTTTGCGTATGTGATTTTTGTATGGTTGTTGTTTACGTTTTGTTTTATTTGTTTTATGTTATTATATGAGTCCGCGATTGCCCAGTTCCGGTAACCGACGTGTATTGTATGCCGTATTTTATTTATATAATTTTGTTTGGATGTTGCGTTGTTTTTTTTGTTGTTTTATTGGTTTAGTTATGTCATTATTTATTATAGAGGGTGGTGGTTTTGTTGATTTACCCGGTGTAAAGTATTATACACGTATTGTAAGTTAGATTTAGATATAAGATATGTTTTT"
 
-    a := NewFragment("a", fe, FORWARD, 1, 't')
-    b := NewFragment("b", pe, FORWARD, 1, 't')
-    c := NewFragment("c", cl, FORWARD, 1, 't')
+    a := NewFragment("a", fe, FORWARD, 1, 1, 't')
+    b := NewFragment("b", pe, FORWARD, 1, 1, 't')
+    c := NewFragment("c", cl, FORWARD, 1, 1, 't')
 
     tmpl, err := NewTemplate(a, b, nil, nil)
     if err != nil {

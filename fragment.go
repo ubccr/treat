@@ -9,6 +9,7 @@ import (
 type Fragment struct {
     Name         string
     ReadCount    ReadCountType
+    Norm         float64
     Bases        string
     EditBase     rune
     EditSite     []BaseCountType
@@ -23,7 +24,7 @@ func reverse(s string) string {
     return string(runes)
 }
 
-func NewFragment(name, seq string, orientation OrientationType, reads ReadCountType, base rune) (*Fragment) {
+func NewFragment(name, seq string, orientation OrientationType, reads ReadCountType, norm float64, base rune) (*Fragment) {
     base = unicode.ToUpper(base)
 
     // Ensure all sequences are in forward 5' -> 3' orientation
@@ -51,7 +52,7 @@ func NewFragment(name, seq string, orientation OrientationType, reads ReadCountT
     bases := strings.Map(procBases, seq)
     editSite[index] = baseCount
 
-    return &Fragment{Name: name, ReadCount: reads, Bases: bases, EditBase: base, EditSite: editSite}
+    return &Fragment{Name: name, ReadCount: reads, Norm: norm, Bases: bases, EditBase: base, EditSite: editSite}
 }
 
 func (f *Fragment) String() (string) {

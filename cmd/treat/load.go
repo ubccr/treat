@@ -25,6 +25,35 @@ type LoadOptions struct {
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 
+func MergeCount(rec *gofasta.SeqRecord) (treat.ReadCountType) {
+    mergeCount := 1
+    matches := readsPattern.FindStringSubmatch(rec.Id)
+    if len(matches) == 2 {
+        count, err := strconv.Atoi(matches[1])
+        if err == nil {
+            mergeCount = count
+        }
+    }
+
+    return treat.ReadCountType(mergeCount)
+}
+
+func TotalReads(path string) (treat.ReadCountType) {
+    total := treat.ReadCountType(0)
+
+    f, err := os.Open(path)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer f.Close()
+
+    for rec := range gofasta.SimpleParser(f) {
+        total += MergeCount(rec)
+    }
+
+    return total
+}
+
 func Load(dbpath string, options *LoadOptions) {
     if len(options.Gene) == 0 {
         log.Fatalln("ERROR Gene name is required")
@@ -50,6 +79,17 @@ func Load(dbpath string, options *LoadOptions) {
         log.Fatalln(err)
     }
 
+    // Normalize read counts
+    if options.Norm == 0 {
+        total := treat.ReadCountType(0)
+        for _,path := range(options.FragmentPath) {
+            total += TotalReads(path)
+        }
+        options.Norm = float64(total) / float64(len(options.FragmentPath))
+        log.Printf("Total reads across all samples: %d", total)
+        log.Printf("Normalizing to average read count:: %.4f", options.Norm)
+    }
+
     db, err := bolt.Open(dbpath, 0644, nil)
     if err != nil {
         log.Fatal(err)
@@ -68,10 +108,17 @@ func Load(dbpath string, options *LoadOptions) {
     }
 
     for _,path := range(options.FragmentPath) {
+        log.Printf("Computing total read count for file: %s", path)
+        total := TotalReads(path)
+        scale := options.Norm / float64(total)
+        log.Printf("Total reads for file: %d", total)
+        log.Printf("Normalized scaling factor: %.4f", scale)
+
         f, err := os.Open(path)
         if err != nil {
             log.Fatal(err)
         }
+        defer f.Close()
 
         fname := filepath.Base(path)
         sample := fname[:len(fname)-len(filepath.Ext(path))]
@@ -79,6 +126,7 @@ func Load(dbpath string, options *LoadOptions) {
         var tx *bolt.Tx
         count := 0
 
+        log.Printf("Processing fragments for sample name : %s", sample)
         for rec := range gofasta.SimpleParser(f) {
 
             if count % 100 == 0 {
@@ -93,16 +141,10 @@ func Load(dbpath string, options *LoadOptions) {
                 }
             }
 
-            mergeCount := 1
-            matches := readsPattern.FindStringSubmatch(rec.Id)
-            if len(matches) == 2 {
-                mergeCount, err = strconv.Atoi(matches[1])
-                if err != nil {
-                    mergeCount = 1
-                }
-            }
+            mergeCount := MergeCount(rec)
+            norm := scale * float64(mergeCount)
 
-            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, treat.ReadCountType(mergeCount), 't')
+            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, 't')
             aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3, grna)
 
 
@@ -129,5 +171,7 @@ func Load(dbpath string, options *LoadOptions) {
                 log.Fatal(err)
             }
         }
+
+        log.Printf("Loaded %d fragment sequences for sample %s", count, sample)
     }
 }
