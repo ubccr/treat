@@ -4,16 +4,19 @@ import (
     "fmt"
     "log"
     "os"
+    "strings"
     "encoding/json"
     "html/template"
     "path/filepath"
     "net/http"
+    "github.com/gorilla/schema"
     "github.com/gorilla/mux"
     "github.com/ubccr/treat"
 )
 
 var templates map[string]*template.Template
 var db *treat.Storage
+var decoder = schema.NewDecoder()
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
     err := templates[name].ExecuteTemplate(w, "layout", data)
@@ -28,11 +31,38 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    aln := make([]*treat.Alignment, 0)
-    fields := &treat.SearchFields{Limit: 10, All: true}
+    fields := new(treat.SearchFields)
+    err := decoder.Decode(fields, r.URL.Query())
 
-    err := db.Search(fields, func (k string, a *treat.Alignment) {
-        aln = append(aln, a)
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        return
+    }
+
+    if len(fields.Gene) == 0 {
+        log.Printf("Missing required field gene")
+        http.Error(w, "Missing required field gene", http.StatusInternalServerError)
+        return
+    }
+
+    tmpl, err := db.GetTemplate(fields.Gene)
+    if err != nil {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        http.Error(w, "No templates found for gene", http.StatusInternalServerError)
+        return
+    }
+
+    samples := make(map[string][]float64)
+
+    err = db.Search(fields, func (k string, a *treat.Alignment) {
+        key := strings.Split(string(k), ";")
+
+        if _, ok := samples[key[1]]; !ok {
+            samples[key[1]] = make([]float64, tmpl.Len())
+        }
+
+        samples[key[1]][a.EditStop] += a.Norm
     })
 
     if err != nil {
@@ -41,7 +71,7 @@ func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    json.NewEncoder(w).Encode(aln)
+    json.NewEncoder(w).Encode(samples)
 }
 
 func Server(dbpath, tmpldir string, port int) {
