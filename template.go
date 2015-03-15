@@ -101,7 +101,7 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
             max = editSite[1][i]
         }
         index += uint64(max)
-        if i != len(editSite[0])-1 {
+        if i > 0 && i != len(editSite[0])-1 {
             index++
         }
         bi[i] = index

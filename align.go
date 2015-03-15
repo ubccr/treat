@@ -10,16 +10,16 @@ import (
 )
 
 type Alignment struct {
-    EditStop       uint64
-    JuncStart      uint64
-    JuncEnd        uint64
-    JuncLen        uint64
-    ReadCount      ReadCountType
-    Norm           float64
-    HasMutation    uint8
-    AltEditing     int8
-    GrnaEdit       *big.Int
-    GrnaJunc       *big.Int
+    EditStop       uint64          `json:"edit_stop"`
+    JuncStart      uint64          `json:"junc_start"`
+    JuncEnd        uint64          `json:"junc_end"`
+    JuncLen        uint64          `json:"junc_len"`
+    ReadCount      ReadCountType   `json:"read_count"`
+    Norm           float64         `json:"norm_count"`
+    HasMutation    uint8           `json:"has_mutation"`
+    AltEditing     int8            `json:"alt_editing"`
+    GrnaEdit       *big.Int        `json:"-"`
+    GrnaJunc       *big.Int        `json:"-"`
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
@@ -153,11 +153,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     for i, g := range(grna) {
         gstart := g.Start-uint64(11)
         gend := g.End
-        sidx := int(alignment.JuncStart)+1
-        if sidx < 0 {
-            sidx = 0
-        }
-        sidx = ti-sidx
+        sidx := ti-int(alignment.EditStop)
         start := template.BaseIndex[sidx]
         end := template.BaseIndex[sidx]
         if ( (gend >= end && gstart <= start) ||
