@@ -15,18 +15,18 @@ type Storage struct {
 }
 
 type SearchFields struct {
-    Gene          string
-    Sample        string
-    Replicate     int
-    EditStop      int
-    JuncEnd       int
-    Offset        int
-    Limit         int
-    HasMutation   bool
-    HasAlt        bool
-    All           bool
-    GrnaEdit      []int
-    GrnaJunc      []int
+    Gene          string      `schema:"gene"`
+    Sample        []string    `schema:"sample"`
+    Replicate     int         `schmea:"replicate"`
+    EditStop      int         `schema:"edit_stop"`
+    JuncEnd       int         `schema:"junc_end"`
+    Offset        int         `schema:"offset"`
+    Limit         int         `schema:"limit"`
+    HasMutation   bool        `schema:"has_mutation"`
+    HasAlt        bool        `schema:"has_alt"`
+    All           bool        `schema:"all"`
+    GrnaEdit      []int       `schema:"grna_edit"`
+    GrnaJunc      []int       `schema:"grna_junc"`
 }
 
 func (fields *SearchFields) HasKeyMatch(k string) bool {
@@ -37,8 +37,17 @@ func (fields *SearchFields) HasKeyMatch(k string) bool {
         return false
     }
 
-    if len(fields.Sample) > 0 && fields.Sample != key[1] {
-        return false
+    if len(fields.Sample) > 0 {
+        match := false
+        for _, s := range(fields.Sample) {
+            if s == key[1] {
+                match = true
+                break
+            }
+        }
+        if !match {
+            return false
+        }
     }
     if fields.Replicate > 0 && fields.Replicate != replicate {
         return false
@@ -109,8 +118,8 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     prefix := ""
     if len(fields.Gene) > 0 {
         prefix +=  fields.Gene
-        if len(fields.Sample) > 0 {
-            prefix += ";"+fields.Sample
+        if len(fields.Sample) == 1 {
+            prefix += ";"+fields.Sample[0]
             if fields.Replicate > 0 {
                 prefix =  fmt.Sprintf("%s;%d", prefix, fields.Replicate)
             }
@@ -192,4 +201,27 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     })
 
     return err
+}
+
+func (s *Storage) GetTemplate(gene string) (*Template, error) {
+    var tmpl *Template
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte("templates"))
+        v := b.Get([]byte(gene))
+
+        t, err := NewTemplateFromBytes(v)
+        if err != nil {
+            return err
+        }
+
+        tmpl = t
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return tmpl, nil
 }

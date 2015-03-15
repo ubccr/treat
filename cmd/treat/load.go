@@ -100,7 +100,19 @@ func Load(dbpath string, options *LoadOptions) {
         if err != nil {
             return err
         }
-        return nil
+
+        b, err := tx.CreateBucketIfNotExists([]byte("templates"))
+        if err != nil {
+            return err
+        }
+
+        data, err := tmpl.Bytes()
+        if err != nil {
+            return err
+        }
+
+        err = b.Put([]byte(options.Gene), data)
+        return err
     })
 
     if err != nil {

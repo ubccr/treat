@@ -49,6 +49,7 @@ func main() {
                 &cli.IntFlag{Name: "port, p", Value: 8080, Usage: "Port to listen on"},
             },
             Action: func(c *cli.Context) {
+                //decoder.IgnoreUnknownKeys(true)
                 Server(c.GlobalString("db"), c.String("templates"), c.Int("port"))
             },
         },
@@ -57,7 +58,7 @@ func main() {
             Usage: "Search database",
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "gene, g", Usage: "Gene Name"},
-                &cli.StringFlag{Name: "sample, s", Usage: "Sample Name"},
+                &cli.StringSliceFlag{Name: "sample, s", Value: &cli.StringSlice{}, Usage: "One or more samples"},
                 &cli.IntFlag{Name: "replicate, r", Value: 0, Usage: "Biological replicate number"},
                 &cli.IntFlag{Name: "edit-stop", Value: 0, Usage: "Edit stop"},
                 &cli.IntFlag{Name: "junc-end", Value: 0, Usage: "Junction end"},
@@ -72,7 +73,7 @@ func main() {
             Action: func(c *cli.Context) {
                 Search(c.GlobalString("db"), &treat.SearchFields{
                     Gene:         c.String("gene"),
-                    Sample:       c.String("sample"),
+                    Sample:       c.StringSlice("sample"),
                     Replicate:    c.Int("replicate"),
                     EditStop:     c.Int("edit-stop"),
                     JuncEnd:      c.Int("junc-end"),

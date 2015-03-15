@@ -6,6 +6,8 @@ import (
     "fmt"
     "regexp"
     "strconv"
+    "bytes"
+    "encoding/gob"
 )
 
 var startPattern = regexp.MustCompile(`\s*alt_start=(\d+)\s*`)
@@ -114,6 +116,10 @@ func (tmpl *Template) Size() (int) {
     return len(tmpl.EditSite)
 }
 
+func (tmpl *Template) Len() (int) {
+    return len(tmpl.EditSite[0])
+}
+
 func (tmpl *Template) Max(i int) (BaseCountType) {
     max := BaseCountType(0)
     for j := range(tmpl.EditSite) {
@@ -122,4 +128,27 @@ func (tmpl *Template) Max(i int) (BaseCountType) {
         }
     }
     return max
+}
+
+func NewTemplateFromBytes(data []byte) (*Template, error) {
+    var tmpl Template
+    buf := bytes.NewReader(data)
+    dec := gob.NewDecoder(buf)
+    err := dec.Decode(&tmpl)
+    if err != nil {
+        return nil, err
+    }
+
+    return &tmpl, nil
+}
+
+func (tmpl *Template) Bytes() ([]byte, error) {
+    data := new(bytes.Buffer)
+    enc := gob.NewEncoder(data)
+    err := enc.Encode(tmpl)
+    if err != nil {
+        return nil, err
+    }
+
+    return data.Bytes(), nil
 }
