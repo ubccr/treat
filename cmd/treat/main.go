@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "github.com/codegangsta/cli"
+    "github.com/ubccr/treat"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func main() {
                 &cli.IntFlag{Name: "port, p", Value: 8080, Usage: "Port to listen on"},
             },
             Action: func(c *cli.Context) {
-                Server(c.String("templates"), c.Int("port"))
+                Server(c.GlobalString("db"), c.String("templates"), c.Int("port"))
             },
         },
         {
@@ -69,7 +70,7 @@ func main() {
                 &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
             },
             Action: func(c *cli.Context) {
-                Search(c.GlobalString("db"), &SearchFields{
+                Search(c.GlobalString("db"), &treat.SearchFields{
                     Gene:         c.String("gene"),
                     Sample:       c.String("sample"),
                     Replicate:    c.Int("replicate"),
