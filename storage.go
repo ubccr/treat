@@ -106,21 +106,21 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     count := 0
     offset := 0
 
-    err := s.DB.View(func(tx *bolt.Tx) error {
-        c := tx.Bucket([]byte("alignments")).Cursor()
-
-        prefix := ""
-        if len(fields.Gene) > 0 {
-            prefix +=  fields.Gene
-            if len(fields.Sample) > 0 {
-                prefix += ";"+fields.Sample
-                if fields.Replicate > 0 {
-                    prefix =  fmt.Sprintf("%s;%d", prefix, fields.Replicate)
-                }
+    prefix := ""
+    if len(fields.Gene) > 0 {
+        prefix +=  fields.Gene
+        if len(fields.Sample) > 0 {
+            prefix += ";"+fields.Sample
+            if fields.Replicate > 0 {
+                prefix =  fmt.Sprintf("%s;%d", prefix, fields.Replicate)
             }
         }
+    }
 
-        if len(prefix) > 0 {
+
+    if len(prefix) > 0 {
+        err := s.DB.View(func(tx *bolt.Tx) error {
+            c := tx.Bucket([]byte("alignments")).Cursor()
             for k, v := c.Seek([]byte(prefix)); bytes.HasPrefix(k, []byte(prefix)); k, v = c.Next() {
                 key := string(k)
                 if !fields.HasKeyMatch(key) {
@@ -148,43 +148,46 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
                 count++
                 offset++
             }
-        } else {
-            s.DB.View(func(tx *bolt.Tx) error {
-                b := tx.Bucket([]byte("alignments"))
-                b.ForEach(func(k, v []byte) error {
-                    key := string(k)
-                    if !fields.HasKeyMatch(key) {
-                        return nil
-                    }
 
-                    a, err := NewAlignmentFromBytes(v)
-                    if err != nil {
-                        return err
-                    }
+            return nil
+        })
 
-                    if !fields.HasMatch(a) {
-                        return nil
-                    }
+        return err
+    }
 
-                    if fields.Offset > 0 && offset < fields.Offset {
-                        offset++
-                        return nil
-                    }
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte("alignments"))
 
-                    if fields.Limit > 0 && count >= fields.Limit {
-                        return nil
-                    }
-
-                    f(key, a)
-                    count++
-                    offset++
-
-                    return nil
-                })
+        b.ForEach(func(k, v []byte) error {
+            key := string(k)
+            if !fields.HasKeyMatch(key) {
                 return nil
-            })
-        }
+            }
 
+            a, err := NewAlignmentFromBytes(v)
+            if err != nil {
+                return err
+            }
+
+            if !fields.HasMatch(a) {
+                return nil
+            }
+
+            if fields.Offset > 0 && offset < fields.Offset {
+                offset++
+                return nil
+            }
+
+            if fields.Limit > 0 && count >= fields.Limit {
+                return nil
+            }
+
+            f(key, a)
+            count++
+            offset++
+
+            return nil
+        })
         return nil
     })
 
