@@ -119,7 +119,6 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
         }
     }
 
-
     if len(prefix) > 0 {
         err := s.DB.View(func(tx *bolt.Tx) error {
             c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
@@ -161,12 +160,13 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
 
     err := s.DB.View(func(tx *bolt.Tx) error {
         b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
+        c := b.Cursor()
 
-        b.ForEach(func(k, v []byte) error {
+        for k, v := c.First(); k != nil; k, v = c.Next() {
             key := new(AlignmentKey)
             key.UnmarshalBinary(k)
             if !fields.HasKeyMatch(key) {
-                return nil
+                continue
             }
 
             a := new(Alignment)
@@ -176,12 +176,12 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
             }
 
             if !fields.HasMatch(a) {
-                return nil
+                continue
             }
 
             if fields.Offset > 0 && offset < fields.Offset {
                 offset++
-                return nil
+                continue
             }
 
             if fields.Limit > 0 && count >= fields.Limit {
@@ -191,9 +191,8 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
             f(key, a)
             count++
             offset++
+        }
 
-            return nil
-        })
         return nil
     })
 
