@@ -2,6 +2,7 @@ package main
 
 import (
     "os"
+    "log"
     "github.com/codegangsta/cli"
     "github.com/ubccr/treat"
 )
@@ -51,6 +52,17 @@ func main() {
             Action: func(c *cli.Context) {
                 //decoder.IgnoreUnknownKeys(true)
                 Server(c.GlobalString("db"), c.String("templates"), c.Int("port"))
+            },
+        },
+        {
+            Name: "stats",
+            Usage: "Print database stats",
+            Action: func(c *cli.Context) {
+                s, err := treat.NewStorage(c.GlobalString("db"))
+                if err != nil {
+                    log.Fatal(err)
+                }
+                s.Stats()
             },
         },
         {

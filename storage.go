@@ -3,9 +3,8 @@ package treat
 import (
     "fmt"
     "time"
+    "log"
     "bytes"
-    "strings"
-    "strconv"
     "math"
     "github.com/boltdb/bolt"
 )
@@ -29,18 +28,15 @@ type SearchFields struct {
     GrnaJunc      []int       `schema:"grna_junc"`
 }
 
-func (fields *SearchFields) HasKeyMatch(k string) bool {
-    key := strings.Split(string(k), ";")
-    replicate,_ := strconv.Atoi(key[2])
-
-    if fields.Replicate > 0 && replicate != fields.Replicate {
+func (fields *SearchFields) HasKeyMatch(k *AlignmentKey) bool {
+    if fields.Replicate > 0 && k.Replicate != uint8(fields.Replicate) {
         return false
     }
 
     if len(fields.Sample) > 0 {
         match := false
         for _, s := range(fields.Sample) {
-            if s == key[1] {
+            if s == k.Sample {
                 match = true
                 break
             }
@@ -48,9 +44,6 @@ func (fields *SearchFields) HasKeyMatch(k string) bool {
         if !match {
             return false
         }
-    }
-    if fields.Replicate > 0 && fields.Replicate != replicate {
-        return false
     }
 
     return true
@@ -111,7 +104,7 @@ func NewStorage(dbpath string) (*Storage, error) {
     return &Storage{DB: db}, nil
 }
 
-func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (error) {
+func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignment)) (error) {
     count := 0
     offset := 0
 
@@ -119,9 +112,9 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     if len(fields.Gene) > 0 {
         prefix +=  fields.Gene
         if len(fields.Sample) == 1 {
-            prefix += ";"+fields.Sample[0]
+            prefix += " "+fields.Sample[0]
             if fields.Replicate > 0 {
-                prefix =  fmt.Sprintf("%s;%d", prefix, fields.Replicate)
+                prefix =  fmt.Sprintf("%s %d", prefix, fields.Replicate)
             }
         }
     }
@@ -129,9 +122,10 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
 
     if len(prefix) > 0 {
         err := s.DB.View(func(tx *bolt.Tx) error {
-            c := tx.Bucket([]byte("alignments")).Cursor()
+            c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
             for k, v := c.Seek([]byte(prefix)); bytes.HasPrefix(k, []byte(prefix)); k, v = c.Next() {
-                key := string(k)
+                key := new(AlignmentKey)
+                key.UnmarshalBinary(k)
                 if !fields.HasKeyMatch(key) {
                     continue
                 }
@@ -166,10 +160,11 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     }
 
     err := s.DB.View(func(tx *bolt.Tx) error {
-        b := tx.Bucket([]byte("alignments"))
+        b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
 
         b.ForEach(func(k, v []byte) error {
-            key := string(k)
+            key := new(AlignmentKey)
+            key.UnmarshalBinary(k)
             if !fields.HasKeyMatch(key) {
                 return nil
             }
@@ -242,4 +237,47 @@ func (s *Storage) GetTemplate(gene string) (*Template, error) {
     }
 
     return tmpl, nil
+}
+
+func (s *Storage) Genes() ([]string, error) {
+    genes := make([]string, 0)
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
+
+        b.ForEach(func(k, v []byte) error {
+            genes = append(genes, string(k))
+            return nil
+        })
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return genes, nil
+}
+
+func (s *Storage) Stats() {
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
+
+        b.ForEach(func(k, v []byte) error {
+            tmpl, err := NewTemplateFromBytes(v)
+            if err != nil {
+                return err
+            }
+
+            fmt.Println(string(k))
+            fmt.Printf(" - Alt editing: %d\n", len(tmpl.AltRegion))
+            return nil
+        })
+
+        return nil
+    })
+
+    if err != nil {
+        log.Fatal(err)
+    }
 }

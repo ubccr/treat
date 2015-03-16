@@ -8,6 +8,13 @@ import (
     "math/big"
 )
 
+type AlignmentKey struct {
+    Gene          string
+    Sample        string
+    Replicate     uint8
+    Id            uint64
+}
+
 type Alignment struct {
     EditStop       uint64          `json:"edit_stop"`
     JuncStart      uint64          `json:"junc_start"`
@@ -19,6 +26,28 @@ type Alignment struct {
     AltEditing     int8            `json:"alt_editing"`
     GrnaEdit       *big.Int        `json:"-"`
     GrnaJunc       *big.Int        `json:"-"`
+}
+
+func (k *AlignmentKey) UnmarshalBinary(data []byte) error {
+    buf := bytes.NewBuffer(data)
+    _, err := fmt.Fscanln(buf,
+        &k.Gene,
+        &k.Sample,
+        &k.Replicate,
+        &k.Id)
+
+    return err
+}
+
+func (k *AlignmentKey) MarshalBinary() ([]byte, error) {
+    var buf bytes.Buffer
+    _, err := fmt.Fprintln(&buf,
+        k.Gene,
+        k.Sample,
+        k.Replicate,
+        k.Id)
+
+    return buf.Bytes(), err
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {

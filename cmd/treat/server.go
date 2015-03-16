@@ -4,7 +4,6 @@ import (
     "fmt"
     "log"
     "os"
-    "strings"
     "encoding/json"
     "html/template"
     "path/filepath"
@@ -55,14 +54,12 @@ func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
 
     samples := make(map[string][]float64)
 
-    err = db.Search(fields, func (k string, a *treat.Alignment) {
-        key := strings.Split(string(k), ";")
-
-        if _, ok := samples[key[1]]; !ok {
-            samples[key[1]] = make([]float64, tmpl.Len())
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        if _, ok := samples[key.Sample]; !ok {
+            samples[key.Sample] = make([]float64, tmpl.Len())
         }
 
-        samples[key[1]][a.EditStop] += a.Norm
+        samples[key.Sample][a.EditStop] += a.Norm
     })
 
     if err != nil {

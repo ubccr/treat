@@ -1,7 +1,6 @@
 package main
 
 import (
-    "fmt"
     "os"
     "log"
     "regexp"
@@ -96,12 +95,12 @@ func Load(dbpath string, options *LoadOptions) {
     }
 
     err = db.Update(func(tx *bolt.Tx) error {
-        _, err := tx.CreateBucketIfNotExists([]byte("alignments"))
+        _, err := tx.CreateBucketIfNotExists([]byte(treat.BUCKET_ALIGNMENTS))
         if err != nil {
             return err
         }
 
-        b, err := tx.CreateBucketIfNotExists([]byte("templates"))
+        b, err := tx.CreateBucketIfNotExists([]byte(treat.BUCKET_TEMPLATES))
         if err != nil {
             return err
         }
@@ -160,17 +159,21 @@ func Load(dbpath string, options *LoadOptions) {
             aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3, grna)
 
 
-            bucket := tx.Bucket([]byte("alignments"))
+            bucket := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
             id, _ := bucket.NextSequence()
 
-            key := fmt.Sprintf("%s;%s;%d;%d", options.Gene, sample, options.Replicate, id)
+            key := &treat.AlignmentKey{options.Gene, sample, uint8(options.Replicate), id}
+            kbytes, err := key.MarshalBinary()
+            if err != nil {
+                log.Fatal(err)
+            }
 
             data, err := aln.MarshalBinary()
             if err != nil {
                 log.Fatal(err)
             }
 
-            err = bucket.Put([]byte(key), data)
+            err = bucket.Put(kbytes, data)
             if err != nil {
                 log.Fatal(err)
             }

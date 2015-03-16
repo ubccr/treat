@@ -14,19 +14,17 @@ func Search(dbpath string, fields *treat.SearchFields) {
         log.Fatalf("%s", err)
     }
 
-    err = s.Search(fields, func (k string, a *treat.Alignment) {
-        key := strings.Split(string(k), ";")
-
+    err = s.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         alt := fmt.Sprintf("%d", a.AltEditing)
         if a.AltEditing != -1 {
             alt = fmt.Sprintf("A%d", a.AltEditing)
         }
 
         fmt.Println(strings.Join([]string{
-            key[0],
-            key[1],
-            key[2],
-            key[3],
+            key.Gene,
+            key.Sample,
+            fmt.Sprintf("%d", key.Replicate),
+            fmt.Sprintf("%d", key.Id),
             fmt.Sprintf("%.4f", treat.RoundPlus(a.Norm, 4)),
             fmt.Sprintf("%d", a.ReadCount),
             alt,
