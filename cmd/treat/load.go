@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "log"
+    "strings"
     "regexp"
     "strconv"
     "path/filepath"
@@ -63,6 +64,8 @@ func Load(dbpath string, options *LoadOptions) {
     if options.FragmentPath == nil || len(options.FragmentPath) == 0 {
         log.Fatalln("ERROR Please provide 1 or more fragment files to load")
     }
+
+    options.Gene = strings.Replace(options.Gene, " ", "_", -1)
 
     grna := make([]*treat.Grna, 0)
     if len(options.GrnaPath) != 0 {
@@ -133,6 +136,7 @@ func Load(dbpath string, options *LoadOptions) {
 
         fname := filepath.Base(path)
         sample := fname[:len(fname)-len(filepath.Ext(path))]
+        sample = strings.Replace(sample, " ", "_", -1)
 
         var tx *bolt.Tx
         count := 0
