@@ -29,6 +29,71 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "index.html", nil)
 }
 
+func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    fields := new(treat.SearchFields)
+    err := decoder.Decode(fields, r.URL.Query())
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        return
+    }
+
+    if len(fields.Gene) == 0 {
+        log.Printf("Missing required field gene")
+        http.Error(w, "Missing required field gene", http.StatusInternalServerError)
+        return
+    }
+
+    samples := make(map[string]map[uint64]float64)
+
+    max := uint64(0)
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        if _, ok := samples[key.Sample]; !ok {
+            samples[key.Sample] = make(map[uint64]float64)
+        }
+
+        if a.JuncLen > max {
+            max = a.JuncLen
+        }
+        samples[key.Sample][a.JuncLen] += a.Norm
+    })
+
+    if err != nil {
+        log.Printf("Fatal error: %s", err)
+        http.Error(w, "Fatal database error.", http.StatusInternalServerError)
+        return
+    }
+
+    series := make([]map[string]interface{}, 0)
+    for k,v := range(samples) {
+        x := make([]float64, max+1)
+        for i := range(x) {
+            if _, ok := v[uint64(i)]; ok {
+                x[int(max)-i] = v[uint64(i)]
+            }
+        }
+
+        m := make(map[string]interface{})
+        m["data"] = x
+        m["name"] = k
+        m["type"] = "spline"
+        series = append(series, m)
+    }
+
+
+    cats := make([]int, max+1)
+    for i := range(cats) {
+        cats[i] = int(max)-i
+    }
+
+    data := make(map[string]interface{})
+    data["cats"] = cats
+    data["series"] = series
+
+    json.NewEncoder(w).Encode(data)
+}
+
 func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
     fields := new(treat.SearchFields)
     err := decoder.Decode(fields, r.URL.Query())
@@ -68,7 +133,29 @@ func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    json.NewEncoder(w).Encode(samples)
+    series := make([]map[string]interface{}, 0)
+    for k,v := range(samples) {
+        for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
+            v[i], v[j] = v[j], v[i]
+        }
+        m := make(map[string]interface{})
+        m["data"] = v
+        m["name"] = k
+        m["type"] = "spline"
+        series = append(series, m)
+    }
+
+
+    cats := make([]int, tmpl.Len())
+    for i := range(cats) {
+        cats[i] = (tmpl.Len()-1)-i
+    }
+
+    data := make(map[string]interface{})
+    data["cats"] = cats
+    data["series"] = series
+
+    json.NewEncoder(w).Encode(data)
 }
 
 func Server(dbpath, tmpldir string, port int) {
@@ -109,6 +196,7 @@ func Server(dbpath, tmpldir string, port int) {
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
     mx.HandleFunc("/", IndexHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
+    mx.HandleFunc("/data/jl-hist", JuncHistogramHandler)
     http.Handle("/", mx)
     http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
