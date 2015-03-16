@@ -165,7 +165,7 @@ func Load(dbpath string, options *LoadOptions) {
 
             key := fmt.Sprintf("%s;%s;%d;%d", options.Gene, sample, options.Replicate, id)
 
-            data, err := aln.Bytes()
+            data, err := aln.MarshalBinary()
             if err != nil {
                 log.Fatal(err)
             }

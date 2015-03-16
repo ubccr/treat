@@ -6,7 +6,6 @@ import (
     "strings"
     "bytes"
     "math/big"
-    "encoding/binary"
 )
 
 type Alignment struct {
@@ -184,104 +183,43 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     return alignment
 }
 
-func NewAlignmentFromBytes(data []byte) (*Alignment, error) {
-    var a Alignment
-    buf := bytes.NewReader(data)
+func (a *Alignment) UnmarshalBinary(data []byte) error {
+    var editVect,juncVect uint64
 
-    err := binary.Read(buf, binary.BigEndian, &a.EditStop)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.JuncStart)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.JuncEnd)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.JuncLen)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.ReadCount)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.Norm)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.HasMutation)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Read(buf, binary.BigEndian, &a.AltEditing)
-    if err != nil {
-        return nil, err
-    }
-    var editVect uint64
-    err = binary.Read(buf, binary.BigEndian, &editVect)
-    if err != nil {
-        return nil, err
-    }
-    var juncVect uint64
-    err = binary.Read(buf, binary.BigEndian, &juncVect)
-    if err != nil {
-        return nil, err
-    }
+    buf := bytes.NewBuffer(data)
+    _, err := fmt.Fscanln(buf,
+        &a.EditStop,
+        &a.JuncStart,
+        &a.JuncEnd,
+        &a.JuncLen,
+        &a.ReadCount,
+        &a.Norm,
+        &a.HasMutation,
+        &a.AltEditing,
+        &editVect,
+        &juncVect)
 
     a.GrnaEdit = big.NewInt(int64(editVect))
     a.GrnaJunc = big.NewInt(int64(juncVect))
 
-    return &a, nil
+    return err
 }
 
-func (a *Alignment) Bytes() ([]byte, error) {
-    data := new(bytes.Buffer)
+func (a *Alignment) MarshalBinary() ([]byte, error) {
+    var buf bytes.Buffer
+    _, err := fmt.Fprintln(&buf,
+        a.EditStop,
+        a.JuncStart,
+        a.JuncEnd,
+        a.JuncLen,
+        a.ReadCount,
+        a.Norm,
+        a.HasMutation,
+        a.AltEditing,
+        a.GrnaEdit.Uint64(),
+        a.GrnaJunc.Uint64())
 
-    err := binary.Write(data, binary.BigEndian, a.EditStop)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.JuncStart)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.JuncEnd)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.JuncLen)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.ReadCount)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.Norm)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.HasMutation)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.AltEditing)
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.GrnaEdit.Uint64())
-    if err != nil {
-        return nil, err
-    }
-    err = binary.Write(data, binary.BigEndian, a.GrnaJunc.Uint64())
-    if err != nil {
-        return nil, err
-    }
-
-    return data.Bytes(), nil
+    return buf.Bytes(), err
 }
 
 func (a *Alignment) GrnaEditString() (string) {

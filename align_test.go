@@ -3,6 +3,7 @@ package treat
 import (
     "testing"
     "os"
+    "math/big"
     "github.com/aebruno/gofasta"
 )
 
@@ -102,5 +103,16 @@ func TestAlignGrna(t *testing.T) {
             }
         }
         count++
+    }
+}
+
+func BenchmarkBinaryMarshal(b *testing.B) {
+    a := new(Alignment)
+    a.GrnaEdit = big.NewInt(int64(0))
+    a.GrnaJunc = big.NewInt(int64(0))
+    x := new(Alignment)
+    for i := 0; i < b.N; i++ {
+        buf, _ := a.MarshalBinary()
+        x.UnmarshalBinary(buf)
     }
 }

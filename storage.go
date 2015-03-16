@@ -135,7 +135,8 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
                 if !fields.HasKeyMatch(key) {
                     continue
                 }
-                a, err := NewAlignmentFromBytes(v)
+                a := new(Alignment)
+                err := a.UnmarshalBinary(v)
                 if err != nil {
                     return err
                 }
@@ -173,7 +174,8 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
                 return nil
             }
 
-            a, err := NewAlignmentFromBytes(v)
+            a := new(Alignment)
+            err := a.UnmarshalBinary(v)
             if err != nil {
                 return err
             }
@@ -203,10 +205,26 @@ func (s *Storage) Search(fields *SearchFields, f func(k string, a *Alignment)) (
     return err
 }
 
+func (s *Storage) PutTemplate(gene string, tmpl *Template) (error) {
+    err := s.DB.Update(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
+
+        data, err := tmpl.Bytes()
+        if err != nil {
+            return err
+        }
+
+        err = b.Put([]byte(gene), data)
+        return err
+    })
+
+    return err
+}
+
 func (s *Storage) GetTemplate(gene string) (*Template, error) {
     var tmpl *Template
     err := s.DB.View(func(tx *bolt.Tx) error {
-        b := tx.Bucket([]byte("templates"))
+        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
         v := b.Get([]byte(gene))
 
         t, err := NewTemplateFromBytes(v)
