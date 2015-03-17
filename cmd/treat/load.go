@@ -25,7 +25,7 @@ type LoadOptions struct {
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 
-func MergeCount(rec *gofasta.SeqRecord) (treat.ReadCountType) {
+func MergeCount(rec *gofasta.SeqRecord) (uint64) {
     mergeCount := 1
     matches := readsPattern.FindStringSubmatch(rec.Id)
     if len(matches) == 2 {
@@ -35,11 +35,11 @@ func MergeCount(rec *gofasta.SeqRecord) (treat.ReadCountType) {
         }
     }
 
-    return treat.ReadCountType(mergeCount)
+    return uint64(mergeCount)
 }
 
-func TotalReads(path string) (treat.ReadCountType) {
-    total := treat.ReadCountType(0)
+func TotalReads(path string) (uint64) {
+    total := uint64(0)
 
     f, err := os.Open(path)
     if err != nil {
@@ -83,7 +83,7 @@ func Load(dbpath string, options *LoadOptions) {
 
     // Normalize read counts
     if options.Norm == 0 {
-        total := treat.ReadCountType(0)
+        total := uint64(0)
         for _,path := range(options.FragmentPath) {
             total += TotalReads(path)
         }
@@ -172,7 +172,7 @@ func Load(dbpath string, options *LoadOptions) {
                 log.Fatal(err)
             }
 
-            data, err := aln.MarshalBinary()
+            data, err := aln.ToBytes()
             if err != nil {
                 log.Fatal(err)
             }
@@ -194,3 +194,39 @@ func Load(dbpath string, options *LoadOptions) {
         log.Printf("Loaded %d fragment sequences for sample %s", count, sample)
     }
 }
+
+/*
+func Index(db *bolt.DB, gene string) (error) {
+    fields := new(treat.SearchFields)
+    files.Gene = gene
+
+    esmap := make(map[string]map[uint64]float64)
+    jlmap := make(map[string]map[uint64]float64)
+
+    esmax := uint64(0)
+    jlmax := uint64(0)
+
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        if _, ok := samples[key.Sample]; !ok {
+            esmap[key.Sample] = make(map[uint64]float64)
+            jlmap[key.Sample] = make(map[uint64]float64)
+        }
+
+        if a.JuncLen > jlmax {
+            jlmax = a.JuncLen
+        }
+        jlmap[key.Sample][a.JuncLen] += a.Norm
+
+        if a.EditStop > esmax {
+            esmax = a.EditStop
+        }
+        esmap[key.Sample][a.EditStop] += a.Norm
+    })
+
+    if err != nil {
+        return error
+    }
+
+    return nil
+}
+*/

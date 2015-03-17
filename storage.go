@@ -64,7 +64,7 @@ func (fields *SearchFields) HasMatch(a *Alignment) bool {
     if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
         return false
     }
-    if fields.HasAlt && a.AltEditing == -1 {
+    if fields.HasAlt && a.AltEditing == 0 {
         return false
     }
     gflag := false
@@ -129,7 +129,7 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
                     continue
                 }
                 a := new(Alignment)
-                err := a.UnmarshalBinary(v)
+                err := a.FromBytes(v)
                 if err != nil {
                     return err
                 }
@@ -170,7 +170,7 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
             }
 
             a := new(Alignment)
-            err := a.UnmarshalBinary(v)
+            err := a.FromBytes(v)
             if err != nil {
                 return err
             }

@@ -16,7 +16,7 @@ func Search(dbpath string, fields *treat.SearchFields) {
 
     err = s.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         alt := fmt.Sprintf("%d", a.AltEditing)
-        if a.AltEditing != -1 {
+        if a.AltEditing != 0 {
             alt = fmt.Sprintf("A%d", a.AltEditing)
         }
 
