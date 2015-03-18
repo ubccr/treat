@@ -172,7 +172,7 @@ func Load(dbpath string, options *LoadOptions) {
                 log.Fatal(err)
             }
 
-            data, err := aln.ToBytes()
+            data, err := aln.MarshalBinary()
             if err != nil {
                 log.Fatal(err)
             }

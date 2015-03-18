@@ -128,8 +128,9 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
                 if !fields.HasKeyMatch(key) {
                     continue
                 }
+
                 a := new(Alignment)
-                err := a.FromBytes(v)
+                err := a.UnmarshalBinary(v)
                 if err != nil {
                     return err
                 }
@@ -170,7 +171,7 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
             }
 
             a := new(Alignment)
-            err := a.FromBytes(v)
+            err := a.UnmarshalBinary(v)
             if err != nil {
                 return err
             }
