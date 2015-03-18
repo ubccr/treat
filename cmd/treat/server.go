@@ -16,6 +16,7 @@ import (
 var templates map[string]*template.Template
 var db *treat.Storage
 var decoder = schema.NewDecoder()
+var cache map[string][]byte
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
     err := templates[name].ExecuteTemplate(w, "layout", data)
@@ -26,10 +27,46 @@ func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-    renderTemplate(w, "index.html", nil)
+    fields := new(treat.SearchFields)
+    err := decoder.Decode(fields, r.URL.Query())
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        return
+    }
+
+    genes, err := db.Genes()
+    if err != nil || len(genes) == 0 {
+        log.Printf("Error fetching genes: %s", err)
+        http.Error(w, "No genes", http.StatusInternalServerError)
+        return
+    }
+
+    if len(fields.Gene) == 0 {
+        fields.Gene = genes[0]
+    }
+
+    tmpl, err := db.GetTemplate(fields.Gene)
+    if err != nil {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        http.Error(w, "No templates found for gene", http.StatusInternalServerError)
+        return
+    }
+
+    vars := map[string]interface{}{
+        "Template": tmpl,
+        "Genes": genes}
+
+    renderTemplate(w, "index.html", vars)
 }
 
 func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    if _, ok := cache[r.URL.String()]; ok {
+        w.Write(cache[r.URL.String()])
+        return
+    }
+
     fields := new(treat.SearchFields)
     err := decoder.Decode(fields, r.URL.Query())
 
@@ -91,10 +128,24 @@ func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
     data["cats"] = cats
     data["series"] = series
 
-    json.NewEncoder(w).Encode(data)
+    out, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error encoding data as json: %s", err)
+        http.Error(w, "Fatal system error", http.StatusInternalServerError)
+        return
+    }
+
+    cache[r.URL.String()] = out
+    w.Write(out)
+    //json.NewEncoder(w).Encode(data)
 }
 
 func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    if _, ok := cache[r.URL.String()]; ok {
+        w.Write(cache[r.URL.String()])
+        return
+    }
+
     fields := new(treat.SearchFields)
     err := decoder.Decode(fields, r.URL.Query())
 
@@ -155,7 +206,16 @@ func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
     data["cats"] = cats
     data["series"] = series
 
-    json.NewEncoder(w).Encode(data)
+    out, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error encoding data as json: %s", err)
+        http.Error(w, "Fatal system error", http.StatusInternalServerError)
+        return
+    }
+
+    cache[r.URL.String()] = out
+    w.Write(out)
+    //json.NewEncoder(w).Encode(data)
 }
 
 func Server(dbpath, tmpldir string, port int) {
@@ -187,10 +247,14 @@ func Server(dbpath, tmpldir string, port int) {
     templates = make(map[string]*template.Template)
     for _, t := range tmpls {
         base := filepath.Base(t)
-        if base != "layout.html" {
-            templates[base] = template.Must(template.New("layout").ParseFiles(t, tmpldir + "/templates/layout.html"))
+        if base != "layout.html" && base != "search-form.html" {
+            templates[base] = template.Must(template.New("layout").ParseFiles(t,
+                                                        tmpldir + "/templates/layout.html",
+                                                        tmpldir + "/templates/search-form.html"))
         }
     }
+
+    cache = make(map[string][]byte)
 
     mx := mux.NewRouter()
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))

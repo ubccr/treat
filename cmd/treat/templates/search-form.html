@@ -1,0 +1,24 @@
+{{define "search-form"}}
+<div class="well">
+<form class="form-inline" role="form" method="GET">
+  <div class="form-group">
+    <select name="gene" class="selectpicker show-tick" title="Gene..">
+        {{ range .Genes }}
+            <option value="{{ . }}">{{ . }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <button id="search-btn" type="submit" class="btn btn-default"><i id="search-spin" class="fa fa-refresh fa-spin"></i> Search</button>
+</form>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    $('.selectpicker').selectpicker({
+        width: '100px'
+    });
+    $("#search-spin").hide()
+    $("#search-btn").click(function() { $("#search-spin").show(); });
+});
+</script>
+{{end}}
