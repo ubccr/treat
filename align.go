@@ -13,8 +13,6 @@ import (
 type AlignmentKey struct {
     Gene          string
     Sample        string
-    Replicate     uint8
-    Id            uint64
 }
 
 type Alignment struct {
@@ -31,25 +29,15 @@ type Alignment struct {
 }
 
 func (k *AlignmentKey) UnmarshalBinary(data []byte) error {
-    buf := bytes.NewBuffer(data)
-    _, err := fmt.Fscanln(buf,
-        &k.Gene,
-        &k.Sample,
-        &k.Replicate,
-        &k.Id)
+    parts := strings.Split(string(data), ";")
+    k.Gene = parts[0]
+    k.Sample = parts[1]
 
-    return err
+    return nil
 }
 
 func (k *AlignmentKey) MarshalBinary() ([]byte, error) {
-    var buf bytes.Buffer
-    _, err := fmt.Fprintln(&buf,
-        k.Gene,
-        k.Sample,
-        k.Replicate,
-        k.Id)
-
-    return buf.Bytes(), err
+    return []byte(strings.Join([]string{k.Gene, k.Sample}, ";")), nil
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
@@ -59,7 +47,7 @@ func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
     }
 }
 
-func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna []*Grna) (*Alignment) {
+func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Alignment) {
     alignment := new(Alignment)
 
     m := make([]*big.Int, template.Size())
@@ -181,7 +169,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     juncVect := big.NewInt(int64(0))
 
     // check for gRNA coverage over the edit stop site
-    for i, g := range(grna) {
+    for i, g := range(template.Grna) {
         gstart := g.Start-uint64(11)
         gend := g.End
         sidx := ti-int(alignment.EditStop)
@@ -196,7 +184,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int, grna
     }
 
      // check for gRNA coverage over the junction region
-    for i, g := range(grna) {
+    for i, g := range(template.Grna) {
         gstart := g.Start
         gend := g.End
         start := template.BaseIndex[ti-int(alignment.JuncStart)]

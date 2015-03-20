@@ -16,6 +16,8 @@ import (
 var templates map[string]*template.Template
 var db *treat.Storage
 var decoder = schema.NewDecoder()
+var geneTemplates map[string]*treat.Template
+var genes []string
 var cache map[string][]byte
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
@@ -36,19 +38,16 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    genes, err := db.Genes()
-    if err != nil || len(genes) == 0 {
-        log.Printf("Error fetching genes: %s", err)
-        http.Error(w, "No genes", http.StatusInternalServerError)
-        return
-    }
-
     if len(fields.Gene) == 0 {
-        fields.Gene = genes[0]
+        for k := range(geneTemplates) {
+            fields.Gene = k
+            break
+        }
     }
 
-    tmpl, err := db.GetTemplate(fields.Gene)
-    if err != nil {
+    tmpl,ok := geneTemplates[fields.Gene]
+
+    if !ok {
         log.Printf("Error fetching template for gene: %s", fields.Gene)
         http.Error(w, "No templates found for gene", http.StatusInternalServerError)
         return
@@ -61,7 +60,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "index.html", vars)
 }
 
-func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
+func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Alignment) uint64) {
     if _, ok := cache[r.URL.String()]; ok {
         w.Write(cache[r.URL.String()])
         return
@@ -82,6 +81,12 @@ func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    if _,ok := geneTemplates[fields.Gene]; !ok {
+        log.Printf("Invalid gene: %s", fields.Gene)
+        http.Error(w, "Invalid gene", http.StatusInternalServerError)
+        return
+    }
+
     samples := make(map[string]map[uint64]float64)
 
     max := uint64(0)
@@ -90,10 +95,12 @@ func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
             samples[key.Sample] = make(map[uint64]float64)
         }
 
-        if a.JuncLen > max {
-            max = a.JuncLen
+        val := f(a)
+
+        if val > max {
+            max = val
         }
-        samples[key.Sample][a.JuncLen] += a.Norm
+        samples[key.Sample][val] += a.Norm
     })
 
     if err != nil {
@@ -140,82 +147,16 @@ func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
     //json.NewEncoder(w).Encode(data)
 }
 
-func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    if _, ok := cache[r.URL.String()]; ok {
-        w.Write(cache[r.URL.String()])
-        return
-    }
-
-    fields := new(treat.SearchFields)
-    err := decoder.Decode(fields, r.URL.Query())
-
-    if err != nil {
-        log.Printf("Error parsing get request: %s", err)
-        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
-        return
-    }
-
-    if len(fields.Gene) == 0 {
-        log.Printf("Missing required field gene")
-        http.Error(w, "Missing required field gene", http.StatusInternalServerError)
-        return
-    }
-
-    tmpl, err := db.GetTemplate(fields.Gene)
-    if err != nil {
-        log.Printf("Error fetching template for gene: %s", fields.Gene)
-        http.Error(w, "No templates found for gene", http.StatusInternalServerError)
-        return
-    }
-
-    samples := make(map[string][]float64)
-
-    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
-        if _, ok := samples[key.Sample]; !ok {
-            samples[key.Sample] = make([]float64, tmpl.Len())
-        }
-
-        samples[key.Sample][a.EditStop] += a.Norm
+func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    highChartHist(w, r, func(a *treat.Alignment) uint64 {
+        return a.JuncLen
     })
+}
 
-    if err != nil {
-        log.Printf("Fatal error: %s", err)
-        http.Error(w, "Fatal database error.", http.StatusInternalServerError)
-        return
-    }
-
-    series := make([]map[string]interface{}, 0)
-    for k,v := range(samples) {
-        for i, j := 0, len(v)-1; i < j; i, j = i+1, j-1 {
-            v[i], v[j] = v[j], v[i]
-        }
-        m := make(map[string]interface{})
-        m["data"] = v
-        m["name"] = k
-        m["type"] = "spline"
-        series = append(series, m)
-    }
-
-
-    cats := make([]int, tmpl.Len())
-    for i := range(cats) {
-        cats[i] = (tmpl.Len()-1)-i
-    }
-
-    data := make(map[string]interface{})
-    data["cats"] = cats
-    data["series"] = series
-
-    out, err := json.Marshal(data)
-    if err != nil {
-        log.Printf("Error encoding data as json: %s", err)
-        http.Error(w, "Fatal system error", http.StatusInternalServerError)
-        return
-    }
-
-    cache[r.URL.String()] = out
-    w.Write(out)
-    //json.NewEncoder(w).Encode(data)
+func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    highChartHist(w, r, func(a *treat.Alignment) uint64 {
+        return a.EditStop
+    })
 }
 
 func Server(dbpath, tmpldir string, port int) {
@@ -224,6 +165,18 @@ func Server(dbpath, tmpldir string, port int) {
         log.Fatal(err)
     }
     db = dbx
+
+    geneTemplates, err = db.TemplateMap()
+    if err != nil {
+        log.Fatal(err)
+    }
+    if len(geneTemplates) == 0 {
+        log.Fatal("No genes/templates found. Please load some data first")
+    }
+    genes = make([]string, 0)
+    for k := range(geneTemplates) {
+        genes = append(genes, k)
+    }
 
     if len(tmpldir) == 0 {
         // default to directory of current executable 

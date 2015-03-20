@@ -7,6 +7,7 @@ import (
     "regexp"
     "strconv"
     "path/filepath"
+    "encoding/binary"
     "github.com/aebruno/gofasta"
     "github.com/ubccr/treat"
     "github.com/boltdb/bolt"
@@ -81,6 +82,8 @@ func Load(dbpath string, options *LoadOptions) {
         log.Fatalln(err)
     }
 
+    tmpl.Grna = grna
+
     // Normalize read counts
     if options.Norm == 0 {
         total := uint64(0)
@@ -138,7 +141,28 @@ func Load(dbpath string, options *LoadOptions) {
         sample := fname[:len(fname)-len(filepath.Ext(path))]
         sample = strings.Replace(sample, " ", "_", -1)
 
+        akey := &treat.AlignmentKey{options.Gene, sample}
+        key, err := akey.MarshalBinary()
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        err = db.Update(func(tx *bolt.Tx) error {
+            b := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
+            _, err := b.CreateBucket(key)
+            if err != nil {
+                return err
+            }
+
+            return nil
+        })
+
+        if err != nil {
+            log.Fatal(err)
+        }
+
         var tx *bolt.Tx
+        var bucket *bolt.Bucket
         count := 0
 
         log.Printf("Processing fragments for sample name : %s", sample)
@@ -154,29 +178,25 @@ func Load(dbpath string, options *LoadOptions) {
                 if err != nil {
                     log.Fatal(err)
                 }
+                abucket := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
+                bucket =  abucket.Bucket(key)
             }
 
             mergeCount := MergeCount(rec)
             norm := scale * float64(mergeCount)
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, 't')
-            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3, grna)
+            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3)
 
-
-            bucket := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
             id, _ := bucket.NextSequence()
-
-            key := &treat.AlignmentKey{options.Gene, sample, uint8(options.Replicate), id}
-            kbytes, err := key.MarshalBinary()
-            if err != nil {
-                log.Fatal(err)
-            }
 
             data, err := aln.MarshalBinary()
             if err != nil {
                 log.Fatal(err)
             }
 
+            kbytes := make([]byte, 8)
+            binary.BigEndian.PutUint64(kbytes, id)
             err = bucket.Put(kbytes, data)
             if err != nil {
                 log.Fatal(err)

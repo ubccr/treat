@@ -4,6 +4,7 @@ import (
     "fmt"
     "time"
     "log"
+    "strings"
     "bytes"
     "math"
     "github.com/boltdb/bolt"
@@ -16,9 +17,9 @@ type Storage struct {
 type SearchFields struct {
     Gene          string      `schema:"gene"`
     Sample        []string    `schema:"sample"`
-    Replicate     int         `schmea:"replicate"`
     EditStop      int         `schema:"edit_stop"`
     JuncEnd       int         `schema:"junc_end"`
+    JuncLen       int         `schema:"junc_len"`
     Offset        int         `schema:"offset"`
     Limit         int         `schema:"limit"`
     HasMutation   bool        `schema:"has_mutation"`
@@ -29,7 +30,7 @@ type SearchFields struct {
 }
 
 func (fields *SearchFields) HasKeyMatch(k *AlignmentKey) bool {
-    if fields.Replicate > 0 && k.Replicate != uint8(fields.Replicate) {
+    if len(fields.Gene) > 0 && fields.Gene != k.Gene {
         return false
     }
 
@@ -59,6 +60,9 @@ func (fields *SearchFields) HasMatch(a *Alignment) bool {
     }
 
     if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
+        return false
+    }
+    if fields.JuncLen > 0 && uint64(fields.JuncLen) != a.JuncLen {
         return false
     }
     if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
@@ -108,29 +112,22 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
     count := 0
     offset := 0
 
-    prefix := ""
-    if len(fields.Gene) > 0 {
-        prefix +=  fields.Gene
-        if len(fields.Sample) == 1 {
-            prefix += " "+fields.Sample[0]
-            if fields.Replicate > 0 {
-                prefix =  fmt.Sprintf("%s %d", prefix, fields.Replicate)
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
+        c := b.Cursor()
+
+        for k, _ := c.First(); k != nil; k, _ = c.Next() {
+            key := new(AlignmentKey)
+            key.UnmarshalBinary(k)
+            if !fields.HasKeyMatch(key) {
+                continue
             }
-        }
-    }
 
-    if len(prefix) > 0 {
-        err := s.DB.View(func(tx *bolt.Tx) error {
-            c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
-            for k, v := c.Seek([]byte(prefix)); bytes.HasPrefix(k, []byte(prefix)); k, v = c.Next() {
-                key := new(AlignmentKey)
-                key.UnmarshalBinary(k)
-                if !fields.HasKeyMatch(key) {
-                    continue
-                }
+            bucket := c.Bucket().Bucket(k).Cursor()
 
+            for ak, av := bucket.First(); ak != nil; ak, av = bucket.Next() {
                 a := new(Alignment)
-                err := a.UnmarshalBinary(v)
+                err := a.UnmarshalBinary(av)
                 if err != nil {
                     return err
                 }
@@ -152,46 +149,6 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
                 count++
                 offset++
             }
-
-            return nil
-        })
-
-        return err
-    }
-
-    err := s.DB.View(func(tx *bolt.Tx) error {
-        b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
-        c := b.Cursor()
-
-        for k, v := c.First(); k != nil; k, v = c.Next() {
-            key := new(AlignmentKey)
-            key.UnmarshalBinary(k)
-            if !fields.HasKeyMatch(key) {
-                continue
-            }
-
-            a := new(Alignment)
-            err := a.UnmarshalBinary(v)
-            if err != nil {
-                return err
-            }
-
-            if !fields.HasMatch(a) {
-                continue
-            }
-
-            if fields.Offset > 0 && offset < fields.Offset {
-                offset++
-                continue
-            }
-
-            if fields.Limit > 0 && count >= fields.Limit {
-                return nil
-            }
-
-            f(key, a)
-            count++
-            offset++
         }
 
         return nil
@@ -239,6 +196,33 @@ func (s *Storage) GetTemplate(gene string) (*Template, error) {
     return tmpl, nil
 }
 
+func (s *Storage) TemplateMap() (map[string]*Template, error) {
+    templates := make(map[string]*Template, 0)
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
+
+        b.ForEach(func(k, v []byte) error {
+
+            tmpl, err := NewTemplateFromBytes(v)
+            if err != nil {
+                return err
+            }
+
+            templates[string(k)] = tmpl
+
+            return nil
+        })
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return templates, nil
+}
+
 func (s *Storage) Genes() ([]string, error) {
     genes := make([]string, 0)
     err := s.DB.View(func(tx *bolt.Tx) error {
@@ -259,6 +243,29 @@ func (s *Storage) Genes() ([]string, error) {
     return genes, nil
 }
 
+
+func (s *Storage) Samples(gene string) ([]string, error) {
+    samples := make([]string, 0)
+    gbytes := []byte(gene)
+
+    err := s.DB.View(func(tx *bolt.Tx) error {
+        c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
+        for k, _ := c.Seek(gbytes); bytes.HasPrefix(k, gbytes); k, _ = c.Next() {
+            key := new(AlignmentKey)
+            key.UnmarshalBinary(k)
+            samples = append(samples, key.Sample)
+        }
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return samples, nil
+}
+
 func (s *Storage) Stats() {
     err := s.DB.View(func(tx *bolt.Tx) error {
         b := tx.Bucket([]byte(BUCKET_TEMPLATES))
@@ -271,6 +278,30 @@ func (s *Storage) Stats() {
 
             fmt.Println(string(k))
             fmt.Printf(" - Alt editing: %d\n", len(tmpl.AltRegion))
+            fmt.Printf(" - gRNAs: %d\n", len(tmpl.Grna))
+            samples, err := s.Samples(string(k))
+            if err != nil {
+                return err
+            }
+            fmt.Printf(" - Samples: %s\n", strings.Join(samples, ", "))
+
+            count := 0
+            err = s.Search(&SearchFields{Gene:string(k)}, func (key *AlignmentKey, a *Alignment) {
+                count++
+            })
+            if err != nil {
+                return err
+            }
+            fmt.Printf(" - Alignments: %d\n", count)
+            count = 0
+            err = s.Search(&SearchFields{Gene:string(k), HasMutation: true}, func (key *AlignmentKey, a *Alignment) {
+                count++
+            })
+            if err != nil {
+                return err
+            }
+            fmt.Printf(" - Mutations: %d\n", count)
+
             return nil
         })
 

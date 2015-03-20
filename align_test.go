@@ -43,7 +43,9 @@ func TestAlignment(t *testing.T) {
         t.Errorf("%s", err)
     }
 
-    aln := NewAlignment(c, tmpl, 0, 0, grna)
+    tmpl.Grna = grna
+
+    aln := NewAlignment(c, tmpl, 0, 0)
     if aln.JuncLen != 6 {
         t.Errorf("%s", err)
         t.Errorf("Wrong junc len. %d != %d", aln.JuncLen, 6)
@@ -75,6 +77,8 @@ func TestAlignGrna(t *testing.T) {
         t.Errorf("%s", err)
     }
 
+    tmpl.Grna = grna
+
     f, err := os.Open("examples/clones.fa")
     if err != nil {
         t.Errorf("%s", err)
@@ -84,7 +88,7 @@ func TestAlignGrna(t *testing.T) {
     count := 0
     for rec := range gofasta.SimpleParser(f) {
         frag := NewFragment(rec.Id, rec.Seq, FORWARD, 0, 0, 't')
-        aln := NewAlignment(frag, tmpl, 10, 10, grna)
+        aln := NewAlignment(frag, tmpl, 10, 10)
         if count == 0 || count == 1 {
             if aln.GrnaEditString() != "gRNA13;gRNA14;" {
                 t.Errorf("Wrong edit grna. %s != %s", aln.GrnaEditString(), "gRNA13;gRNA14;")

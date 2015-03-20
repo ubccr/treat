@@ -24,6 +24,7 @@ type Template struct {
     EditSite     [][]BaseCountType
     BaseIndex    []uint64
     AltRegion    []*AltRegion
+    Grna         []*Grna
 }
 
 func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (*Template, error) {

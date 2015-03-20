@@ -23,8 +23,6 @@ func Search(dbpath string, fields *treat.SearchFields) {
         fmt.Println(strings.Join([]string{
             key.Gene,
             key.Sample,
-            fmt.Sprintf("%d", key.Replicate),
-            fmt.Sprintf("%d", key.Id),
             fmt.Sprintf("%.4f", treat.RoundPlus(a.Norm, 4)),
             fmt.Sprintf("%d", a.ReadCount),
             alt,
