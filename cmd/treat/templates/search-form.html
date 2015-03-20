@@ -3,8 +3,69 @@
 <form class="form-inline" role="form" method="GET">
   <div class="form-group">
     <select name="gene" class="selectpicker show-tick" title="Gene..">
-        {{ range .Genes }}
-            <option value="{{ . }}">{{ . }}</option>
+        {{ range $g := .Genes }}
+            <option{{if eq $g $.Fields.Gene }} selected="selected"{{end}} value="{{ $g }}">{{ $g }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <div class="form-group">
+    <select name="sample" class="selectpicker show-tick" multiple title="Sample..">
+        {{ range $s := .Samples }}
+        {{ $check := $.Fields.HasSample $s }}
+            <option{{if $check }} selected="selected"{{end}} value="{{ $s }}">{{ $s }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <div class="form-group">
+    <select name="grna_edit" class="selectpicker show-tick" title="gRNA..">
+        <option></option>
+        {{ range $i, $g := .Template.Grna }}
+        {{ $check := $.Fields.HasGrnaEdit $i }}
+            <option{{if $check }} selected="selected"{{end}} value="{{ $i }}">{{ $g.Name }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <div class="form-group">
+    <select name="alt" class="selectpicker show-tick" title="Alts..">
+        <option></option>
+        {{ range $i, $a := .Template.AltRegion }}
+            {{ $x := increment $i }}
+            <option{{if eq $x $.Fields.AltRegion }} selected="selected"{{end}} value="{{ $x }}">A{{ $x }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+      <div class="input-group-addon"><i title="Filter by Edit Stop Site" class="fa fa-edit"></i></div>
+      <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -1 }}{{ .Fields.EditStop }}{{end}}" placeholder="Stop">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+      <div class="input-group-addon"><i title="Filter by Junction End Site" class="fa fa-link"></i></div>
+      <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -1 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="End">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="input-group">
+      <div class="input-group-addon"><i title="Filter by Junction Length" class="fa fa-link"></i></div>
+      <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -1 }}{{ .Fields.JuncLen }}{{end}}" placeholder="Len">
+    </div>
+  </div>
+  <div class="checkbox">
+    <label>
+      <input name="has_mutation" value="1" type="checkbox"{{if $.Fields.HasMutation }} checked="checked"{{end}}> <i class="fa fa-warning" title="Show mutations only"></i>
+    </label>
+  </div>
+  <div class="checkbox">
+    <label>
+      <input name="has_alt" value="1" type="checkbox"{{if $.Fields.HasAlt }} checked="checked"{{end}}> <i class="fa fa-magic" title="Show Alternate Editing only"></i>
+    </label>
+  </div>
+  <div class="form-group">
+    <select name="limit" class="selectpicker show-tick" title="Show..">
+        {{ range $n := .Pages }}
+        <option{{if eq $n $.Fields.Limit }} selected="selected"{{end}}>{{ $n }}</option>
         {{ end }}
     </select>
   </div>

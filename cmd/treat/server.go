@@ -4,10 +4,12 @@ import (
     "fmt"
     "log"
     "os"
+    "bytes"
     "encoding/json"
     "html/template"
     "path/filepath"
     "net/http"
+    "net/url"
     "github.com/gorilla/schema"
     "github.com/gorilla/mux"
     "github.com/ubccr/treat"
@@ -17,20 +19,29 @@ var templates map[string]*template.Template
 var db *treat.Storage
 var decoder = schema.NewDecoder()
 var geneTemplates map[string]*treat.Template
+var geneSamples map[string][]string
 var genes []string
 var cache map[string][]byte
 
+func increment(x int) (int) {
+    x++
+    return x
+}
+
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
-    err := templates[name].ExecuteTemplate(w, "layout", data)
+    var buf bytes.Buffer
+    err := templates[name].ExecuteTemplate(&buf, "layout", data)
 
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
     }
+
+    buf.WriteTo(w)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-    fields := new(treat.SearchFields)
-    err := decoder.Decode(fields, r.URL.Query())
+    fields, err := NewSearchFields(r.URL)
 
     if err != nil {
         log.Printf("Error parsing get request: %s", err)
@@ -53,11 +64,49 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    count := 0
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        count++
+    })
+
+    if err != nil {
+        log.Printf("Error fetching alignment count for gene: %s", fields.Gene)
+        http.Error(w, "System error", http.StatusInternalServerError)
+        return
+    }
+
     vars := map[string]interface{}{
         "Template": tmpl,
+        "Count": count,
+        "Query": r.URL.RawQuery,
+        "Fields": fields,
+        "Samples": geneSamples[fields.Gene],
+        "Pages": []int{10,50,100,1000},
         "Genes": genes}
 
     renderTemplate(w, "index.html", vars)
+}
+
+func NewSearchFields(url *url.URL) (* treat.SearchFields, error) {
+    vals := url.Query()
+    fields := new(treat.SearchFields)
+    err := decoder.Decode(fields, vals)
+
+    if err != nil {
+        return nil, err
+    }
+
+    if vals.Get("edit_stop") == "" {
+        fields.EditStop = -1
+    }
+    if vals.Get("junc_len") == "" {
+        fields.JuncLen = -1
+    }
+    if vals.Get("junc_end") == "" {
+        fields.JuncEnd = -1
+    }
+
+    return fields, nil
 }
 
 func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Alignment) uint64) {
@@ -66,8 +115,7 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
         return
     }
 
-    fields := new(treat.SearchFields)
-    err := decoder.Decode(fields, r.URL.Query())
+    fields, err := NewSearchFields(r.URL)
 
     if err != nil {
         log.Printf("Error parsing get request: %s", err)
@@ -173,9 +221,22 @@ func Server(dbpath, tmpldir string, port int) {
     if len(geneTemplates) == 0 {
         log.Fatal("No genes/templates found. Please load some data first")
     }
+
+    geneSamples = make(map[string][]string)
     genes = make([]string, 0)
     for k := range(geneTemplates) {
         genes = append(genes, k)
+
+        s, err := db.Samples(k)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        if len(s) == 0 {
+            log.Fatalf("No samples found for gene %s. Please load some data first", k)
+        }
+
+        geneSamples[k] = s
     }
 
     if len(tmpldir) == 0 {
@@ -197,11 +258,16 @@ func Server(dbpath, tmpldir string, port int) {
         log.Fatal(err)
     }
 
+    funcMap := template.FuncMap{
+        "increment": increment,
+    }
+
+
     templates = make(map[string]*template.Template)
     for _, t := range tmpls {
         base := filepath.Base(t)
         if base != "layout.html" && base != "search-form.html" {
-            templates[base] = template.Must(template.New("layout").ParseFiles(t,
+            templates[base] = template.Must(template.New("layout").Funcs(funcMap).ParseFiles(t,
                                                         tmpldir + "/templates/layout.html",
                                                         tmpldir + "/templates/search-form.html"))
         }

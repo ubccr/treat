@@ -27,6 +27,27 @@ type SearchFields struct {
     All           bool        `schema:"all"`
     GrnaEdit      []int       `schema:"grna_edit"`
     GrnaJunc      []int       `schema:"grna_junc"`
+    AltRegion     int         `schema:"alt"`
+}
+
+func (fields *SearchFields) HasSample(val string) bool {
+    for _, s := range(fields.Sample) {
+        if s == val  {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (fields *SearchFields) HasGrnaEdit(val int) bool {
+    for _, i := range(fields.GrnaEdit) {
+        if i == val  {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (fields *SearchFields) HasKeyMatch(k *AlignmentKey) bool {
@@ -59,16 +80,19 @@ func (fields *SearchFields) HasMatch(a *Alignment) bool {
         }
     }
 
-    if fields.EditStop > 0 && uint64(fields.EditStop) != a.EditStop {
+    if fields.EditStop >= 0 && uint64(fields.EditStop) != a.EditStop {
         return false
     }
-    if fields.JuncLen > 0 && uint64(fields.JuncLen) != a.JuncLen {
+    if fields.JuncLen >= 0 && uint64(fields.JuncLen) != a.JuncLen {
         return false
     }
-    if fields.JuncEnd > 0 && uint64(fields.JuncEnd) != a.JuncEnd {
+    if fields.JuncEnd >= 0 && uint64(fields.JuncEnd) != a.JuncEnd {
         return false
     }
     if fields.HasAlt && a.AltEditing == 0 {
+        return false
+    }
+    if fields.AltRegion > 0 && uint64(fields.AltRegion) != a.AltEditing {
         return false
     }
     gflag := false
