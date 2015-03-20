@@ -5,7 +5,11 @@ import (
     "log"
     "os"
     "bytes"
+    "reflect"
+    "strconv"
+    "regexp"
     "encoding/json"
+    "encoding/csv"
     "html/template"
     "path/filepath"
     "net/http"
@@ -15,9 +19,10 @@ import (
     "github.com/ubccr/treat"
 )
 
+
 var templates map[string]*template.Template
 var db *treat.Storage
-var decoder = schema.NewDecoder()
+var decoder *schema.Decoder
 var geneTemplates map[string]*treat.Template
 var geneSamples map[string][]string
 var genes []string
@@ -26,6 +31,11 @@ var cache map[string][]byte
 func increment(x int) (int) {
     x++
     return x
+}
+
+func replace(src, key string) (string) {
+    var pattern = regexp.MustCompile(key+`=\d*`)
+    return pattern.ReplaceAllString(src, "")
 }
 
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
@@ -47,13 +57,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
         log.Printf("Error parsing get request: %s", err)
         http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
         return
-    }
-
-    if len(fields.Gene) == 0 {
-        for k := range(geneTemplates) {
-            fields.Gene = k
-            break
-        }
     }
 
     tmpl,ok := geneTemplates[fields.Gene]
@@ -94,6 +97,13 @@ func NewSearchFields(url *url.URL) (* treat.SearchFields, error) {
 
     if err != nil {
         return nil, err
+    }
+
+    if len(fields.Gene) == 0 {
+        for k := range(geneTemplates) {
+            fields.Gene = k
+            break
+        }
     }
 
     if vals.Get("edit_stop") == "" {
@@ -183,6 +193,29 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
     data["cats"] = cats
     data["series"] = series
 
+    if r.URL.Query().Get("export") == "1" {
+        csvout := csv.NewWriter(w)
+        col := "edit_stop"
+        if r.URL.Path == "/data/jl-hist" {
+            col = "junc_len"
+        }
+        csvout.Write([]string{col, "name", "norm_count"})
+
+        w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+        w.Header().Set("Content-Disposition", "attachment; filename="+col+".csv")
+
+        for _, rec := range(series) {
+            for i, es := range(cats) {
+                norm := reflect.ValueOf(rec["data"])
+                name := reflect.ValueOf(rec["name"])
+                csvout.Write([]string{strconv.Itoa(es), fmt.Sprintf("%s", name), fmt.Sprintf("%.4f", norm.Index(i).Float())})
+            }
+        }
+
+        csvout.Flush()
+        return
+    }
+
     out, err := json.Marshal(data)
     if err != nil {
         log.Printf("Error encoding data as json: %s", err)
@@ -260,6 +293,7 @@ func Server(dbpath, tmpldir string, port int) {
 
     funcMap := template.FuncMap{
         "increment": increment,
+        "replace": replace,
     }
 
 
@@ -274,6 +308,8 @@ func Server(dbpath, tmpldir string, port int) {
     }
 
     cache = make(map[string][]byte)
+    decoder = schema.NewDecoder()
+    decoder.IgnoreUnknownKeys(true)
 
     mx := mux.NewRouter()
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
