@@ -28,6 +28,7 @@ type Alignment struct {
     AltEditing     uint64          `json:"alt_editing"`
     GrnaEdit       *big.Int        `json:"-"`
     GrnaJunc       *big.Int        `json:"-"`
+    JuncSeq        string           `json:"-"`
 }
 
 func (k *AlignmentKey) UnmarshalBinary(data []byte) error {
@@ -161,6 +162,14 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
 
     if alignment.JuncEnd > alignment.JuncStart {
         alignment.JuncLen = alignment.JuncEnd - alignment.EditStop
+        if alignment.HasMutation == 0 {
+            for i := ti-int(alignment.JuncEnd); i < ti-int(alignment.EditStop); i++ {
+                alignment.JuncSeq += strings.Repeat(string(frag.EditBase), int(frag.EditSite[i]))
+                if i < len(frag.Bases) {
+                    alignment.JuncSeq += string(frag.Bases[i])
+                }
+            }
+        }
     }
 
     alignment.ReadCount = frag.ReadCount
@@ -227,6 +236,7 @@ func (a *Alignment) UnmarshalBinary(data []byte) (error) {
     a.Norm = math.Float64frombits(normBits)
     a.GrnaEdit = big.NewInt(int64(editVect))
     a.GrnaJunc = big.NewInt(int64(juncVect))
+    a.JuncSeq = string(data[80:])
 
     return nil
 }
@@ -249,6 +259,8 @@ func (a *Alignment) MarshalBinary() ([]byte, error) {
     for i, v := range(cols) {
         binary.BigEndian.PutUint64(buf[(i*8):((i*8)+8)], v)
     }
+
+    buf = append(buf, []byte(a.JuncSeq)...)
 
     return buf, nil
 }

@@ -30,7 +30,8 @@ func Search(dbpath string, fields *treat.SearchFields) {
             fmt.Sprintf("%d", a.EditStop),
             fmt.Sprintf("%d", a.JuncEnd),
             fmt.Sprintf("%d", a.JuncLen),
-            a.GrnaEditString()}, "\t"))
+            a.GrnaEditString(),
+            a.JuncSeq}, "\t"))
     })
 
     if err != nil {
