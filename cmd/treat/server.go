@@ -52,6 +52,16 @@ func pct(a *treat.Alignment, totals map[uint64]map[string]float64) (string) {
     return fmt.Sprintf("%.4f", d)
 }
 
+func grna(a *treat.Alignment) (template.HTML) {
+    html := ""
+    for i := 0; i < a.GrnaEdit.BitLen(); i++ {
+        if a.GrnaEdit.Bit(i) == 1 {
+            html += `<span class="label label-success">`+fmt.Sprintf("gRNA%d", i+1)+`</span> `
+        }
+    }
+    return template.HTML(html)
+}
+
 func juncseq(val string) (template.HTML) {
     html := ""
     for _,b := range(val) {
@@ -423,6 +433,7 @@ func Server(dbpath, tmpldir string, port int) {
         "round": round,
         "juncseq": juncseq,
         "pct": pct,
+        "grna": grna,
     }
 
 
