@@ -31,6 +31,14 @@ type SearchFields struct {
     AltRegion     int         `schema:"alt"`
 }
 
+type AlignmentResults []*Alignment
+
+func (s AlignmentResults) Len() int  { return len(s) }
+func (s AlignmentResults) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+type ByReadCount struct{ AlignmentResults }
+func (s ByReadCount) Less(i, j int) bool { return s.AlignmentResults[i].ReadCount > s.AlignmentResults[j].ReadCount }
+
 func (fields *SearchFields) HasSample(val string) bool {
     for _, s := range(fields.Sample) {
         if s == val  {

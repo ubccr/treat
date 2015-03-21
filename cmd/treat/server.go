@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "log"
+    "sort"
     "os"
     "bytes"
     "reflect"
@@ -79,21 +80,6 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    page, err := strconv.Atoi(r.URL.Query().Get("page"))
-    if err != nil {
-        page = 0
-    }
-
-    if page <= 0 {
-        page = 1
-    }
-
-    if fields.Limit == 0 {
-        fields.Limit = 10
-    }
-
-    fields.Offset = (page-1)*fields.Limit
-
     tmpl,ok := geneTemplates[fields.Gene]
 
     if !ok {
@@ -102,6 +88,9 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    limit := fields.Limit
+    fields.Limit = 0
+    fields.Offset = 0
     alignments := make([]*treat.Alignment, 0)
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         a.Key = key
@@ -114,21 +103,34 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    count := 0
-    showing := fields.Offset + fields.Limit
-    limit := fields.Limit
-    fields.Limit = 0
-    fields.Offset = 0
-    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
-        count++
-    })
-    fields.Limit = limit
+    sort.Sort(treat.ByReadCount{alignments})
 
-    if err != nil {
-        log.Printf("Error fetching alignment count for gene: %s", fields.Gene)
-        errorHandler(w, r, http.StatusInternalServerError, "")
-        return
+    fields.Limit = limit
+    if fields.Limit == 0 {
+        fields.Limit = 10
     }
+
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil {
+        page = 0
+    }
+
+    if page <= 0 {
+        page = 1
+    }
+
+    if page > (int(len(alignments)/fields.Limit)+1) {
+        page = (int(len(alignments)/fields.Limit)+1)
+    }
+
+    fields.Offset = (page-1)*fields.Limit
+    end := (fields.Offset+fields.Limit)
+    if end > len(alignments)-1 {
+        end = len(alignments)-1
+    }
+
+    count := len(alignments)
+    showing := fields.Offset + fields.Limit
 
     vars := map[string]interface{}{
         "Template": tmpl,
@@ -137,7 +139,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         "Page": page,
         "Query": r.URL.RawQuery,
         "Fields": fields,
-        "Alignments": alignments,
+        "Alignments": alignments[fields.Offset:end],
         "Samples": geneSamples[fields.Gene],
         "Pages": []int{10,50,100,1000},
         "Genes": genes}
