@@ -42,6 +42,16 @@ func round(val float64) (string) {
     return fmt.Sprintf("%.4f", val)
 }
 
+func pct(a *treat.Alignment, totals map[uint64]map[string]float64) (string) {
+    y := totals[a.EditStop][a.Key.Sample]
+    if y == 0 {
+        return "0.0"
+    }
+
+    d := (a.Norm / y)*100
+    return fmt.Sprintf("%.4f", d)
+}
+
 func juncseq(val string) (template.HTML) {
     html := ""
     for _,b := range(val) {
@@ -95,6 +105,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    totalMap := make(map[uint64]map[string]float64)
+
     limit := fields.Limit
     fields.Limit = 0
     fields.Offset = 0
@@ -102,6 +114,11 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         a.Key = key
         alignments = append(alignments, a)
+
+        if _, ok := totalMap[a.EditStop]; !ok {
+            totalMap[a.EditStop] = make(map[string]float64)
+        }
+        totalMap[a.EditStop][a.Key.Sample] += a.Norm
     })
 
     if err != nil {
@@ -135,6 +152,9 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     if end > len(alignments)-1 {
         end = len(alignments)-1
     }
+    if end < 0 {
+        end = 0
+    }
 
     count := len(alignments)
     showing := fields.Offset + fields.Limit
@@ -142,6 +162,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     vars := map[string]interface{}{
         "Template": tmpl,
         "Count": count,
+        "Totals": totalMap,
         "Showing": showing,
         "Page": page,
         "Query": r.URL.RawQuery,
@@ -401,6 +422,7 @@ func Server(dbpath, tmpldir string, port int) {
         "decrement": decrement,
         "round": round,
         "juncseq": juncseq,
+        "pct": pct,
     }
 
 
