@@ -43,11 +43,22 @@ func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
     err := templates[name].ExecuteTemplate(&buf, "layout", data)
 
     if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        log.Printf("Error rendering template: %s", err)
+        http.Error(w, "Fatal error rendering template", http.StatusInternalServerError)
         return
     }
 
     buf.WriteTo(w)
+}
+
+func notFoundHandler(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusNotFound)
+    renderTemplate(w, "404.html", nil)
+}
+
+func errorHandler(w http.ResponseWriter, r *http.Request, status int, message string) {
+    w.WriteHeader(status)
+    renderTemplate(w, "error.html", message)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +66,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         log.Printf("Error parsing get request: %s", err)
-        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        errorHandler(w, r, http.StatusInternalServerError, "")
         return
     }
 
@@ -63,7 +74,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
     if !ok {
         log.Printf("Error fetching template for gene: %s", fields.Gene)
-        http.Error(w, "No templates found for gene", http.StatusInternalServerError)
+        errorHandler(w, r, http.StatusInternalServerError, "No templates found for gene")
         return
     }
 
@@ -74,7 +85,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 
     if err != nil {
         log.Printf("Error fetching alignment count for gene: %s", fields.Gene)
-        http.Error(w, "System error", http.StatusInternalServerError)
+        errorHandler(w, r, http.StatusInternalServerError, "")
         return
     }
 
@@ -312,6 +323,7 @@ func Server(dbpath, tmpldir string, port int) {
     decoder.IgnoreUnknownKeys(true)
 
     mx := mux.NewRouter()
+    mx.NotFoundHandler = http.HandlerFunc(notFoundHandler)
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
     mx.HandleFunc("/", IndexHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
