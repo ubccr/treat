@@ -6,6 +6,7 @@ import (
     "log"
     "strings"
     "bytes"
+    "encoding/binary"
     "math"
     "github.com/boltdb/bolt"
 )
@@ -151,6 +152,7 @@ func (s *Storage) Search(fields *SearchFields, f func(k *AlignmentKey, a *Alignm
 
             for ak, av := bucket.First(); ak != nil; ak, av = bucket.Next() {
                 a := new(Alignment)
+                a.Id = binary.BigEndian.Uint64(ak)
                 err := a.UnmarshalBinary(av)
                 if err != nil {
                     return err

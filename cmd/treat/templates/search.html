@@ -1,0 +1,67 @@
+{{define "content"}}
+
+<div class="page-header">
+  <h3><i class="fa fa-align-left fa-lg"></i> Fragments 
+    <span class="badge badge-default">{{ .Showing }} of {{ .Count }}</span>
+  </h3>
+</div>
+
+{{template "search-form" .}}
+
+
+<div class="table-responsive">
+<table class="table table-bordered table-condensed table-hover">
+  <thead>
+    <tr>
+      <th>View</th>
+      <th>ID</th>
+      <th>Gene</th>
+      <th>Cell Line</th>
+      <th>Merge Count</th>
+      <th>Norm Count</th>
+      <th class="text-right">% Search</th>
+      <th class="text-right">% Edit Stop</th>
+      <th class="text-right">Editing Stop</th>
+      <th class="text-right">Junction End</th>
+      <th class="text-right">Junction Len</th>
+      <th class="text-right">Edit gRNAs</th>
+      <th class="text-right">Flags</th>
+      <th>Junction Sequence</th>
+    </tr>
+  </thead>
+  <tbody>
+{{ range $i, $a := .Alignments }}
+    <tr>
+      <td><a class="btn btn-default btn-primary" href="#"><i class="fa fa-search"></i></a></td>
+      <td>{{ $a.Id }}</td>
+      <td>{{ $a.Key.Gene }}</td>
+      <td style="white-space: nowrap">{{ $a.Key.Sample }}</td>
+      <td class="text-right">{{ $a.ReadCount }}</td>
+      <td class="text-right">{{ $a.Norm | round }}</td>
+      <td class="text-right">{{ $a.Norm | round }}</td>
+      <td class="text-right">{{ $a.Norm | round }}</td>
+      <td class="text-right">{{ $a.EditStop }}</td>
+      <td class="text-right">{{ $a.JuncEnd }}</td>
+      <td class="text-right">{{ $a.JuncLen }}</td>
+      <td class="text-right">{{ $a.GrnaEditString }}</td>
+      <td class="text-center">
+        {{ if gt $a.AltEditing 0 }}
+        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> Alternative</span>
+        {{ end }}
+        {{ if $a.HasMutation }}
+        <span class="label label-danger"><i class="fa fa-warning fa-sm"></i> Mutation</span>
+        {{ end }}
+      </td>
+      <td class="dt" style="font-size: 16px">
+      </td>
+    </tr>
+{{ else }}
+    <tr>
+      <td colspan="14">No fragments found</td>
+    </tr>
+{{ end }}
+  </tbody>
+</table>
+</div>
+
+{{end}}

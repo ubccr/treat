@@ -38,6 +38,10 @@ func replace(src, key string) (string) {
     return pattern.ReplaceAllString(src, "")
 }
 
+func round(val float64) (string) {
+    return fmt.Sprintf("%.4f", val)
+}
+
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
     var buf bytes.Buffer
     err := templates[name].ExecuteTemplate(&buf, "layout", data)
@@ -59,6 +63,66 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 func errorHandler(w http.ResponseWriter, r *http.Request, status int, message string) {
     w.WriteHeader(status)
     renderTemplate(w, "error.html", message)
+}
+
+func SearchHandler(w http.ResponseWriter, r *http.Request) {
+    fields, err := NewSearchFields(r.URL)
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        errorHandler(w, r, http.StatusInternalServerError, "")
+        return
+    }
+
+    if fields.Limit == 0 {
+        fields.Limit = 10
+    }
+
+    tmpl,ok := geneTemplates[fields.Gene]
+
+    if !ok {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "No templates found for gene")
+        return
+    }
+
+    alignments := make([]*treat.Alignment, 0)
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        a.Key = key
+        alignments = append(alignments, a)
+    })
+
+    if err != nil {
+        log.Printf("Error fetching alignments for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "")
+        return
+    }
+
+    count := 0
+    showing := fields.Offset + fields.Limit
+    fields.Limit = 0
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        count++
+    })
+
+    if err != nil {
+        log.Printf("Error fetching alignment count for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "")
+        return
+    }
+
+    vars := map[string]interface{}{
+        "Template": tmpl,
+        "Count": count,
+        "Showing": showing,
+        "Query": r.URL.RawQuery,
+        "Fields": fields,
+        "Alignments": alignments,
+        "Samples": geneSamples[fields.Gene],
+        "Pages": []int{10,50,100,1000},
+        "Genes": genes}
+
+    renderTemplate(w, "search.html", vars)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -305,6 +369,7 @@ func Server(dbpath, tmpldir string, port int) {
     funcMap := template.FuncMap{
         "increment": increment,
         "replace": replace,
+        "round": round,
     }
 
 
@@ -326,6 +391,7 @@ func Server(dbpath, tmpldir string, port int) {
     mx.NotFoundHandler = http.HandlerFunc(notFoundHandler)
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
     mx.HandleFunc("/", IndexHandler)
+    mx.HandleFunc("/search", SearchHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
     mx.HandleFunc("/data/jl-hist", JuncHistogramHandler)
     http.Handle("/", mx)

@@ -16,6 +16,8 @@ type AlignmentKey struct {
 }
 
 type Alignment struct {
+    Key            *AlignmentKey   `json:"-"`
+    Id             uint64          `json:"-"`
     EditStop       uint64          `json:"edit_stop"`
     JuncStart      uint64          `json:"junc_start"`
     JuncEnd        uint64          `json:"junc_end"`
