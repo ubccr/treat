@@ -42,6 +42,19 @@ func round(val float64) (string) {
     return fmt.Sprintf("%.4f", val)
 }
 
+func juncseq(val string) (template.HTML) {
+    html := ""
+    for _,b := range(val) {
+        if b == 'T' || b == 't' {
+            html += `<span style="color: red">`+string(b)+`</span>`
+        } else {
+            html += string(b)
+        }
+    }
+
+    return template.HTML(html)
+}
+
 func renderTemplate(w http.ResponseWriter, name string, data interface{}) {
     var buf bytes.Buffer
     err := templates[name].ExecuteTemplate(&buf, "layout", data)
@@ -387,6 +400,7 @@ func Server(dbpath, tmpldir string, port int) {
         "increment": increment,
         "decrement": decrement,
         "round": round,
+        "juncseq": juncseq,
     }
 
 
