@@ -8,7 +8,6 @@ import (
     "bytes"
     "reflect"
     "strconv"
-    "regexp"
     "encoding/json"
     "encoding/csv"
     "html/template"
@@ -37,11 +36,6 @@ func increment(x int) (int) {
 func decrement(x int) (int) {
     x--
     return x
-}
-
-func replace(src, key string) (string) {
-    var pattern = regexp.MustCompile(key+`=\d*`)
-    return pattern.ReplaceAllString(src, "")
 }
 
 func round(val float64) (string) {
@@ -178,7 +172,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     vars := map[string]interface{}{
         "Template": tmpl,
         "Count": count,
-        "Query": r.URL.RawQuery,
         "Fields": fields,
         "Samples": geneSamples[fields.Gene],
         "Pages": []int{10,50,100,1000},
@@ -223,6 +216,8 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
     }
 
     fields, err := NewSearchFields(r.URL)
+    fields.Limit = 0
+    fields.Offset = 0
 
     if err != nil {
         log.Printf("Error parsing get request: %s", err)
@@ -391,7 +386,6 @@ func Server(dbpath, tmpldir string, port int) {
     funcMap := template.FuncMap{
         "increment": increment,
         "decrement": decrement,
-        "replace": replace,
         "round": round,
     }
 
