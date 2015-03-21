@@ -33,6 +33,11 @@ func increment(x int) (int) {
     return x
 }
 
+func decrement(x int) (int) {
+    x--
+    return x
+}
+
 func replace(src, key string) (string) {
     var pattern = regexp.MustCompile(key+`=\d*`)
     return pattern.ReplaceAllString(src, "")
@@ -74,9 +79,20 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil {
+        page = 0
+    }
+
+    if page <= 0 {
+        page = 1
+    }
+
     if fields.Limit == 0 {
         fields.Limit = 10
     }
+
+    fields.Offset = (page-1)*fields.Limit
 
     tmpl,ok := geneTemplates[fields.Gene]
 
@@ -100,10 +116,13 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
     count := 0
     showing := fields.Offset + fields.Limit
+    limit := fields.Limit
     fields.Limit = 0
+    fields.Offset = 0
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         count++
     })
+    fields.Limit = limit
 
     if err != nil {
         log.Printf("Error fetching alignment count for gene: %s", fields.Gene)
@@ -115,6 +134,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         "Template": tmpl,
         "Count": count,
         "Showing": showing,
+        "Page": page,
         "Query": r.URL.RawQuery,
         "Fields": fields,
         "Alignments": alignments,
@@ -368,6 +388,7 @@ func Server(dbpath, tmpldir string, port int) {
 
     funcMap := template.FuncMap{
         "increment": increment,
+        "decrement": decrement,
         "replace": replace,
         "round": round,
     }
