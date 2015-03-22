@@ -83,6 +83,8 @@ func Load(dbpath string, options *LoadOptions) {
     }
 
     tmpl.Grna = grna
+    tmpl.Primer3 = options.Primer3
+    tmpl.Primer5 = options.Primer5
 
     // Normalize read counts
     if options.Norm == 0 {
@@ -198,7 +200,7 @@ func Load(dbpath string, options *LoadOptions) {
             norm := scale * float64(mergeCount)
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, 't')
-            aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3)
+            aln := treat.NewAlignment(frag, tmpl)
 
             id, _ := alnBucket.NextSequence()
             kbytes := make([]byte, 8)

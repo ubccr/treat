@@ -25,6 +25,8 @@ type Template struct {
     BaseIndex    []uint64
     AltRegion    []*AltRegion
     Grna         []*Grna
+    Primer5      int
+    Primer3      int
 }
 
 func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (*Template, error) {

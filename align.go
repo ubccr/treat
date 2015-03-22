@@ -50,7 +50,7 @@ func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
     }
 }
 
-func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Alignment) {
+func NewAlignment(frag *Fragment, template *Template) (*Alignment) {
     alignment := new(Alignment)
 
     m := make([]*big.Int, template.Size())
@@ -104,7 +104,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
 
     // Compute junction start site
     for j := ti; j >= 0; j-- {
-        if j <= (ti-primer3) && m[0].Bit(j) == 0 {
+        if j <= (ti-template.Primer3) && m[0].Bit(j) == 0 {
             alignment.JuncStart = uint64(ti-j)
             break
         }
@@ -141,7 +141,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
             alignment.AltEditing = uint64(alt+1)
             // Shift Junc Start to first site that doesn't match FE template
             for j := shift; j >= 0; j-- {
-                if j <= (ti-primer3) && m[0].Bit(j) == 0 {
+                if j <= (ti-template.Primer3) && m[0].Bit(j) == 0 {
                     alignment.JuncStart = uint64(ti-j)
                     break
                 }
@@ -150,7 +150,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
     }
 
     for j := 0; j <= ti; j++ {
-        if j >= primer5 && m[1].Bit(j) == 0 {
+        if j >= template.Primer5 && m[1].Bit(j) == 0 {
             alignment.JuncEnd = uint64(ti-j)
             break
         }
