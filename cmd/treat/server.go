@@ -6,6 +6,7 @@ import (
     "sort"
     "os"
     "bytes"
+    "strings"
     "reflect"
     "strconv"
     "encoding/json"
@@ -14,6 +15,7 @@ import (
     "path/filepath"
     "net/http"
     "net/url"
+    "github.com/aebruno/nwalgo"
     "github.com/gorilla/schema"
     "github.com/gorilla/mux"
     "github.com/ubccr/treat"
@@ -70,6 +72,152 @@ func juncseq(val string) (template.HTML) {
         } else {
             html += string(b)
         }
+    }
+
+    return template.HTML(html)
+}
+
+func writeBase(buf []string, ai int, base rune, count, max treat.BaseCountType, cat string) {
+    buf[ai] += `<td class="tcell `+cat+`">`
+    buf[ai] += strings.Repeat("-", int(max-count))
+    if count > 0 {
+        buf[ai] += strings.Repeat(string(base), int(count))
+    }
+    buf[ai] += `</td>`
+}
+
+func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (template.HTML) {
+
+    labels := []string{"FE","PE"}
+    for i := range(tmpl.AltRegion) {
+        labels = append(labels, fmt.Sprintf("A%d", i+1))
+    }
+    labels = append(labels, "CL")
+
+
+    aln1, aln2, _ := nwalgo.Align(tmpl.Bases, frag.Bases, 1, -1, -1)
+
+    fragCount := tmpl.Size()+2
+    n := len(aln1)
+
+    buf := make([][]string, fragCount)
+    for i := range(buf) {
+        buf[i] = make([]string, n+1)
+    }
+
+    fi := 0
+    ti := 0
+    for ai := 0; ai < n; ai++ {
+        hilite := ""
+        if uint64(n-ti) == a.EditStop {
+            hilite = "hilite"
+        }
+
+        if aln1[ai] == '-' {
+            buf[0][ai] = `<td class="text-center base-index"></td><td class="text-center base-index"></td>`
+            for i, _ := range tmpl.EditSite {
+                writeBase(buf[i+1], ai, tmpl.EditBase, 0, frag.EditSite[fi], "ME")
+                buf[i+1][ai] += `<td class="text-center base">-</td>`
+            }
+
+            writeBase(buf[fragCount-1], ai, frag.EditBase, frag.EditSite[fi], frag.EditSite[fi], "mutant")
+            buf[fragCount-1][ai] += `<td class="text-center mutant base">`+string(frag.Bases[fi])+`</td>`
+            fi++
+        } else if aln2[ai] == '-' {
+            buf[0][ai] = `<td class="text-center `+hilite+`">`+fmt.Sprintf("%d", n-ti)+`</td><td class="text-center base-index">`+fmt.Sprintf("%d", tmpl.BaseIndex[ti])+`</td>`
+            max := tmpl.Max(ti)
+
+            for i, t := range tmpl.EditSite {
+                writeBase(buf[i+1], ai, tmpl.EditBase, t[ti], max, labels[i])
+                buf[i+1][ai] += `<td class="text-center base">`+string(tmpl.Bases[ti])+`</td>`
+            }
+            writeBase(buf[fragCount-1], ai, '-', 0, max, "ME")
+            buf[fragCount-1][ai] += `<td class="text-center mutant base">-</td>`
+            ti++
+        } else {
+            buf[0][ai] = `<td class="text-center `+hilite+`">`+fmt.Sprintf("%d", n-ti)+`</td><td class="text-center base-index">`+fmt.Sprintf("%d", tmpl.BaseIndex[ti])+`</td>`
+            max := tmpl.Max(ti)
+            if frag.EditSite[fi] > max {
+                max = frag.EditSite[fi]
+            }
+            cat := ""
+            if uint64(n-ti) > a.EditStop {
+                if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
+                    cat = "PE"
+                } else if frag.EditSite[fi] == tmpl.EditSite[0][ti] {
+                    cat = "FE"
+                }
+            } else {
+                if frag.EditSite[fi] == tmpl.EditSite[0][ti] {
+                    cat = "FE"
+                } else if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
+                    cat = "PE"
+                }
+            }
+
+            if uint64(n-ti) > a.EditStop && uint64(n-ti) <= a.JuncEnd {
+                cat += " junction"
+            }
+
+            for i, t := range tmpl.EditSite {
+                writeBase(buf[i+1], ai, tmpl.EditBase, t[ti], max, labels[i])
+                buf[i+1][ai] += `<td class="text-center base">`+string(tmpl.Bases[ti])+`</td>`
+            }
+            writeBase(buf[fragCount-1], ai, frag.EditBase, frag.EditSite[fi], max, cat)
+            buf[fragCount-1][ai] += `<td class="text-center base">`+string(frag.Bases[fi])+`</td>`
+            fi++
+            ti++
+        }
+    }
+
+    // Last edit site has only EditBases
+    buf[0][n] = `<td class="text-center">`+fmt.Sprintf("%d", 0)+`</td>`
+    max := tmpl.Max(ti)
+    if frag.EditSite[fi] > max {
+        max = frag.EditSite[fi]
+    }
+    cat := "PE"
+    if frag.EditSite[fi] == tmpl.EditSite[0][ti] {
+        cat = "FE"
+    }
+
+    for i, t := range tmpl.EditSite {
+        writeBase(buf[i+1], n, tmpl.EditBase, t[ti], max, labels[i])
+    }
+    writeBase(buf[fragCount-1], n, frag.EditBase, frag.EditSite[fi], max, cat)
+
+    cols := 17
+    rows := len(buf[0])/cols
+    if (len(buf[0]) % cols) > 0 {
+        rows++
+    }
+
+    html := ""
+
+    for r := 0; r < rows; r++ {
+        for i, b := range(buf) {
+            html += `<tr>`
+            if i == 0 {
+                html += `<td>&nbsp;</td>`
+            } else {
+                html += `<td class="`+labels[i-1]+`">`+labels[i-1]+`</td>`
+            }
+
+            end := (r*cols)+cols
+            fill := 0
+            if end > len(b) {
+                fill = end-len(b)
+                end = len(b)
+            }
+            html += strings.Join(b[(r*cols):end], "")
+            if fill > 0 {
+                for x := 0; x < (fill*2)+1; x++ {
+                    html += `<td style="border:none">&nbsp</td>`
+                }
+            }
+            html += `</tr>`
+        }
+        html += `<tr style="border: 0"><td style="border: 0" colspan="`+fmt.Sprintf("%d", (cols*2)+1)+`"></td></tr>`
     }
 
     return template.HTML(html)
@@ -489,6 +637,7 @@ func Server(dbpath, tmpldir string, port int) {
         "juncseq": juncseq,
         "pct": pct,
         "grna": grna,
+        "align": align,
     }
 
 
