@@ -214,39 +214,3 @@ func Load(dbpath string, options *LoadOptions) {
         log.Printf("Loaded %d fragment sequences for sample %s", count, sample)
     }
 }
-
-/*
-func Index(db *bolt.DB, gene string) (error) {
-    fields := new(treat.SearchFields)
-    files.Gene = gene
-
-    esmap := make(map[string]map[uint64]float64)
-    jlmap := make(map[string]map[uint64]float64)
-
-    esmax := uint64(0)
-    jlmax := uint64(0)
-
-    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
-        if _, ok := samples[key.Sample]; !ok {
-            esmap[key.Sample] = make(map[uint64]float64)
-            jlmap[key.Sample] = make(map[uint64]float64)
-        }
-
-        if a.JuncLen > jlmax {
-            jlmax = a.JuncLen
-        }
-        jlmap[key.Sample][a.JuncLen] += a.Norm
-
-        if a.EditStop > esmax {
-            esmax = a.EditStop
-        }
-        esmap[key.Sample][a.EditStop] += a.Norm
-    })
-
-    if err != nil {
-        return error
-    }
-
-    return nil
-}
-*/
