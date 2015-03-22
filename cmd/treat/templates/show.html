@@ -3,8 +3,28 @@
 <div class="page-header">
     <h3>
         <i class="fa fa-align-justify fa-lg"></i> 
-        {{ .Gene }}: {{.Sample}} - {{.Fragment.Name}}
+        {{ .Key.Gene }}: {{ .Key.Sample }}
+        <small>
+        #{{ .Alignment.ReadCount }}
+        ({{ .Alignment.Norm | round}})
+        </small>
     </h3>
+    <div>
+    <span class="label label-info"><i class="fa fa-edit fa-sm"></i> Edit Stops: {{ .Alignment.EditStop }}</span>
+    <span class="label label-junction"><i class="fa fa-link fa-sm"></i> Junction Length: {{ .Alignment.JuncLen }}</span>
+    {{if gt .Alignment.AltEditing 0 }}
+        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> A{{ .Alignment.AltEditing | increment }} Editing</span>
+    {{ end }}
+    {{ if eq .Alignment.HasMutation 1 }}
+    <span class="label label-danger"><i class="fa fa-warning fa-sm"></i> Mutation</span>
+    {{ end }}
+    {{ if gt .Alignment.GrnaEdit.Uint64 0 }}
+        <span class="label label-success"><i class="fa fa-edit fa-sm"></i> {{ .Alignment.GrnaEditString }}</span>
+    {{ end }}
+    {{ if gt .Alignment.GrnaJunc.Uint64 0 }}
+        <span class="label label-success"><i class="fa fa-link fa-sm"></i> {{ .Alignment.GrnaJuncString }}</span>
+    {{ end }}
+    </div>
 </div>
 
 {{end}}

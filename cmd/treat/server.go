@@ -131,17 +131,24 @@ func ShowHandler(w http.ResponseWriter, r *http.Request) {
     key := &treat.AlignmentKey{Gene: gene, Sample: sample}
 
     frag, err := db.GetFragment(key, uint64(id))
-    if err != nil {
+    if err != nil || frag == nil {
         log.Printf("fragment not found")
+        notFoundHandler(w, r)
+        return
+    }
+
+    alignment, err := db.GetAlignment(key, uint64(id))
+    if err != nil || alignment == nil {
+        log.Printf("alignment not found")
         notFoundHandler(w, r)
         return
     }
 
     vars := map[string]interface{}{
         "Template": tmpl,
-        "Gene": gene,
         "Fragment": frag,
-        "Sample": sample}
+        "Alignment": alignment,
+        "Key": key}
 
     renderTemplate(w, "show.html", vars)
 }
