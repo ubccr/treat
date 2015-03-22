@@ -3,6 +3,8 @@ package treat
 import (
     "testing"
     "os"
+    "fmt"
+    "bytes"
     "math/big"
     "github.com/aebruno/gofasta"
 )
@@ -21,7 +23,12 @@ func TestAlign(t *testing.T) {
         t.Errorf("%s", err)
     }
 
-    Align(c, tmpl)
+    buf := new(bytes.Buffer)
+
+    aln := NewAlignment(c, tmpl)
+    aln.WriteTo(buf, c, tmpl, 80)
+
+    fmt.Printf("%s", buf.String())
 }
 
 func TestAlignment(t *testing.T) {
@@ -45,7 +52,7 @@ func TestAlignment(t *testing.T) {
 
     tmpl.Grna = grna
 
-    aln := NewAlignment(c, tmpl, 0, 0)
+    aln := NewAlignment(c, tmpl)
     if aln.JuncLen != 6 {
         t.Errorf("%s", err)
         t.Errorf("Wrong junc len. %d != %d", aln.JuncLen, 6)
@@ -77,6 +84,8 @@ func TestAlignGrna(t *testing.T) {
         t.Errorf("%s", err)
     }
 
+    tmpl.Primer5 = 10
+    tmpl.Primer3 = 10
     tmpl.Grna = grna
 
     f, err := os.Open("examples/clones.fa")
@@ -88,7 +97,7 @@ func TestAlignGrna(t *testing.T) {
     count := 0
     for rec := range gofasta.SimpleParser(f) {
         frag := NewFragment(rec.Id, rec.Seq, FORWARD, 0, 0, 't')
-        aln := NewAlignment(frag, tmpl, 10, 10)
+        aln := NewAlignment(frag, tmpl)
         if count == 0 || count == 1 {
             if aln.GrnaEditString() != "gRNA13;gRNA14;" {
                 t.Errorf("Wrong edit grna. %s != %s", aln.GrnaEditString(), "gRNA13;gRNA14;")
