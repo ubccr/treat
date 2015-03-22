@@ -98,6 +98,54 @@ func errorHandler(w http.ResponseWriter, r *http.Request, status int, message st
     renderTemplate(w, "error.html", message)
 }
 
+func ShowHandler(w http.ResponseWriter, r *http.Request) {
+    gene := r.URL.Query().Get("gene")
+    tmpl,ok := geneTemplates[gene]
+
+    if !ok {
+        log.Printf("Error fetching template for gene: %s", gene)
+        errorHandler(w, r, http.StatusInternalServerError, "Gene not found")
+        return
+    }
+
+    sample := ""
+    for _, s := range(geneSamples[gene]) {
+        if s == r.URL.Query().Get("sample") {
+            sample = s
+        }
+    }
+
+    if len(sample) == 0 {
+        log.Printf("sample not found: %s", r.URL.Query().Get("sample"))
+        errorHandler(w, r, http.StatusInternalServerError, "Sample not found")
+        return
+    }
+
+    id, err := strconv.Atoi(r.URL.Query().Get("id"))
+    if err != nil {
+        log.Printf("id not found: %s", r.URL.Query().Get("id"))
+        errorHandler(w, r, http.StatusInternalServerError, "Id not found")
+        return
+    }
+
+    key := &treat.AlignmentKey{Gene: gene, Sample: sample}
+
+    frag, err := db.GetFragment(key, uint64(id))
+    if err != nil {
+        log.Printf("fragment not found")
+        notFoundHandler(w, r)
+        return
+    }
+
+    vars := map[string]interface{}{
+        "Template": tmpl,
+        "Gene": gene,
+        "Fragment": frag,
+        "Sample": sample}
+
+    renderTemplate(w, "show.html", vars)
+}
+
 func SearchHandler(w http.ResponseWriter, r *http.Request) {
     fields, err := NewSearchFields(r.URL)
 
@@ -456,6 +504,7 @@ func Server(dbpath, tmpldir string, port int) {
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
     mx.HandleFunc("/", IndexHandler)
     mx.HandleFunc("/search", SearchHandler)
+    mx.HandleFunc("/show", ShowHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
     mx.HandleFunc("/data/jl-hist", JuncHistogramHandler)
     http.Handle("/", mx)

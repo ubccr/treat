@@ -307,6 +307,40 @@ func (s *Storage) Samples(gene string) ([]string, error) {
     return samples, nil
 }
 
+func (s *Storage) GetFragment(k *treat.AlignmentKey, id uint64) (*treat.Fragment, error) {
+    key, err := k.MarshalBinary()
+    if err != nil {
+        return nil, err
+    }
+
+    buf := make([]byte, 8)
+    binary.BigEndian.PutUint64(buf, id)
+
+
+    var frag *treat.Fragment
+    err = s.DB.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_FRAGMENTS)).Bucket(key)
+        v := b.Get(buf)
+        if v != nil {
+            f := new(treat.Fragment)
+            err := f.UnmarshalBytes(v)
+            if err != nil {
+                return err
+            }
+
+            frag = f
+        }
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return frag, nil
+}
+
 func (s *Storage) Stats() {
     err := s.DB.View(func(tx *bolt.Tx) error {
         b := tx.Bucket([]byte(BUCKET_TEMPLATES))

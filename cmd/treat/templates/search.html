@@ -35,7 +35,7 @@
   <tbody>
 {{ range $i, $a := .Alignments }}
     <tr>
-      <td><a class="btn btn-default btn-primary" href="#"><i class="fa fa-search"></i></a></td>
+      <td><a class="btn btn-default btn-primary" href="/show?gene={{$a.Key.Gene}}&sample={{$a.Key.Sample}}&id={{$a.Id}}"><i class="fa fa-search"></i></a></td>
       <td>{{ $a.Id }}</td>
       <td>{{ $a.Key.Gene }}</td>
       <td style="white-space: nowrap">{{ $a.Key.Sample }}</td>
