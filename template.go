@@ -131,19 +131,18 @@ func (tmpl *Template) Max(i int) (BaseCountType) {
     return max
 }
 
-func NewTemplateFromBytes(data []byte) (*Template, error) {
-    var tmpl Template
+func (tmpl *Template) UnmarshalBytes(data []byte) (error) {
     buf := bytes.NewReader(data)
     dec := gob.NewDecoder(buf)
     err := dec.Decode(&tmpl)
     if err != nil {
-        return nil, err
+        return err
     }
 
-    return &tmpl, nil
+    return nil
 }
 
-func (tmpl *Template) Bytes() ([]byte, error) {
+func (tmpl *Template) MarshalBytes() ([]byte, error) {
     data := new(bytes.Buffer)
     enc := gob.NewEncoder(data)
     err := enc.Encode(tmpl)

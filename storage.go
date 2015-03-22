@@ -195,7 +195,7 @@ func (s *Storage) PutTemplate(gene string, tmpl *Template) (error) {
     err := s.DB.Update(func(tx *bolt.Tx) error {
         b := tx.Bucket([]byte(BUCKET_TEMPLATES))
 
-        data, err := tmpl.Bytes()
+        data, err := tmpl.MarshalBytes()
         if err != nil {
             return err
         }
@@ -213,7 +213,8 @@ func (s *Storage) GetTemplate(gene string) (*Template, error) {
         b := tx.Bucket([]byte(BUCKET_TEMPLATES))
         v := b.Get([]byte(gene))
 
-        t, err := NewTemplateFromBytes(v)
+        t := new(Template)
+        err := t.UnmarshalBytes(v)
         if err != nil {
             return err
         }
@@ -237,7 +238,8 @@ func (s *Storage) TemplateMap() (map[string]*Template, error) {
 
         b.ForEach(func(k, v []byte) error {
 
-            tmpl, err := NewTemplateFromBytes(v)
+            tmpl := new(Template)
+            err := tmpl.UnmarshalBytes(v)
             if err != nil {
                 return err
             }
@@ -305,7 +307,8 @@ func (s *Storage) Stats() {
         b := tx.Bucket([]byte(BUCKET_TEMPLATES))
 
         b.ForEach(func(k, v []byte) error {
-            tmpl, err := NewTemplateFromBytes(v)
+            tmpl := new(Template)
+            err := tmpl.UnmarshalBytes(v)
             if err != nil {
                 return err
             }

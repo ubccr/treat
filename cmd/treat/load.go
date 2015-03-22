@@ -111,7 +111,7 @@ func Load(dbpath string, options *LoadOptions) {
             return err
         }
 
-        data, err := tmpl.Bytes()
+        data, err := tmpl.MarshalBytes()
         if err != nil {
             return err
         }
