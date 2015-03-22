@@ -101,12 +101,17 @@ func Load(dbpath string, options *LoadOptions) {
     }
 
     err = db.Update(func(tx *bolt.Tx) error {
-        _, err := tx.CreateBucketIfNotExists([]byte(treat.BUCKET_ALIGNMENTS))
+        _, err := tx.CreateBucketIfNotExists([]byte(BUCKET_ALIGNMENTS))
         if err != nil {
             return err
         }
 
-        b, err := tx.CreateBucketIfNotExists([]byte(treat.BUCKET_TEMPLATES))
+        _, err = tx.CreateBucketIfNotExists([]byte(BUCKET_FRAGMENTS))
+        if err != nil {
+            return err
+        }
+
+        b, err := tx.CreateBucketIfNotExists([]byte(BUCKET_TEMPLATES))
         if err != nil {
             return err
         }
@@ -148,8 +153,14 @@ func Load(dbpath string, options *LoadOptions) {
         }
 
         err = db.Update(func(tx *bolt.Tx) error {
-            b := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
+            b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
             _, err := b.CreateBucket(key)
+            if err != nil {
+                return err
+            }
+
+            b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
+            _, err = b.CreateBucket(key)
             if err != nil {
                 return err
             }
@@ -162,7 +173,8 @@ func Load(dbpath string, options *LoadOptions) {
         }
 
         var tx *bolt.Tx
-        var bucket *bolt.Bucket
+        var alnBucket *bolt.Bucket
+        var fragBucket *bolt.Bucket
         count := 0
 
         log.Printf("Processing fragments for sample name : %s", sample)
@@ -178,8 +190,8 @@ func Load(dbpath string, options *LoadOptions) {
                 if err != nil {
                     log.Fatal(err)
                 }
-                abucket := tx.Bucket([]byte(treat.BUCKET_ALIGNMENTS))
-                bucket =  abucket.Bucket(key)
+                alnBucket = tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Bucket(key)
+                fragBucket = tx.Bucket([]byte(BUCKET_FRAGMENTS)).Bucket(key)
             }
 
             mergeCount := MergeCount(rec)
@@ -188,16 +200,26 @@ func Load(dbpath string, options *LoadOptions) {
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, 't')
             aln := treat.NewAlignment(frag, tmpl, options.Primer5, options.Primer3)
 
-            id, _ := bucket.NextSequence()
+            id, _ := alnBucket.NextSequence()
+            kbytes := make([]byte, 8)
+            binary.BigEndian.PutUint64(kbytes, id)
 
             data, err := aln.MarshalBinary()
             if err != nil {
                 log.Fatal(err)
             }
 
-            kbytes := make([]byte, 8)
-            binary.BigEndian.PutUint64(kbytes, id)
-            err = bucket.Put(kbytes, data)
+            err = alnBucket.Put(kbytes, data)
+            if err != nil {
+                log.Fatal(err)
+            }
+
+            data, err = frag.MarshalBytes()
+            if err != nil {
+                log.Fatal(err)
+            }
+
+            err = fragBucket.Put(kbytes, data)
             if err != nil {
                 log.Fatal(err)
             }

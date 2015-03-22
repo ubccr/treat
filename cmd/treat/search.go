@@ -8,8 +8,8 @@ import (
 )
 
 
-func Search(dbpath string, fields *treat.SearchFields) {
-    s, err := treat.NewStorage(dbpath)
+func Search(dbpath string, fields *SearchFields) {
+    s, err := NewStorage(dbpath)
     if err != nil {
         log.Fatalf("%s", err)
     }
@@ -23,7 +23,7 @@ func Search(dbpath string, fields *treat.SearchFields) {
         fmt.Println(strings.Join([]string{
             key.Gene,
             key.Sample,
-            fmt.Sprintf("%.4f", treat.RoundPlus(a.Norm, 4)),
+            fmt.Sprintf("%.4f", RoundPlus(a.Norm, 4)),
             fmt.Sprintf("%d", a.ReadCount),
             alt,
             fmt.Sprintf("%d", a.HasMutation),

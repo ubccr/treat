@@ -4,6 +4,7 @@ import (
     "strings"
     "unicode"
     "bytes"
+    "encoding/gob"
 )
 
 type Fragment struct {
@@ -66,4 +67,26 @@ func (f *Fragment) String() (string) {
     }
 
     return buf.String()
+}
+
+func (f *Fragment) UnmarshalBytes(data []byte) (error) {
+    buf := bytes.NewReader(data)
+    dec := gob.NewDecoder(buf)
+    err := dec.Decode(&f)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func (f *Fragment) MarshalBytes() ([]byte, error) {
+    data := new(bytes.Buffer)
+    enc := gob.NewEncoder(data)
+    err := enc.Encode(f)
+    if err != nil {
+        return nil, err
+    }
+
+    return data.Bytes(), nil
 }

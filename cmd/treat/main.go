@@ -4,7 +4,6 @@ import (
     "os"
     "log"
     "github.com/codegangsta/cli"
-    "github.com/ubccr/treat"
 )
 
 func main() {
@@ -56,7 +55,7 @@ func main() {
             Name: "stats",
             Usage: "Print database stats",
             Action: func(c *cli.Context) {
-                s, err := treat.NewStorage(c.GlobalString("db"))
+                s, err := NewStorage(c.GlobalString("db"))
                 if err != nil {
                     log.Fatal(err)
                 }
@@ -82,7 +81,7 @@ func main() {
                 &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
             },
             Action: func(c *cli.Context) {
-                Search(c.GlobalString("db"), &treat.SearchFields{
+                Search(c.GlobalString("db"), &SearchFields{
                     Gene:         c.String("gene"),
                     Sample:       c.StringSlice("sample"),
                     EditStop:     c.Int("edit-stop"),

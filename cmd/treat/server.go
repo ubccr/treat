@@ -21,7 +21,7 @@ import (
 
 
 var templates map[string]*template.Template
-var db *treat.Storage
+var db *Storage
 var decoder *schema.Decoder
 var geneTemplates map[string]*treat.Template
 var geneSamples map[string][]string
@@ -137,7 +137,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    sort.Sort(treat.ByReadCount{alignments})
+    sort.Sort(ByReadCount{alignments})
 
     fields.Limit = limit
     if fields.Limit == 0 {
@@ -224,9 +224,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "index.html", vars)
 }
 
-func NewSearchFields(url *url.URL) (* treat.SearchFields, error) {
+func NewSearchFields(url *url.URL) (*SearchFields, error) {
     vals := url.Query()
-    fields := new(treat.SearchFields)
+    fields := new(SearchFields)
     err := decoder.Decode(fields, vals)
 
     if err != nil {
@@ -377,7 +377,7 @@ func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func Server(dbpath, tmpldir string, port int) {
-    dbx, err := treat.NewStorage(dbpath)
+    dbx, err := NewStorage(dbpath)
     if err != nil {
         log.Fatal(err)
     }
