@@ -160,7 +160,7 @@ func NewAlignment(frag *Fragment, template *Template, primer5, primer3 int) (*Al
         alignment.EditStop = alignment.JuncStart-uint64(1)
     }
 
-    if alignment.JuncEnd > alignment.JuncStart {
+    if alignment.JuncEnd > alignment.EditStop {
         alignment.JuncLen = alignment.JuncEnd - alignment.EditStop
         if alignment.HasMutation == 0 {
             for i := ti-int(alignment.JuncEnd); i < ti-int(alignment.EditStop); i++ {
