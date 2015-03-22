@@ -9,6 +9,7 @@ import (
 func main() {
     app := cli.NewApp()
     app.Name    = "treat"
+    app.Authors = []cli.Author{cli.Author{Name: "Andrew E. Bruno", Email: "aebruno2@buffalo.edu"}}
     app.Usage   = "Trypanosome RNA Editing Alignment Tool"
     app.Version = "0.0.1"
     app.Flags   = []cli.Flag{
@@ -36,6 +37,28 @@ func main() {
                     Primer3:      c.Int("primer3"),
                     Norm:         c.Float64("normalize"),
                     GrnaPath:     c.String("grna"),
+                })
+            },
+        },
+        {
+            Name: "align",
+            Usage: "Align one or more fragments",
+            Flags: []cli.Flag{
+                &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
+                &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
+                &cli.StringFlag{Name: "fragment, f", Usage: "Path to fragment FASTA file"},
+                &cli.StringFlag{Name: "base, b", Usage: "Edit base"},
+                &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
+                &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
+            },
+            Action: func(c *cli.Context) {
+                Align(&AlignOptions{
+                    TemplatePath: c.String("template"),
+                    FragmentPath: c.String("fragment"),
+                    Primer5:      c.Int("primer5"),
+                    Primer3:      c.Int("primer3"),
+                    GrnaPath:     c.String("grna"),
+                    EditBase:     c.String("base"),
                 })
             },
         },

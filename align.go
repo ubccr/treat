@@ -4,6 +4,7 @@ import (
     "github.com/aebruno/nwalgo"
     "fmt"
     "strings"
+    "io"
     "bytes"
     "math/big"
     "math"
@@ -285,7 +286,11 @@ func (a *Alignment) GrnaJuncString() (string) {
     return s
 }
 
-func Align(frag *Fragment, template *Template) {
+func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw int) (error) {
+    if tw <= 0 {
+        tw = 80
+    }
+
     aln1, aln2, _ := nwalgo.Align(template.Bases, frag.Bases, 1, -1, -1)
 
     fragCount := template.Size()+1
@@ -343,9 +348,65 @@ func Align(frag *Fragment, template *Template) {
     }
     writeBase(&buf[fragCount-1], frag.EditBase, frag.EditSite[fi], max)
 
-    // Write out buffers
-    for i,_ := range template.EditSite {
-        fmt.Println(buf[i].String())
+
+    cols := tw - 4
+    rows := buf[0].Len()/cols
+    if buf[0].Len() % cols > 0 {
+        rows++
     }
-    fmt.Println(buf[fragCount-1].String())
+
+    labels := []string{"FE","PE"}
+    for i := range(template.AltRegion) {
+        labels = append(labels, fmt.Sprintf("A%d", i+1))
+    }
+    labels = append(labels, "CL")
+
+
+    _, err := w.Write([]byte(strings.Repeat("=", tw)+"\n"))
+    if err != nil {
+        return err
+    }
+
+    _, err = w.Write([]byte(frag.Name+"\n"))
+    if err != nil {
+        return err
+    }
+
+    _, err = w.Write([]byte(strings.Repeat("=", tw)+"\n"))
+    if err != nil {
+        return err
+    }
+
+    _, err = w.Write([]byte(fmt.Sprintf("EditStop: %d\nJuncEnd: %d\nJuncLen: %d\n", a.EditStop, a.JuncEnd, a.JuncLen)))
+    if err != nil {
+        return err
+    }
+    _, err = w.Write([]byte(strings.Repeat("=", tw)+"\n\n"))
+    if err != nil {
+        return err
+    }
+
+
+    for r := 0; r < rows; r++ {
+        for i, b := range(buf) {
+            _, err := w.Write([]byte(labels[i]+": "))
+            if err != nil {
+                return err
+            }
+            _, err = w.Write(b.Bytes()[(r*cols):((r*cols)+cols)])
+            if err != nil {
+                return err
+            }
+            _, err = w.Write([]byte("\n"))
+            if err != nil {
+                return err
+            }
+        }
+        _, err := w.Write([]byte("\n"))
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
 }
