@@ -13,7 +13,7 @@
     <span class="label label-info"><i class="fa fa-edit fa-sm"></i> Edit Stops: {{ .Alignment.EditStop }}</span>
     <span class="label label-junction"><i class="fa fa-link fa-sm"></i> Junction Length: {{ .Alignment.JuncLen }}</span>
     {{if gt .Alignment.AltEditing 0 }}
-        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> A{{ .Alignment.AltEditing | increment }} Editing</span>
+        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> A{{ .Alignment.AltEditing }} Editing</span>
     {{ end }}
     {{ if eq .Alignment.HasMutation 1 }}
     <span class="label label-danger"><i class="fa fa-warning fa-sm"></i> Mutation</span>
