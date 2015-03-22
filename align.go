@@ -393,7 +393,12 @@ func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw 
             if err != nil {
                 return err
             }
-            _, err = w.Write(b.Bytes()[(r*cols):((r*cols)+cols)])
+
+            end := (r*cols)+cols
+            if end > b.Len() {
+                end = b.Len()
+            }
+            _, err = w.Write(b.Bytes()[(r*cols):end])
             if err != nil {
                 return err
             }
