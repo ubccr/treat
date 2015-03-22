@@ -55,7 +55,7 @@ alternative edited sequences. For example::
 
 We save the above sequence files and run the alignment using TREAT::
 
-  $ treat align -t simple-templates.fasta -f simple-sequences.fasta -v
+  $ treat align -t simple-templates.fasta -f simple-sequences.fasta -b t
   ================================================================================
   example-1
   ================================================================================
@@ -68,12 +68,6 @@ We save the above sequence files and run the alignment using TREAT::
   PE: CT-AATTACACTTT-GAT-AACAAACT--AAA
   CL: CTTAATTACACTTT-GATTAACAAACTTTAAA
 
-  IDX: 19  18  17  16  15  14  13  12  11  10  9   8   7   6   5   4   3   2   1   
-  CAT: PE  FE  PE  PE  PE  PE  PE  PE  FE+ FE  FE  FE  FE  FE  FE  FE  FE  FE  FE  
-
-  IDX: 0   
-  CAT: FE
-
 ------------------------------------------------------------------------
 Viewing Alignments
 ------------------------------------------------------------------------
@@ -83,15 +77,9 @@ and viewing in a web browser. Here we present a slighlty more complex example
 where we view sequences from ribosomal protein S12 (RPS12) from Trypanosoma
 brucei mitochondria. 
 
-We first create an empty database file to store our data. This command creates
-a database file in your current working directory called "rps12.db"::
-
-  $ treat -d `pwd`/rps12.db db create
-  **DANGER AREA** Are you sure you want to proceed? [n] y
-  You are about to create the ENTIRE database from scratch. Are you sure? [n] y
-
-Next we create a FASTA file (templates.fasta) which contains the Fully Edited,
-Pre-Edited and 1 Alternativley Edited template sequences::
+Treat accepts sequencing data in FASTA format. An example FASTA file
+(templates.fasta) containing the Fully Edited, Pre-Edited and one Alternativley
+Edited template sequences is shown below::
 
   >RPS12-FE Fully Edited
   CTAATACACTTTTGATAACAAACTAAAGTAAAtAtAttttGttttttttGCGtAtGtGAT
@@ -113,14 +101,7 @@ Pre-Edited and 1 Alternativley Edited template sequences::
   tAGAGGGTGGtGGttttGttGAtttACCtCGttGGttTAtAtAGtAttAtACACGTAttG
   tAAGttAGATTTAGAtATAAGATATGTTTTT
 
-And load the template data into the database::
-
-  $ treat -d `pwd`/rps12.db load_templates -g RPS12 -f templates.fasta -v
-  [INFO] Processing template sequences for gene: RPS12
-  [INFO] Loaded 3 template sequences for gene RPS12
-  [INFO] Done.
-
-Next we create a file with our DNA fragment reads (sample-A.fasta)::
+FASTA file with our DNA fragment reads (sample-A.fasta)::
 
   >cl-1 merge_count=10
   CTAATACACTTTTGATAACAAACTAAAGATATAATATTTTTGTTTTTTTTGCGTATGTGA
@@ -142,25 +123,20 @@ Next we create a file with our DNA fragment reads (sample-A.fasta)::
   TTAGTTATGTCATTATTTATTATAGAGGGTGGTGGTTTTGTTGATTTACCCGGTGTAAAGTAT
   TATACACGTATTGTAAGTTAGATTTAGATATAACATATGTTTTT
 
-And load the sample data using TREAT::
+Load the sample data using TREAT::
 
-  $ treat -d `pwd`/rps12.db load_samples -g RPS12 -f sample-A.fasta -v
-  **DANGER AREA** Delete all alignments for gene RPS12 replicate 0 ? [n] y
-  [INFO] Computing average read count...
-  [INFO] Total reads accross all files: 139
-  [INFO] Normalizing to average read count: 139
-  [INFO] Computing total read count for file: sample-A.fasta
-  [INFO] Total reads for file: 139
-  [INFO] Normalized scaling factor: 1.0
-  [INFO] Processing fragments in file: sample-A.fasta
-  [INFO] Using sample name: sample-A
-  [INFO] Loaded 3 fragment sequences
-  [INFO] Done.
+  $ treat load -g RPS12 -f sample-A.fasta -t templates.fasta
+  Total reads across all samples: 350
+  Normalizing to average read count:: 350.0000
+  Computing total read count for file: sample-A.fa
+  Total reads for file: 350
+  Normalized scaling factor: 1.0000
+  Processing fragments for sample name : sample-A
+  Loaded 18 fragment sequences for sample sample-A
 
 We can now start the TREAT server and view the sequences in a web browser::
 
-  $ treat -d `pwd`/rps12.db runserver -v
-  [INFO]  * Running on http://127.0.0.1:5000/
+  $ treat -p 8080
 
 .. image:: docs/treat-screen-shot.png
 
