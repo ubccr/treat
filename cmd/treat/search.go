@@ -2,16 +2,39 @@ package main
 
 import (
     "log"
+    "os"
     "fmt"
-    "strings"
+    "encoding/csv"
     "github.com/ubccr/treat"
 )
 
 
-func Search(dbpath string, fields *SearchFields) {
+func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
     s, err := NewStorage(dbpath)
     if err != nil {
         log.Fatalf("%s", err)
+    }
+
+    csvout := csv.NewWriter(os.Stdout)
+    defer csvout.Flush()
+
+    if !csvOutput {
+        csvout.Comma = '\t'
+    }
+
+    if !noHeader {
+        csvout.Write([]string{
+            "gene",
+            "sample",
+            "norm",
+            "read_count",
+            "alt_editing",
+            "has_mutation",
+            "edit_stop",
+            "junc_end",
+            "junc_len",
+            "grna",
+            "junc_seq"})
     }
 
     err = s.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
@@ -20,7 +43,7 @@ func Search(dbpath string, fields *SearchFields) {
             alt = fmt.Sprintf("A%d", a.AltEditing)
         }
 
-        fmt.Println(strings.Join([]string{
+        csvout.Write([]string{
             key.Gene,
             key.Sample,
             fmt.Sprintf("%.4f", RoundPlus(a.Norm, 4)),
@@ -31,7 +54,7 @@ func Search(dbpath string, fields *SearchFields) {
             fmt.Sprintf("%d", a.JuncEnd),
             fmt.Sprintf("%d", a.JuncLen),
             a.GrnaEditString(),
-            a.JuncSeq}, "\t"))
+            a.JuncSeq})
     })
 
     if err != nil {

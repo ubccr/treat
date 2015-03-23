@@ -121,6 +121,8 @@ func main() {
                 &cli.BoolFlag{Name: "has-mutation", Usage: "Has mutation"},
                 &cli.BoolFlag{Name: "all,a", Usage: "Include all sequences"},
                 &cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
+                &cli.BoolFlag{Name: "csv", Usage: "Output in csv format"},
+                &cli.BoolFlag{Name: "no-header, x", Usage: "Exclude header from output"},
                 &cli.IntSliceFlag{Name: "grna-edit", Value: &cli.IntSlice{}, Usage: "gRNA over edit stop"},
                 &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
             },
@@ -139,7 +141,7 @@ func main() {
                     All:          c.Bool("all"),
                     GrnaEdit:     c.IntSlice("grna-edit"),
                     GrnaJunc:     c.IntSlice("grna-junc"),
-                })
+                }, c.Bool("csv"), c.Bool("no-header"))
             },
         }}
 
