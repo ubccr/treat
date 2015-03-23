@@ -4,6 +4,7 @@ import (
     "os"
     "log"
     "strings"
+    "fmt"
     "regexp"
     "strconv"
     "path/filepath"
@@ -15,6 +16,7 @@ import (
 
 type LoadOptions struct {
     Gene          string
+    EditBase      string
     TemplatePath  string
     FragmentPath  []string
     Primer5       int
@@ -65,6 +67,9 @@ func Load(dbpath string, options *LoadOptions) {
     if options.FragmentPath == nil || len(options.FragmentPath) == 0 {
         log.Fatalln("ERROR Please provide 1 or more fragment files to load")
     }
+    if len(options.EditBase) != 1 {
+        log.Fatalln("ERROR Please provide the edit base")
+    }
 
     options.Gene = strings.Replace(options.Gene, " ", "_", -1)
 
@@ -77,7 +82,7 @@ func Load(dbpath string, options *LoadOptions) {
         grna = g
     }
 
-    tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, 't')
+    tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
     if err != nil {
         log.Fatalln(err)
     }
@@ -158,20 +163,20 @@ func Load(dbpath string, options *LoadOptions) {
             b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
             _, err := b.CreateBucket(key)
             if err != nil {
-                return err
+                return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
             }
 
             b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
             _, err = b.CreateBucket(key)
             if err != nil {
-                return err
+                return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
             }
 
             return nil
         })
 
         if err != nil {
-            log.Fatal(err)
+            log.Fatalf("ERROR %s", err)
         }
 
         var tx *bolt.Tx
@@ -199,7 +204,7 @@ func Load(dbpath string, options *LoadOptions) {
             mergeCount := MergeCount(rec)
             norm := scale * float64(mergeCount)
 
-            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, 't')
+            frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, rune(options.EditBase[0]))
             aln := treat.NewAlignment(frag, tmpl)
 
             id, _ := alnBucket.NextSequence()

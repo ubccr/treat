@@ -25,6 +25,7 @@ func main() {
                 &cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
+                &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
                 &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
             },
             Action: func(c *cli.Context) {
@@ -36,6 +37,7 @@ func main() {
                     Primer3:      c.Int("primer3"),
                     Norm:         c.Float64("normalize"),
                     GrnaPath:     c.String("grna"),
+                    EditBase:     c.String("base"),
                 })
             },
         },
@@ -46,7 +48,7 @@ func main() {
                 &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
                 &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
                 &cli.StringFlag{Name: "fragment, f", Usage: "Path to fragment FASTA file"},
-                &cli.StringFlag{Name: "base, b", Usage: "Edit base"},
+                &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
             },
@@ -67,7 +69,7 @@ func main() {
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
                 &cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
-                &cli.StringFlag{Name: "base, b", Usage: "Edit base"},
+                &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
                 &cli.IntFlag{Name: "n", Value: 5, Usage: "Max number of indels to ouptut"},
