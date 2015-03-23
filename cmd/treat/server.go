@@ -342,6 +342,31 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
     sort.Sort(ByReadCount{alignments})
 
+    if r.URL.Query().Get("export") == "1" {
+        csvout := csv.NewWriter(w)
+        defer csvout.Flush()
+        csvout.Write([]string{"id", "gene", "sample", "read_count", "norm_count", "pct_search", "edit_stop", "junc_end", "junc_len", "junc_seq"})
+
+        w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+        w.Header().Set("Content-Disposition", "attachment; filename=treat-export.csv")
+
+        for _, a := range(alignments) {
+            csvout.Write([]string{
+                strconv.Itoa(int(a.Id)),
+                a.Key.Gene,
+                a.Key.Sample,
+                strconv.Itoa(int(a.ReadCount)),
+                fmt.Sprintf("%.4f", a.Norm),
+                pct(a, totalMap),
+                strconv.Itoa(int(a.EditStop)),
+                strconv.Itoa(int(a.JuncEnd)),
+                strconv.Itoa(int(a.JuncLen)),
+                a.JuncSeq})
+        }
+
+        return
+    }
+
     fields.Limit = limit
     if fields.Limit == 0 {
         fields.Limit = 10
@@ -534,6 +559,7 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
 
     if r.URL.Query().Get("export") == "1" {
         csvout := csv.NewWriter(w)
+        defer csvout.Flush()
         col := "edit_stop"
         if r.URL.Path == "/data/jl-hist" {
             col = "junc_len"
@@ -551,7 +577,6 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
             }
         }
 
-        csvout.Flush()
         return
     }
 
