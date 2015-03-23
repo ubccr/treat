@@ -3,8 +3,6 @@ package main
 import (
     "fmt"
     "time"
-    "log"
-    "strings"
     "bytes"
     "encoding/binary"
     "math"
@@ -373,52 +371,4 @@ func (s *Storage) GetFragment(k *treat.AlignmentKey, id uint64) (*treat.Fragment
     }
 
     return frag, nil
-}
-
-func (s *Storage) Stats() {
-    err := s.DB.View(func(tx *bolt.Tx) error {
-        b := tx.Bucket([]byte(BUCKET_TEMPLATES))
-
-        b.ForEach(func(k, v []byte) error {
-            tmpl := new(treat.Template)
-            err := tmpl.UnmarshalBytes(v)
-            if err != nil {
-                return err
-            }
-
-            fmt.Println(string(k))
-            fmt.Printf(" - Alt editing: %d\n", len(tmpl.AltRegion))
-            fmt.Printf(" - gRNAs: %d\n", len(tmpl.Grna))
-            samples, err := s.Samples(string(k))
-            if err != nil {
-                return err
-            }
-            fmt.Printf(" - Samples: %s\n", strings.Join(samples, ", "))
-
-            count := 0
-            err = s.Search(&SearchFields{Gene:string(k)}, func (key *treat.AlignmentKey, a *treat.Alignment) {
-                count++
-            })
-            if err != nil {
-                return err
-            }
-            fmt.Printf(" - Alignments: %d\n", count)
-            count = 0
-            err = s.Search(&SearchFields{Gene:string(k), HasMutation: true}, func (key *treat.AlignmentKey, a *treat.Alignment) {
-                count++
-            })
-            if err != nil {
-                return err
-            }
-            fmt.Printf(" - Mutations: %d\n", count)
-
-            return nil
-        })
-
-        return nil
-    })
-
-    if err != nil {
-        log.Fatal(err)
-    }
 }

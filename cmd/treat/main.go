@@ -2,7 +2,6 @@ package main
 
 import (
     "os"
-    "log"
     "github.com/codegangsta/cli"
 )
 
@@ -77,12 +76,11 @@ func main() {
         {
             Name: "stats",
             Usage: "Print database stats",
+            Flags: []cli.Flag{
+                &cli.StringFlag{Name: "gene, g", Usage: "Filter by gene"},
+            },
             Action: func(c *cli.Context) {
-                s, err := NewStorage(c.GlobalString("db"))
-                if err != nil {
-                    log.Fatal(err)
-                }
-                s.Stats()
+                Stats(c.GlobalString("db"), c.String("gene"))
             },
         },
         {
