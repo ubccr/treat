@@ -12,7 +12,7 @@ import (
 
 const BUCKET_ALIGNMENTS = "alignments"
 const BUCKET_TEMPLATES  = "templates"
-const BUCKET_FRAGMENTS    = "fragments"
+const BUCKET_FRAGMENTS  = "fragments"
 
 type Storage struct {
     DB         *bolt.DB
