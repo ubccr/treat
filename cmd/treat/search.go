@@ -16,7 +16,6 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
     }
 
     csvout := csv.NewWriter(os.Stdout)
-    defer csvout.Flush()
 
     if !csvOutput {
         csvout.Comma = '\t'
@@ -55,6 +54,8 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
             fmt.Sprintf("%d", a.JuncLen),
             a.GrnaEditString(),
             a.JuncSeq})
+
+        csvout.Flush()
     })
 
     if err != nil {
