@@ -25,6 +25,7 @@
       <th>Merge Count</th>
       <th>Norm Count</th>
       <th class="text-right">% Search</th>
+      <th class="text-right">% Edit Stop</th>
       <th class="text-right">Editing Stop</th>
       <th class="text-right">Junction End</th>
       <th class="text-right">Junction Len</th>
@@ -42,7 +43,8 @@
       <td style="white-space: nowrap">{{ $a.Key.Sample }}</td>
       <td class="text-right">{{ $a.ReadCount }}</td>
       <td class="text-right">{{ $a.Norm | round }}</td>
-      <td class="text-right">{{ pct $a $.Totals }}</td>
+      <td class="text-right">{{ pct $a $.SearchTotals }}</td>
+      <td class="text-right">{{ pct $a $.EditStopTotals }}</td>
       <td class="text-right">{{ $a.EditStop }}</td>
       <td class="text-right">{{ $a.JuncEnd }}</td>
       <td class="text-right">{{ $a.JuncLen }}</td>

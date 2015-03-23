@@ -29,6 +29,7 @@ var geneTemplates map[string]*treat.Template
 var geneSamples map[string][]string
 var genes []string
 var cache map[string][]byte
+var cacheEditStopTotals map[string]map[uint64]map[string]float64
 
 func increment(x int) (int) {
     x++
@@ -400,7 +401,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     vars := map[string]interface{}{
         "Template": tmpl,
         "Count": count,
-        "Totals": totalMap,
+        "SearchTotals": totalMap,
+        "EditStopTotals": cacheEditStopTotals[fields.Gene],
         "Showing": showing,
         "Page": page,
         "Query": r.URL.RawQuery,
@@ -619,6 +621,7 @@ func Server(dbpath, tmpldir string, port int) {
         log.Fatal("No genes/templates found. Please load some data first")
     }
 
+    cacheEditStopTotals = make(map[string]map[uint64]map[string]float64)
     geneSamples = make(map[string][]string)
     genes = make([]string, 0)
     for k := range(geneTemplates) {
@@ -634,6 +637,23 @@ func Server(dbpath, tmpldir string, port int) {
         }
 
         geneSamples[k] = s
+
+        log.Printf("Computing edit stop site cache for gene %s...", k)
+        if _, ok := cacheEditStopTotals[k]; !ok {
+            cacheEditStopTotals[k] = make(map[uint64]map[string]float64)
+        }
+
+        fields := &SearchFields{Gene: k, EditStop: -1, JuncEnd: -1, JuncLen: -1}
+        err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+            if _, ok := cacheEditStopTotals[k][a.EditStop]; !ok {
+                cacheEditStopTotals[k][a.EditStop] = make(map[string]float64)
+            }
+            cacheEditStopTotals[k][a.EditStop][key.Sample] += a.Norm
+        })
+
+        if err != nil {
+            log.Fatalf("Failed computing edit stop totals for gene: %s", k)
+        }
     }
 
     if len(tmpldir) == 0 {
@@ -679,6 +699,8 @@ func Server(dbpath, tmpldir string, port int) {
     cache = make(map[string][]byte)
     decoder = schema.NewDecoder()
     decoder.IgnoreUnknownKeys(true)
+
+    log.Printf("Running on http://127.0.0.1:%d", port)
 
     mx := mux.NewRouter()
     mx.NotFoundHandler = http.HandlerFunc(notFoundHandler)
