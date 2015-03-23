@@ -24,6 +24,7 @@ type LoadOptions struct {
     Replicate     int
     Norm          float64
     GrnaPath      string
+    SkipFrags     bool
 }
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
@@ -185,6 +186,10 @@ func Load(dbpath string, options *LoadOptions) {
         count := 0
 
         log.Printf("Processing fragments for sample name : %s", sample)
+        if options.SkipFrags {
+            log.Print("[info] not storing raw fragment reads")
+        }
+
         for rec := range gofasta.SimpleParser(f) {
 
             if count % 100 == 0 {
@@ -221,14 +226,16 @@ func Load(dbpath string, options *LoadOptions) {
                 log.Fatal(err)
             }
 
-            data, err = frag.MarshalBytes()
-            if err != nil {
-                log.Fatal(err)
-            }
+            if !options.SkipFrags {
+                data, err = frag.MarshalBytes()
+                if err != nil {
+                    log.Fatal(err)
+                }
 
-            err = fragBucket.Put(kbytes, data)
-            if err != nil {
-                log.Fatal(err)
+                err = fragBucket.Put(kbytes, data)
+                if err != nil {
+                    log.Fatal(err)
+                }
             }
 
             count++

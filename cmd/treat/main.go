@@ -27,6 +27,7 @@ func main() {
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
                 &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
                 &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
+                &cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
             },
             Action: func(c *cli.Context) {
                 Load(c.GlobalString("db"), &LoadOptions{
@@ -38,6 +39,7 @@ func main() {
                     Norm:         c.Float64("normalize"),
                     GrnaPath:     c.String("grna"),
                     EditBase:     c.String("base"),
+                    SkipFrags:    c.Bool("skip-fragments"),
                 })
             },
         },
@@ -91,7 +93,6 @@ func main() {
                 &cli.IntFlag{Name: "port, p", Value: 8080, Usage: "Port to listen on"},
             },
             Action: func(c *cli.Context) {
-                //decoder.IgnoreUnknownKeys(true)
                 Server(c.GlobalString("db"), c.String("templates"), c.Int("port"))
             },
         },
