@@ -346,7 +346,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     if r.URL.Query().Get("export") == "1" {
         csvout := csv.NewWriter(w)
         defer csvout.Flush()
-        csvout.Write([]string{"id", "gene", "sample", "read_count", "norm_count", "pct_search", "edit_stop", "junc_end", "junc_len", "junc_seq"})
+        csvout.Write([]string{"id", "gene", "sample", "read_count", "norm_count", "pct_search", "pct_edit_stop", "edit_stop", "junc_end", "junc_len", "junc_seq"})
 
         w.Header().Set("Content-Type", "text/csv; charset=utf-8")
         w.Header().Set("Content-Disposition", "attachment; filename=treat-export.csv")
@@ -359,6 +359,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
                 strconv.Itoa(int(a.ReadCount)),
                 fmt.Sprintf("%.4f", a.Norm),
                 pct(a, totalMap),
+                pct(a, cacheEditStopTotals[fields.Gene]),
                 strconv.Itoa(int(a.EditStop)),
                 strconv.Itoa(int(a.JuncEnd)),
                 strconv.Itoa(int(a.JuncLen)),
