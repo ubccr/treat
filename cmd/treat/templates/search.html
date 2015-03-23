@@ -51,7 +51,7 @@
       <td class="text-right">{{ grna $a }}</td>
       <td class="text-center">
         {{ if gt $a.AltEditing 0 }}
-        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> Alternative</span>
+        <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> A{{ $a.AltEditing }}</span>
         {{ end }}
         {{ if $a.HasMutation }}
         <span class="label label-danger"><i class="fa fa-warning fa-sm"></i> Mutation</span>
