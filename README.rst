@@ -11,18 +11,19 @@ designed for sequences containing uridine insertion/deletion RNA editing. This
 phenomenon occurs in trypanosomes, a group of unicellular parasitic flagellate
 protozoa such as Trypanosoma brucei which causes African sleeping sickness. The
 pre-mRNA sequences in trypanosomes are posttranscriptionally edited by the
-insertion/deletion of uridylate residues. TREAT aligns sequences (typically
-from RNA-Seq experiments) using 3 bases (A,C,G) and assembles editing sites to
-detect the extent of uridine (T) editing. TREAT is written in Go and is
-released under the GPLv3.0 free software license. 
+insertion/deletion of uridylate residues. By default, TREAT aligns sequences
+using 3 bases (A,C,G) and assembles editing sites to detect the extent of
+uridine (T) editing. TREAT is written in Go and is released under the GPLv3.0
+free software license. 
 
 ------------------------------------------------------------------------
 Installation
 ------------------------------------------------------------------------
 
-Fetch from github::
+Download the latest binary release `here <https://github.com/ubccr/treat/releases>`_::
 
-  $ go get install github.com/ubccr/treat/...
+  $ tar xvzf treat-x.x.x.tar.gz
+  $ cd treat-x.x.x
 
 Install from source::
 
@@ -30,52 +31,56 @@ Install from source::
   $ cd treat
   $ go build ./...
 
+Install using go tools::
+
+  $ go get install github.com/ubccr/treat/...
+
 ------------------------------------------------------------------------
 Alignment Example
 ------------------------------------------------------------------------
 
-TREAT alignments require 2 files in FASTA format as input. The fragment of DNA
-(read, clone, etc.) to align, for example from an RNA-Seq experiment, and 2
-template sequences: Fully Edited and Pre-Edited. The Fully Edited template
-represents a mature edited mRNA (completely precisely edited mRNA). The
-Pre-Edited template represents the sequence that will be edited in the mature
-RNA. The template input file should include the Fully Edited
-template sequence first, followed by the Pre-Edited template, and optionally any
-alternative edited sequences. For example::
+TREAT alignments require 2 files in FASTA format as input. The fragment(s) of
+DNA (reads) to align, for example from an RNA-Seq experiment, and 2 template
+sequences: Fully Edited and Pre-Edited. The Fully Edited template represents a
+mature edited mRNA (completely precisely edited mRNA). The Pre-Edited template
+represents the sequence that will be edited in the mature RNA. The template
+input file should include the Fully Edited template sequence first, followed by
+the Pre-Edited template, and optionally any alternative edited sequences. For
+example::
 
-  # simple-templates.fasta
+  # simple-templates.fa
   >Fully Edited
   CTTAATACACTTTTGATTAACAAACTTTAAA
   >Pre-Edited
   CTAATTACACTTTGATAACAAACTAAA
 
-  # simple-sequences.fasta
+  # simple-sequences.fa
   >example-1
   CTTAATTACACTTTGATTAACAAACTTTAAA
 
 We save the above sequence files and run the alignment using TREAT::
 
-  $ treat align -t simple-templates.fasta -f simple-sequences.fasta -b t
+  $ ./treat align -t simple-templates.fa -f simple-sequences.fa
   ================================================================================
   example-1
   ================================================================================
-  Editing stops at site: 11
-  Junction ends at site: 18
-  Junction length: 7
+  EditStop: 11
+  JuncEnd: 18
+  JuncLen: 7
   ================================================================================
 
-  FE: CTTAAT-ACACTTTTGATTAACAAACTTTAAA
-  PE: CT-AATTACACTTT-GAT-AACAAACT--AAA
-  CL: CTTAATTACACTTT-GATTAACAAACTTTAAA
+  FE: CTTAA-TACACTTTTGATTAACAAACTTTAAA
+  PE: C-TAATTACAC-TTTGA-TAACAAAC--TAAA
+  CL: CTTAATTACAC-TTTGATTAACAAACTTTAAA
 
 ------------------------------------------------------------------------
 Viewing Alignments
 ------------------------------------------------------------------------
 
 TREAT can optionally store alignments into a database for more complex analysis
-and viewing in a web browser. Here we present a slighlty more complex example
-where we view sequences from ribosomal protein S12 (RPS12) from Trypanosoma
-brucei mitochondria. 
+and viewing in a web browser. Here we present an example where we view
+sequences from ribosomal protein S12 (RPS12) from Trypanosoma brucei
+mitochondria. 
 
 Treat accepts sequencing data in FASTA format. An example FASTA file
 (templates.fasta) containing the Fully Edited, Pre-Edited and one Alternativley
@@ -125,18 +130,55 @@ FASTA file with our DNA fragment reads (sample-A.fasta)::
 
 Load the sample data using TREAT::
 
-  $ treat load -g RPS12 -f sample-A.fasta -t templates.fasta
-  Total reads across all samples: 350
-  Normalizing to average read count:: 350.0000
-  Computing total read count for file: sample-A.fa
-  Total reads for file: 350
+  $ ./treat --db treat.db load -g RPS12 -f sample-1.fa -t templates.fa
+  Total reads across all samples: 139
+  Normalizing to average read count:: 139.0000
+  Computing total read count for file: sample-1.fa
+  Total reads for file: 139
   Normalized scaling factor: 1.0000
-  Processing fragments for sample name : sample-A
-  Loaded 18 fragment sequences for sample sample-A
+  Processing fragments for sample name : sample-1
+  Loaded 3 fragment sequences for sample sample-1
 
-We can now start the TREAT server and view the sequences in a web browser::
+A new databse file has been created called "treat.db". We can now search the
+data using the TREAT command line tool::
 
-  $ treat -p 8080
+  $ ./treat --db treat.db search -g RPS12 -l 10 --csv
+  gene,sample,norm,read_count,alt_editing,has_mutation,edit_stop,junc_end,junc_len,grna,junc_seq
+  RPS12,sample-1,10.0000,10,0,0,137,143,6,,ATATAATATTTTTG
+  RPS12,sample-1,9.0000,9,0,0,95,123,28,,TTCGGTATTTGTTTTATGTTATTATATGAGTCCGCGATTGCCCAGCTCTG
+
+Search options are described below::
+
+  $ ./treat help search
+  NAME:
+     search - Search database
+
+  USAGE:
+     command search [command options] [arguments...]
+
+  OPTIONS:
+     --gene, -g                       Gene Name
+     --sample, -s                     One or more samples
+     --edit-stop "-1"                 Edit stop
+     --junc-end "-1"                  Junction end
+     --junc-len "-1"                  Junction len
+     --alt "0"                        Alt editing region
+     --offset, -o "0"                 offset
+     --limit, -l "0"                  limit
+     --has-mutation                   Has mutation
+     --all, -a                        Include all sequences
+     --has-alt                        Has Alternative Editing
+     --csv                            Output in csv format
+     --no-header, -x                  Exclude header from output
+     --grna-edit                      gRNA over edit stop
+     --grna-junc                      gRNA over junc region
+
+Start the TREAT server and view the sequences in a web browser::
+
+  $ ./treat --db treat.db server -p 8080
+  Computing edit stop site cache for gene RPS12...
+  Using template dir: /path/to/treat
+  Running on http://127.0.0.1:8080
 
 .. image:: docs/treat-screen-shot.png
 
