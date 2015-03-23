@@ -47,6 +47,7 @@ func Stats(dbpath, gene string) {
         fmt.Println(g)
         fmt.Println(strings.Repeat("=", 80))
         fmt.Printf("%20s%11d\n", "Total Alignments:", grandTotal)
+        fmt.Printf("%20s%11s\n", "Edit Base:", string(tmpl.EditBase))
         fmt.Printf("%20s%11d\n", "Alt Templates:", len(tmpl.Grna))
         fmt.Printf("%20s%11d\n", "Guide RNAs:", len(tmpl.AltRegion))
         fmt.Println(strings.Repeat("-", 80))
