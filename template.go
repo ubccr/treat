@@ -32,7 +32,7 @@ type Template struct {
 func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (*Template, error) {
     f, err := os.Open(path)
     if err != nil {
-        return nil, fmt.Errorf("Invalid FASTA file: ", err)
+        return nil, fmt.Errorf("Invalid FASTA file: %s", err)
     }
     defer f.Close()
 

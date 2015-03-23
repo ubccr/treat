@@ -32,14 +32,14 @@ func Align(options *AlignOptions) {
     if len(options.GrnaPath) != 0 {
         g, err := treat.GrnaFromFile(options.GrnaPath)
         if err != nil {
-            log.Fatalln("ERROR parsing grna file: %s", err)
+            log.Fatalf("ERROR parsing grna file: %s", err)
         }
         grna = g
     }
 
     tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
     if err != nil {
-        log.Fatalln(err)
+        log.Fatal(err)
     }
 
     tmpl.Grna = grna
