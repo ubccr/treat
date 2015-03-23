@@ -62,6 +62,26 @@ func main() {
             },
         },
         {
+            Name: "mutant",
+            Usage: "Indel mutation analysis",
+            Flags: []cli.Flag{
+                &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
+                &cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
+                &cli.StringFlag{Name: "base, b", Usage: "Edit base"},
+                &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
+                &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
+                &cli.IntFlag{Name: "n", Value: 5, Usage: "Max number of indels to ouptut"},
+            },
+            Action: func(c *cli.Context) {
+                Mutant(&AlignOptions{
+                    TemplatePath: c.String("template"),
+                    Primer5:      c.Int("primer5"),
+                    Primer3:      c.Int("primer3"),
+                    EditBase:     c.String("base"),
+                }, c.StringSlice("fragment"), c.Int("n"))
+            },
+        },
+        {
             Name: "server",
             Usage: "Run http server",
             Flags: []cli.Flag{
