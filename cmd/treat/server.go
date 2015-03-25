@@ -154,17 +154,31 @@ func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (temp
                 max = frag.EditSite[fi]
             }
             cat := ""
+            boldi := -1
             if uint64(n-ti) > a.EditStop {
                 if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
                     cat = "PE"
+                    boldi = 1
                 } else if frag.EditSite[fi] == tmpl.EditSite[0][ti] {
                     cat = "FE"
+                    boldi = 0
                 }
             } else {
                 if frag.EditSite[fi] == tmpl.EditSite[0][ti] {
                     cat = "FE"
+                    boldi = 0
                 } else if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
                     cat = "PE"
+                    boldi = 1
+                }
+            }
+
+            if boldi == -1 {
+                for i,t := range(tmpl.EditSite[2:]) {
+                    if frag.EditSite[fi] == t[ti] {
+                        boldi = i+2
+                        cat = fmt.Sprintf("A%d", i+1)
+                    }
                 }
             }
 
@@ -173,7 +187,11 @@ func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (temp
             }
 
             for i, t := range tmpl.EditSite {
-                writeBase(buf[i+1], ai, tmpl.EditBase, t[ti], max, labels[i])
+                bold := ""
+                if boldi == i {
+                    bold = "hilite"
+                }
+                writeBase(buf[i+1], ai, tmpl.EditBase, t[ti], max, labels[i]+" "+bold)
                 buf[i+1][ai] += `<td class="text-center base">`+string(tmpl.Bases[ti])+`</td>`
             }
             writeBase(buf[fragCount-1], ai, frag.EditBase, frag.EditSite[fi], max, cat)
