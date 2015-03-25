@@ -171,6 +171,8 @@ func NewAlignment(frag *Fragment, template *Template) (*Alignment) {
                 }
             }
         }
+    } else if alignment.JuncEnd < alignment.EditStop {
+        alignment.JuncEnd = alignment.EditStop
     }
 
     alignment.ReadCount = frag.ReadCount
