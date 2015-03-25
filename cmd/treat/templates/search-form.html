@@ -21,7 +21,7 @@
         <option></option>
         {{ range $i, $g := .Template.Grna }}
         {{ $check := $.Fields.HasGrnaEdit $i }}
-            <option{{if $check }} selected="selected"{{end}} value="{{ $i }}">{{ $g.Name }}</option>
+            <option{{if $check }} selected="selected"{{end}} value="{{ $i }}">{{ $g.Name }} ({{$g.Start}}-{{$g.End}})</option>
         {{ end }}
     </select>
   </div>
