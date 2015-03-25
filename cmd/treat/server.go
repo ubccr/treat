@@ -27,6 +27,8 @@ var db *Storage
 var decoder *schema.Decoder
 var geneTemplates map[string]*treat.Template
 var geneSamples map[string][]string
+var maxEditStop map[string]uint64
+var maxJuncLen map[string]uint64
 var genes []string
 var cache map[string][]byte
 var cacheEditStopTotals map[string]map[uint64]map[string]float64
@@ -45,7 +47,17 @@ func round(val float64) (string) {
     return fmt.Sprintf("%.4f", val)
 }
 
-func pct(a *treat.Alignment, totals map[uint64]map[string]float64) (string) {
+func pctSearch(a *treat.Alignment, totals map[string]float64) (string) {
+    y := totals[a.Key.Sample]
+    if y == 0 {
+        return "0.0"
+    }
+
+    d := (a.Norm / y)*100
+    return fmt.Sprintf("%.4f", d)
+}
+
+func pctEditStop(a *treat.Alignment, totals map[uint64]map[string]float64) (string) {
     y := totals[a.EditStop][a.Key.Sample]
     if y == 0 {
         return "0.0"
@@ -319,7 +331,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    totalMap := make(map[uint64]map[string]float64)
+    totalMap := make(map[string]float64)
 
     limit := fields.Limit
     fields.Limit = 0
@@ -329,10 +341,7 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
         a.Key = key
         alignments = append(alignments, a)
 
-        if _, ok := totalMap[a.EditStop]; !ok {
-            totalMap[a.EditStop] = make(map[string]float64)
-        }
-        totalMap[a.EditStop][a.Key.Sample] += a.Norm
+        totalMap[a.Key.Sample] += a.Norm
     })
 
     if err != nil {
@@ -358,8 +367,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
                 a.Key.Sample,
                 strconv.Itoa(int(a.ReadCount)),
                 fmt.Sprintf("%.4f", a.Norm),
-                pct(a, totalMap),
-                pct(a, cacheEditStopTotals[fields.Gene]),
+                pctSearch(a, totalMap),
+                pctEditStop(a, cacheEditStopTotals[fields.Gene]),
                 strconv.Itoa(int(a.EditStop)),
                 strconv.Itoa(int(a.JuncEnd)),
                 strconv.Itoa(int(a.JuncLen)),
@@ -484,7 +493,7 @@ func NewSearchFields(url *url.URL) (*SearchFields, error) {
     return fields, nil
 }
 
-func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Alignment) uint64) {
+func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uint64, f func(a *treat.Alignment) uint64) {
     if _, ok := cache[r.URL.String()]; ok {
         w.Write(cache[r.URL.String()])
         return
@@ -514,7 +523,7 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
 
     samples := make(map[string]map[uint64]float64)
 
-    max := uint64(0)
+    max := maxMap[fields.Gene]
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         if _, ok := samples[key.Sample]; !ok {
             samples[key.Sample] = make(map[uint64]float64)
@@ -522,9 +531,6 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
 
         val := f(a)
 
-        if val > max {
-            max = val
-        }
         samples[key.Sample][val] += a.Norm
     })
 
@@ -549,7 +555,6 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
         m["type"] = "spline"
         series = append(series, m)
     }
-
 
     cats := make([]int, max+1)
     for i := range(cats) {
@@ -596,13 +601,13 @@ func highChartHist(w http.ResponseWriter, r *http.Request, f func(a *treat.Align
 }
 
 func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    highChartHist(w, r, func(a *treat.Alignment) uint64 {
+    highChartHist(w, r, maxJuncLen, func(a *treat.Alignment) uint64 {
         return a.JuncLen
     })
 }
 
 func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    highChartHist(w, r, func(a *treat.Alignment) uint64 {
+    highChartHist(w, r, maxEditStop, func(a *treat.Alignment) uint64 {
         return a.EditStop
     })
 }
@@ -623,6 +628,8 @@ func Server(dbpath, tmpldir string, port int) {
     }
 
     cacheEditStopTotals = make(map[string]map[uint64]map[string]float64)
+    maxEditStop = make(map[string]uint64)
+    maxJuncLen = make(map[string]uint64)
     geneSamples = make(map[string][]string)
     genes = make([]string, 0)
     for k := range(geneTemplates) {
@@ -650,6 +657,13 @@ func Server(dbpath, tmpldir string, port int) {
                 cacheEditStopTotals[k][a.EditStop] = make(map[string]float64)
             }
             cacheEditStopTotals[k][a.EditStop][key.Sample] += a.Norm
+
+            if a.EditStop > maxEditStop[k] {
+                maxEditStop[k] = a.EditStop
+            }
+            if a.JuncLen > maxJuncLen[k] {
+                maxJuncLen[k] = a.JuncLen
+            }
         })
 
         if err != nil {
@@ -681,7 +695,8 @@ func Server(dbpath, tmpldir string, port int) {
         "decrement": decrement,
         "round": round,
         "juncseq": juncseq,
-        "pct": pct,
+        "pctSearch": pctSearch,
+        "pctEditStop": pctEditStop,
         "grna": grna,
         "align": align,
     }
