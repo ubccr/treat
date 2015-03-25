@@ -596,7 +596,8 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
         w.Header().Set("Content-Disposition", "attachment; filename="+col+".csv")
 
         for _, rec := range(series) {
-            for i, es := range(cats) {
+            for i := len(cats)-1; i >= 0; i-- {
+                es := cats[i]
                 norm := reflect.ValueOf(rec["data"])
                 name := reflect.ValueOf(rec["name"])
                 csvout.Write([]string{strconv.Itoa(es), fmt.Sprintf("%s", name), fmt.Sprintf("%.4f", norm.Index(i).Float())})
