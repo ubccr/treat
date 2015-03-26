@@ -288,6 +288,58 @@ func (a *Alignment) GrnaJuncString() (string) {
     return s
 }
 
+func (a *Alignment) SimpleAlign(f1, f2 *Fragment) (string, string) {
+    aln1, aln2, _ := nwalgo.Align(f1.Bases, f2.Bases, 1, -1, -1)
+
+    buf := make([]bytes.Buffer, 2)
+    n := len(aln1)
+
+    fi := 0
+    ti := 0
+    for ai := 0; ai < n; ai++ {
+        if aln1[ai] == '-' {
+            writeBase(&buf[0], f1.EditBase, 0, f2.EditSite[fi])
+            buf[0].WriteString("-")
+
+            writeBase(&buf[1], f2.EditBase, f2.EditSite[fi], f2.EditSite[fi])
+            buf[1].WriteString(string(f2.Bases[fi]))
+            fi++
+        } else if aln2[ai] == '-' {
+            writeBase(&buf[0], f1.EditBase, f1.EditSite[ti], f1.EditSite[ti])
+            buf[0].WriteString(string(f1.Bases[ti]))
+
+            writeBase(&buf[1], '-', 0, f1.EditSite[ti])
+            buf[1].WriteString("-")
+            ti++
+        } else {
+            max := f1.EditSite[ti]
+            if f2.EditSite[fi] > max {
+                max = f2.EditSite[fi]
+            }
+
+            writeBase(&buf[0], f1.EditBase, f1.EditSite[ti], max)
+            buf[0].WriteString(string(f1.Bases[ti]))
+
+            writeBase(&buf[1], f2.EditBase, f2.EditSite[fi], max)
+            buf[1].WriteString(string(f2.Bases[fi]))
+            fi++
+            ti++
+        }
+    }
+
+    // Last edit site has only EditBases
+    max := f1.EditSite[ti]
+    if f2.EditSite[fi] > max {
+        max = f2.EditSite[fi]
+    }
+
+    writeBase(&buf[0], f1.EditBase, f1.EditSite[ti], max)
+    writeBase(&buf[1], f2.EditBase, f2.EditSite[fi], max)
+
+
+    return buf[0].String(), buf[1].String()
+}
+
 func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw int) (error) {
     if tw <= 0 {
         tw = 80
