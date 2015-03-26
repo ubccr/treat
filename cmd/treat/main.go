@@ -51,6 +51,8 @@ func main() {
                 &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
                 &cli.StringFlag{Name: "fragment, f", Usage: "Path to fragment FASTA file"},
                 &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
+                &cli.StringFlag{Name: "s1, 1", Usage: "first sequence to align"},
+                &cli.StringFlag{Name: "s2, 2", Usage: "second sequence to align"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
             },
@@ -62,6 +64,8 @@ func main() {
                     Primer3:      c.Int("primer3"),
                     GrnaPath:     c.String("grna"),
                     EditBase:     c.String("base"),
+                    S1:           c.String("s1"),
+                    S2:           c.String("s2"),
                 })
             },
         },

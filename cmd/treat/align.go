@@ -16,11 +16,13 @@ type AlignOptions struct {
     Primer3       int
     GrnaPath      string
     EditBase      string
+    S1            string
+    S2            string
 }
 
 func PrintAlignment(a1, a2 string, tw int) {
     n := len(a1)
-    cols := tw-4
+    cols := tw
     rows := n/cols
     if n % cols > 0 {
         rows++
@@ -32,23 +34,32 @@ func PrintAlignment(a1, a2 string, tw int) {
             end = n
         }
 
-        fmt.Print("F1: ")
         fmt.Println(a1[(r*cols):end])
-        fmt.Print("F2: ")
         fmt.Println(a2[(r*cols):end])
         fmt.Println()
     }
 }
 
 func Align(options *AlignOptions) {
-    var tmpl *treat.Template
-
-    if len(options.FragmentPath) == 0 {
-        log.Fatalln("ERROR Please provide path to fragment file")
-    }
     if len(options.EditBase) != 1 {
         log.Fatalln("ERROR Please provide the edit base")
     }
+
+    if (len(options.S1) > 0 && len(options.S2) == 0) || (len(options.S1) == 0 && len(options.S2) > 0) {
+        log.Fatal("ERROR please provide 2 fragments to align")
+    }
+    if len(options.S1) > 0 && len(options.S2) > 0 {
+        frag1 := treat.NewFragment("", options.S1, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+        frag2 := treat.NewFragment("", options.S2, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+        aln := new(treat.Alignment)
+        a1, a2 := aln.SimpleAlign(frag1, frag2)
+        PrintAlignment(a1, a2, 80)
+        return
+    } else if len(options.FragmentPath) == 0 {
+        log.Fatalln("ERROR Please provide either 2 sequences to align or a path to fragment FASTA file")
+    }
+
+    var tmpl *treat.Template
 
     if len(options.TemplatePath) > 0 {
         t, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
@@ -89,7 +100,7 @@ func Align(options *AlignOptions) {
         }
 
         if len(frags) < 2 {
-            log.Fatalf("ERROR need 2 fragments to align")
+            log.Fatal("ERROR need 2 fragments to align")
         }
 
         aln := new(treat.Alignment)
