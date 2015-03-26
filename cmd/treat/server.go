@@ -416,8 +416,8 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
     fields.Offset = (page-1)*fields.Limit
     end := (fields.Offset+fields.Limit)
-    if end > len(alignments)-1 {
-        end = len(alignments)-1
+    if end > len(alignments) {
+        end = len(alignments)
     }
     if end < 0 {
         end = 0
@@ -425,6 +425,9 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
     count := len(alignments)
     showing := fields.Offset + fields.Limit
+    if showing > count {
+        showing = count
+    }
 
     vars := map[string]interface{}{
         "Template": tmpl,
