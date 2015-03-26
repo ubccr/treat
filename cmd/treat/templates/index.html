@@ -56,7 +56,7 @@ $(function () {
                 point: {
                     events: {
                         click: function() {
-                            location.href = '/search?edit_stop='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}';
+                            location.href = '/search?edit_stop='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;junc_len={{.Fields.JuncLen}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}';
                         }
                     }
                 }
@@ -113,7 +113,7 @@ $(function () {
                 point: {
                     events: {
                         click: function() {
-                            location.href = '/search?junc_len='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}';
+                            location.href = '/search?junc_len='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}';
                         }
                     }
                 }
