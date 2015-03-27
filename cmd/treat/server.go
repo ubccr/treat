@@ -446,6 +446,33 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "search.html", vars)
 }
 
+func HeatHandler(w http.ResponseWriter, r *http.Request) {
+    fields, err := NewSearchFields(r.URL)
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        errorHandler(w, r, http.StatusInternalServerError, "")
+        return
+    }
+
+    tmpl,ok := geneTemplates[fields.Gene]
+
+    if !ok {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "No templates found for gene")
+        return
+    }
+
+    vars := map[string]interface{}{
+        "Template": tmpl,
+        "Fields": fields,
+        "Samples": geneSamples[fields.Gene],
+        "Pages": []int{10,50,100,1000},
+        "Genes": genes}
+
+    renderTemplate(w, "heat.html", vars)
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
     fields, err := NewSearchFields(r.URL)
 
@@ -512,6 +539,81 @@ func NewSearchFields(url *url.URL) (*SearchFields, error) {
     }
 
     return fields, nil
+}
+
+func HeatMapJson(w http.ResponseWriter, r *http.Request) {
+    fields, err := NewSearchFields(r.URL)
+    fields.Limit = 0
+    fields.Offset = 0
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        return
+    }
+
+    if len(fields.Gene) == 0 {
+        log.Printf("Missing required field gene")
+        http.Error(w, "Missing required field gene", http.StatusInternalServerError)
+        return
+    }
+
+    tmpl, ok := geneTemplates[fields.Gene]
+
+    if !ok {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "Gene not found")
+        return
+    }
+
+    n := tmpl.Len()
+
+    heat := make([][]float64, n)
+    for i := 0; i < n; i++ {
+        heat[i] = make([]float64, n)
+    }
+
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        heat[int(a.EditStop)][int(a.JuncLen)] += a.Norm
+    })
+
+    if err != nil {
+        log.Printf("Fatal error: %s", err)
+        http.Error(w, "Fatal database error.", http.StatusInternalServerError)
+        return
+    }
+
+    primer3 := tmpl.Primer3
+    if primer3 > 0 {
+        primer3--
+    }
+    series := make([][]interface{}, n*n)
+    k := 0
+    for i := 0; i < n; i++ {
+        for j := 0; j < n; j++ {
+            series[k] = make([]interface{}, 3)
+            series[k][0] = i
+            series[k][1] = j
+            if i == primer3 && j == 0 {
+                series[k][2] = 0.0
+            } else {
+                series[k][2] = heat[i][j]
+            }
+            k++
+        }
+    }
+
+    data := make(map[string]interface{})
+    data["series"] = series
+
+    out, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error encoding data as json: %s", err)
+        http.Error(w, "Fatal system error", http.StatusInternalServerError)
+        return
+    }
+
+    w.Write(out)
 }
 
 func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uint64, f func(a *treat.Alignment) uint64) {
@@ -744,10 +846,12 @@ func Server(dbpath, tmpldir string, port int) {
     mx.NotFoundHandler = http.HandlerFunc(notFoundHandler)
     mx.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", tmpldir)))))
     mx.HandleFunc("/", IndexHandler)
+    mx.HandleFunc("/heat", HeatHandler)
     mx.HandleFunc("/search", SearchHandler)
     mx.HandleFunc("/show", ShowHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
     mx.HandleFunc("/data/jl-hist", JuncHistogramHandler)
+    mx.HandleFunc("/data/heat", HeatMapJson)
     http.Handle("/", mx)
     http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
