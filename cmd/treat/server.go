@@ -588,6 +588,7 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
         primer3--
     }
     series := make([][]interface{}, n*n)
+    max := 0.0
     k := 0
     for i := 0; i < n; i++ {
         for j := 0; j < n; j++ {
@@ -598,6 +599,9 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
                 series[k][2] = 0.0
             } else {
                 series[k][2] = heat[i][j]
+                if heat[i][j] > max {
+                    max = heat[i][j]
+                }
             }
             k++
         }
@@ -605,6 +609,7 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
 
     data := make(map[string]interface{})
     data["series"] = series
+    data["max"] = max
 
     out, err := json.Marshal(data)
     if err != nil {

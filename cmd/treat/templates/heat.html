@@ -141,6 +141,13 @@ $(function () {
 
         colorAxis: {
             min: 0,
+            max: data.max
+        },
+
+        /*
+        colorAxis: {
+            min: 0,
+            max: data.max,
             stops: [
                 [0, '#3060cf'],
                 [0.5, '#fffbbc'],
@@ -148,6 +155,7 @@ $(function () {
                 [1, '#c4463a']
             ],
         },
+        */
 
         series: [{
             borderWidth: 0,
