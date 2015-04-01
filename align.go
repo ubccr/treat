@@ -51,7 +51,7 @@ func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
     }
 }
 
-func NewAlignment(frag *Fragment, template *Template) (*Alignment) {
+func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignment) {
     alignment := new(Alignment)
 
     m := make([]*big.Int, template.Size())
@@ -75,7 +75,7 @@ func NewAlignment(frag *Fragment, template *Template) (*Alignment) {
         if aln2[ai] != '-' {
             count = frag.EditSite[fi]
 
-            if frag.Bases[fi] != template.Bases[ti] {
+            if excludeSnps && frag.Bases[fi] != template.Bases[ti] {
                 // SNP
                 alignment.HasMutation = uint64(1)
             }

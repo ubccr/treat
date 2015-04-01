@@ -25,6 +25,7 @@ type LoadOptions struct {
     Norm          float64
     GrnaPath      string
     SkipFrags     bool
+    ExcludeSnps   bool
 }
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
@@ -210,7 +211,7 @@ func Load(dbpath string, options *LoadOptions) {
             norm := scale * float64(mergeCount)
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, rune(options.EditBase[0]))
-            aln := treat.NewAlignment(frag, tmpl)
+            aln := treat.NewAlignment(frag, tmpl, options.ExcludeSnps)
 
             id, _ := alnBucket.NextSequence()
             kbytes := make([]byte, 8)
