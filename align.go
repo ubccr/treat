@@ -29,7 +29,7 @@ type Alignment struct {
     AltEditing     uint64          `json:"alt_editing"`
     GrnaEdit       *big.Int        `json:"-"`
     GrnaJunc       *big.Int        `json:"-"`
-    JuncSeq        string           `json:"-"`
+    JuncSeq        string          `json:"-"`
 }
 
 func (k *AlignmentKey) UnmarshalBinary(data []byte) error {
@@ -197,7 +197,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         }
     }
 
-     // check for gRNA coverage over the junction region
+    // check for gRNA coverage over the junction region
     for i, g := range(template.Grna) {
         gstart := g.Start
         gend := g.End
