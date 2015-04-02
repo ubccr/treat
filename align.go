@@ -100,7 +100,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         ti++
     }
 
-    // Compute binary matrix
+    // Last edit site
     for i := range(template.EditSite) {
         if template.EditSite[i][ti] == frag.EditSite[fi] {
            m[i].SetBit(m[i], ti, 1)
@@ -108,11 +108,19 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
     }
 
     // Compute junction start site
-    for j := ti; j >= 0; j-- {
-        if j <= (ti-template.Primer3) && m[0].Bit(j) == 0 {
+    isFullyEdited := true
+    for j := ti-template.Primer3; j >= template.Primer5; j-- {
+        if m[0].Bit(j) == 0 {
+            // Sites are numbered 3' -> 5', so we reverse the index (ti-j)
             alignment.JuncStart = uint64(ti-j)
+            isFullyEdited = false
             break
         }
+    }
+
+    // If fragment matches the fully edited template entirely. Set junc start to primer3
+    if isFullyEdited {
+        alignment.JuncStart = uint64(ti-template.Primer3)
     }
 
     // Compute alt editing
@@ -154,8 +162,8 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         }
     }
 
-    for j := 0; j <= ti; j++ {
-        if j >= template.Primer5 && m[1].Bit(j) == 0 {
+    for j := template.Primer5; j <= ti-template.Primer3; j++ {
+        if m[1].Bit(j) == 0 {
             alignment.JuncEnd = uint64(ti-j)
             break
         }
@@ -177,6 +185,13 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         }
     } else if alignment.JuncEnd < alignment.EditStop {
         alignment.JuncEnd = alignment.EditStop
+    }
+
+    // If fragment matches the fully edited template entirely. Set junc len 0
+    if isFullyEdited {
+        alignment.JuncEnd = alignment.JuncStart
+        alignment.JuncLen = 0
+        alignment.JuncSeq = ""
     }
 
     alignment.ReadCount = frag.ReadCount
