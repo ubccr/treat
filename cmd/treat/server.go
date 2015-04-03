@@ -587,10 +587,6 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    primer3 := tmpl.Primer3
-    if primer3 > 0 {
-        primer3--
-    }
     series := make([][]interface{}, n*n)
     max := 0.0
     k := 0
@@ -599,7 +595,7 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
             series[k] = make([]interface{}, 3)
             series[k][0] = i
             series[k][1] = j
-            if i == primer3 && j == 0 {
+            if i == int(tmpl.EditStop) && j == 0 {
                 series[k][2] = 0.0
             } else {
                 series[k][2] = heat[i][j]
@@ -647,7 +643,8 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
         return
     }
 
-    if _,ok := geneTemplates[fields.Gene]; !ok {
+    tmpl, ok := geneTemplates[fields.Gene]
+    if !ok {
         log.Printf("Invalid gene: %s", fields.Gene)
         http.Error(w, "Invalid gene", http.StatusInternalServerError)
         return
@@ -657,6 +654,10 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
 
     max := maxMap[fields.Gene]
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
+            return
+        }
+
         if _, ok := samples[key.Sample]; !ok {
             samples[key.Sample] = make(map[uint64]float64)
         }
