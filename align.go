@@ -118,9 +118,9 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         }
     }
 
-    // If fragment matches the fully edited template entirely. Set junc start to primer3
+    // If fragment matches the fully edited template entirely. Set junc start to primer5
     if isFullyEdited {
-        alignment.JuncStart = uint64(ti-template.Primer3)
+        alignment.JuncStart = uint64(ti-template.Primer5)
     }
 
     // Compute alt editing
