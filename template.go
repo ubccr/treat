@@ -24,6 +24,7 @@ type AltRegion struct {
 
 type Template struct {
     Bases        string
+    EditStop     uint64
     EditBase     rune
     EditSite     [][]BaseCountType
     BaseIndex    []uint64

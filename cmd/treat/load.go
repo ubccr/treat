@@ -97,6 +97,19 @@ func Load(dbpath string, options *LoadOptions) {
     tmpl.Primer3 = options.Primer3
     tmpl.Primer5 = options.Primer5
 
+    // Compute Edit Stop Site
+    tmpl.EditStop = uint64((tmpl.Len()-1)-tmpl.Primer3)
+    for j := int(tmpl.EditStop); j >= int(tmpl.Primer5); j-- {
+        if tmpl.EditSite[0][j] != tmpl.EditSite[1][j] {
+            tmpl.EditStop = uint64((tmpl.Len()-1)-j)
+            break
+        }
+    }
+    if tmpl.EditStop > 0 {
+        tmpl.EditStop--
+    }
+    log.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
+
     // Normalize read counts
     if options.Norm == 0 {
         total := uint64(0)
