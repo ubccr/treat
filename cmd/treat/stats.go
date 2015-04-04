@@ -36,7 +36,7 @@ func Stats(dbpath, gene string) {
         countMap := make(map[string]int)
         totalMap := make(map[string]int)
         err = s.Search(&SearchFields{Gene: g, All: true, EditStop: -1, JuncLen: -1, JuncEnd: -1}, func (key *treat.AlignmentKey, a *treat.Alignment) {
-            if a.HasMutation == uint64(0) {
+            if a.HasMutation == uint8(0) {
                 countMap[key.Sample]++
                 nonMutant++
             }

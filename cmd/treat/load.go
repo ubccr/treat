@@ -34,7 +34,7 @@ type LoadOptions struct {
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 
-func MergeCount(rec *gofasta.SeqRecord) (uint64) {
+func MergeCount(rec *gofasta.SeqRecord) (uint32) {
     mergeCount := 1
     matches := readsPattern.FindStringSubmatch(rec.Id)
     if len(matches) == 2 {
@@ -44,11 +44,11 @@ func MergeCount(rec *gofasta.SeqRecord) (uint64) {
         }
     }
 
-    return uint64(mergeCount)
+    return uint32(mergeCount)
 }
 
-func TotalReads(path string) (uint64) {
-    total := uint64(0)
+func TotalReads(path string) (uint32) {
+    total := uint32(0)
 
     f, err := os.Open(path)
     if err != nil {
@@ -98,10 +98,10 @@ func Load(dbpath string, options *LoadOptions) {
     tmpl.Primer5 = options.Primer5
 
     // Compute Edit Stop Site
-    tmpl.EditStop = uint64((tmpl.Len()-1)-tmpl.Primer3)
+    tmpl.EditStop = uint32((tmpl.Len()-1)-tmpl.Primer3)
     for j := int(tmpl.EditStop); j >= int(tmpl.Primer5); j-- {
         if tmpl.EditSite[0][j] != tmpl.EditSite[1][j] {
-            tmpl.EditStop = uint64((tmpl.Len()-1)-j)
+            tmpl.EditStop = uint32((tmpl.Len()-1)-j)
             break
         }
     }
@@ -112,7 +112,7 @@ func Load(dbpath string, options *LoadOptions) {
 
     // Normalize read counts
     if options.Norm == 0 {
-        total := uint64(0)
+        total := uint32(0)
         for _,path := range(options.FragmentPath) {
             total += TotalReads(path)
         }

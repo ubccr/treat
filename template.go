@@ -24,10 +24,10 @@ type AltRegion struct {
 
 type Template struct {
     Bases        string
-    EditStop     uint64
+    EditStop     uint32
     EditBase     rune
     EditSite     [][]BaseCountType
-    BaseIndex    []uint64
+    BaseIndex    []uint32
     AltRegion    []*AltRegion
     Grna         []*Grna
     Primer5      int
@@ -102,15 +102,15 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
         editSite[i+2] = a.EditSite
     }
 
-    bi := make([]uint64, len(editSite[0]))
+    bi := make([]uint32, len(editSite[0]))
 
-    index := uint64(0)
+    index := uint32(0)
     for i := range(editSite[0]) {
         max := editSite[0][i]
         if editSite[1][i] > max {
             max = editSite[1][i]
         }
-        index += uint64(max)
+        index += uint32(max)
         if i > 0 && i != len(editSite[0])-1 {
             index++
         }

@@ -23,14 +23,14 @@ type AlignmentKey struct {
 type Alignment struct {
     Key            *AlignmentKey   `json:"-"`
     Id             uint64          `json:"-"`
-    EditStop       uint64          `json:"edit_stop"`
-    JuncStart      uint64          `json:"junc_start"`
-    JuncEnd        uint64          `json:"junc_end"`
-    JuncLen        uint64          `json:"junc_len"`
-    ReadCount      uint64          `json:"read_count"`
+    EditStop       uint32          `json:"edit_stop"`
+    JuncStart      uint32          `json:"junc_start"`
+    JuncEnd        uint32          `json:"junc_end"`
+    JuncLen        uint32          `json:"junc_len"`
+    ReadCount      uint32          `json:"read_count"`
     Norm           float64         `json:"norm_count"`
-    HasMutation    uint64          `json:"has_mutation"`
-    AltEditing     uint64          `json:"alt_editing"`
+    HasMutation    uint8           `json:"has_mutation"`
+    AltEditing     uint8           `json:"alt_editing"`
     GrnaEdit       *big.Int        `json:"-"`
     GrnaJunc       *big.Int        `json:"-"`
     JuncSeq        string          `json:"-"`
@@ -71,7 +71,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         if aln1[ai] == '-' {
             fi++
             // insertion
-            alignment.HasMutation = uint64(1)
+            alignment.HasMutation = uint8(1)
             continue
         }
 
@@ -81,11 +81,11 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
 
             if excludeSnps && frag.Bases[fi] != template.Bases[ti] {
                 // SNP
-                alignment.HasMutation = uint64(1)
+                alignment.HasMutation = uint8(1)
             }
         } else {
             // deletion
-            alignment.HasMutation = uint64(1)
+            alignment.HasMutation = uint8(1)
         }
 
         for i := range(template.EditSite) {
@@ -112,7 +112,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
     for j := ti-template.Primer3; j >= template.Primer5; j-- {
         if m[0].Bit(j) == 0 {
             // Sites are numbered 3' -> 5', so we reverse the index (ti-j)
-            alignment.JuncStart = uint64(ti-j)
+            alignment.JuncStart = uint32(ti-j)
             isFullyEdited = false
             break
         }
@@ -120,7 +120,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
 
     // If fragment matches the fully edited template entirely. Set junc start to primer5
     if isFullyEdited {
-        alignment.JuncStart = uint64(ti-template.Primer5)
+        alignment.JuncStart = uint32(ti-template.Primer5)
     }
 
     // Compute alt editing
@@ -151,11 +151,11 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
         // If we're before the end of alt editing
         if (ti-shift) > template.AltRegion[alt].End {
             // flag which alt tempalte we matched
-            alignment.AltEditing = uint64(alt+1)
+            alignment.AltEditing = uint8(alt+1)
             // Shift Junc Start to first site that doesn't match FE template
             for j := shift; j >= 0; j-- {
                 if j <= (ti-template.Primer3) && m[0].Bit(j) == 0 {
-                    alignment.JuncStart = uint64(ti-j)
+                    alignment.JuncStart = uint32(ti-j)
                     break
                 }
             }
@@ -164,13 +164,13 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
 
     for j := template.Primer5; j <= ti-template.Primer3; j++ {
         if m[1].Bit(j) == 0 {
-            alignment.JuncEnd = uint64(ti-j)
+            alignment.JuncEnd = uint32(ti-j)
             break
         }
     }
 
     if alignment.JuncStart > 0 {
-        alignment.EditStop = alignment.JuncStart-uint64(1)
+        alignment.EditStop = alignment.JuncStart-uint32(1)
     }
 
     if alignment.JuncEnd > alignment.EditStop {
@@ -203,7 +203,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
 
     // check for gRNA coverage over the edit stop site
     for i, g := range(template.Grna) {
-        gstart := g.Start-uint64(11)
+        gstart := g.Start-uint32(11)
         gend := g.End
         sidx := ti-int(alignment.EditStop)
         start := template.BaseIndex[sidx]
@@ -236,53 +236,43 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
     return alignment
 }
 
-func (a *Alignment) UnmarshalBinary(data []byte) (error) {
-    var editVect, juncVect, normBits uint64
-
-    cols := []*uint64{
-        &a.EditStop,
-        &a.JuncStart,
-        &a.JuncEnd,
-        &a.JuncLen,
-        &a.ReadCount,
-        &a.HasMutation,
-        &a.AltEditing,
-        &editVect,
-        &juncVect,
-        &normBits}
-
-    for i, v := range(cols) {
-        *v = binary.BigEndian.Uint64(data[(i*8):((i*8)+8)])
-    }
+func (a *Alignment) UnmarshalBinary(buf []byte) (error) {
+    a.EditStop = binary.BigEndian.Uint32(buf[0:4])
+    a.JuncStart = binary.BigEndian.Uint32(buf[4:8])
+    a.JuncLen = binary.BigEndian.Uint32(buf[8:12])
+    a.ReadCount = binary.BigEndian.Uint32(buf[12:16])
+    a.HasMutation = buf[16]
+    a.AltEditing = buf[17]
+    editVect := binary.BigEndian.Uint64(buf[18:26])
+    juncVect := binary.BigEndian.Uint64(buf[26:34])
+    normBits := binary.BigEndian.Uint64(buf[34:42])
+    seqLen := binary.BigEndian.Uint32(buf[42:46])
 
     a.Norm = math.Float64frombits(normBits)
     a.GrnaEdit = big.NewInt(int64(editVect))
     a.GrnaJunc = big.NewInt(int64(juncVect))
-    a.JuncSeq = string(data[80:])
+
+    a.JuncSeq = string(buf[46:46+int(seqLen)])
 
     return nil
 }
 
 func (a *Alignment) MarshalBinary() ([]byte, error) {
-    buf := make([]byte, 80)
+    buf := make([]byte, 46)
 
-    cols := []uint64{
-        a.EditStop,
-        a.JuncStart,
-        a.JuncEnd,
-        a.JuncLen,
-        a.ReadCount,
-        a.HasMutation,
-        a.AltEditing,
-        a.GrnaEdit.Uint64(),
-        a.GrnaJunc.Uint64(),
-        math.Float64bits(a.Norm)}
+    binary.BigEndian.PutUint32(buf[0:4], a.EditStop)
+    binary.BigEndian.PutUint32(buf[4:8], a.JuncStart)
+    binary.BigEndian.PutUint32(buf[8:12], a.JuncLen)
+    binary.BigEndian.PutUint32(buf[12:16], a.ReadCount)
+    buf[16] = a.HasMutation
+    buf[17] = a.AltEditing
+    binary.BigEndian.PutUint64(buf[18:26], a.GrnaEdit.Uint64())
+    binary.BigEndian.PutUint64(buf[26:34], a.GrnaJunc.Uint64())
+    binary.BigEndian.PutUint64(buf[34:42], math.Float64bits(a.Norm))
 
-    for i, v := range(cols) {
-        binary.BigEndian.PutUint64(buf[(i*8):((i*8)+8)], v)
-    }
-
-    buf = append(buf, []byte(a.JuncSeq)...)
+    seq := []byte(a.JuncSeq)
+    binary.BigEndian.PutUint32(buf[42:46], uint32(len(seq)))
+    buf = append(buf, seq[0:]...)
 
     return buf, nil
 }

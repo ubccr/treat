@@ -31,11 +31,12 @@ var db *Storage
 var decoder *schema.Decoder
 var geneTemplates map[string]*treat.Template
 var geneSamples map[string][]string
-var maxEditStop map[string]uint64
-var maxJuncLen map[string]uint64
+var maxEditStop map[string]uint32
+var maxJuncLen map[string]uint32
+var maxJuncEnd map[string]uint32
 var genes []string
 var cache map[string][]byte
-var cacheEditStopTotals map[string]map[uint64]map[string]float64
+var cacheEditStopTotals map[string]map[uint32]map[string]float64
 
 func increment(x int) (int) {
     x++
@@ -61,7 +62,7 @@ func pctSearch(a *treat.Alignment, totals map[string]float64) (string) {
     return fmt.Sprintf("%.4f", d)
 }
 
-func pctEditStop(a *treat.Alignment, totals map[uint64]map[string]float64) (string) {
+func pctEditStop(a *treat.Alignment, totals map[uint32]map[string]float64) (string) {
     y := totals[a.EditStop][a.Key.Sample]
     if y == 0 {
         return "0.0"
@@ -126,7 +127,7 @@ func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (temp
     ti := 0
     for ai := 0; ai < n; ai++ {
         hilite := ""
-        if uint64(n-ti) == a.EditStop {
+        if uint32(n-ti) == a.EditStop {
             hilite = "hilite"
         }
 
@@ -159,7 +160,7 @@ func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (temp
             }
             cat := ""
             boldi := -1
-            if uint64(n-ti) > a.EditStop {
+            if uint32(n-ti) > a.EditStop {
                 if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
                     cat = "PE"
                     boldi = 1
@@ -186,7 +187,7 @@ func align(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (temp
                 }
             }
 
-            if uint64(n-ti) > a.EditStop && uint64(n-ti) <= a.JuncEnd {
+            if uint32(n-ti) > a.EditStop && uint32(n-ti) <= a.JuncEnd {
                 cat += " junction"
             }
 
@@ -588,7 +589,7 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
     }
 
     series := make([][]interface{}, n*n)
-    max := 0.0
+    max := float64(0.0)
     k := 0
     for i := 0; i < n; i++ {
         for j := 0; j < n; j++ {
@@ -621,7 +622,7 @@ func HeatMapJson(w http.ResponseWriter, r *http.Request) {
     w.Write(out)
 }
 
-func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uint64, f func(a *treat.Alignment) uint64) {
+func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uint32, f func(a *treat.Alignment) uint32) {
     if _, ok := cache[r.URL.String()]; ok {
         w.Write(cache[r.URL.String()])
         return
@@ -650,7 +651,7 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
         return
     }
 
-    samples := make(map[string]map[uint64]float64)
+    samples := make(map[string]map[uint32]float64)
 
     max := maxMap[fields.Gene]
     err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
@@ -659,7 +660,7 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
         }
 
         if _, ok := samples[key.Sample]; !ok {
-            samples[key.Sample] = make(map[uint64]float64)
+            samples[key.Sample] = make(map[uint32]float64)
         }
 
         val := f(a)
@@ -677,8 +678,8 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
     for k,v := range(samples) {
         x := make([]float64, max+1)
         for i := range(x) {
-            if _, ok := v[uint64(i)]; ok {
-                x[int(max)-i] = v[uint64(i)]
+            if _, ok := v[uint32(i)]; ok {
+                x[int(max)-i] = v[uint32(i)]
             }
         }
 
@@ -704,6 +705,8 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
         col := "edit_stop"
         if r.URL.Path == "/data/jl-hist" {
             col = "junc_len"
+        } else if r.URL.Path == "/data/je-hist" {
+            col = "junc_end"
         }
         csvout.Write([]string{col, "name", "norm_count"})
 
@@ -734,15 +737,21 @@ func highChartHist(w http.ResponseWriter, r *http.Request, maxMap map[string]uin
     //json.NewEncoder(w).Encode(data)
 }
 
-func JuncHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    highChartHist(w, r, maxJuncLen, func(a *treat.Alignment) uint64 {
+func JuncLenHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    highChartHist(w, r, maxJuncLen, func(a *treat.Alignment) uint32 {
         return a.JuncLen
     })
 }
 
 func EditHistogramHandler(w http.ResponseWriter, r *http.Request) {
-    highChartHist(w, r, maxEditStop, func(a *treat.Alignment) uint64 {
+    highChartHist(w, r, maxEditStop, func(a *treat.Alignment) uint32 {
         return a.EditStop
+    })
+}
+
+func JuncEndHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    highChartHist(w, r, maxJuncEnd, func(a *treat.Alignment) uint32 {
+        return a.JuncEnd
     })
 }
 
@@ -761,9 +770,10 @@ func Server(dbpath, tmpldir string, port int) {
         log.Fatal("No genes/templates found. Please load some data first")
     }
 
-    cacheEditStopTotals = make(map[string]map[uint64]map[string]float64)
-    maxEditStop = make(map[string]uint64)
-    maxJuncLen = make(map[string]uint64)
+    cacheEditStopTotals = make(map[string]map[uint32]map[string]float64)
+    maxEditStop = make(map[string]uint32)
+    maxJuncLen = make(map[string]uint32)
+    maxJuncEnd = make(map[string]uint32)
     geneSamples = make(map[string][]string)
     genes = make([]string, 0)
     for k := range(geneTemplates) {
@@ -782,7 +792,7 @@ func Server(dbpath, tmpldir string, port int) {
 
         log.Printf("Computing edit stop site cache for gene %s...", k)
         if _, ok := cacheEditStopTotals[k]; !ok {
-            cacheEditStopTotals[k] = make(map[uint64]map[string]float64)
+            cacheEditStopTotals[k] = make(map[uint32]map[string]float64)
         }
 
         fields := &SearchFields{Gene: k, EditStop: -1, JuncEnd: -1, JuncLen: -1}
@@ -797,6 +807,9 @@ func Server(dbpath, tmpldir string, port int) {
             }
             if a.JuncLen > maxJuncLen[k] {
                 maxJuncLen[k] = a.JuncLen
+            }
+            if a.JuncEnd > maxJuncEnd[k] {
+                maxJuncEnd[k] = a.JuncEnd
             }
         })
 
@@ -860,7 +873,8 @@ func Server(dbpath, tmpldir string, port int) {
     mx.HandleFunc("/search", SearchHandler)
     mx.HandleFunc("/show", ShowHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
-    mx.HandleFunc("/data/jl-hist", JuncHistogramHandler)
+    mx.HandleFunc("/data/jl-hist", JuncLenHistogramHandler)
+    mx.HandleFunc("/data/je-hist", JuncEndHistogramHandler)
     mx.HandleFunc("/data/heat", HeatMapJson)
     http.Handle("/", mx)
     http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

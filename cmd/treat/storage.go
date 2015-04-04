@@ -96,19 +96,19 @@ func (fields *SearchFields) HasMatch(a *treat.Alignment) bool {
         }
     }
 
-    if fields.EditStop >= 0 && uint64(fields.EditStop) != a.EditStop {
+    if fields.EditStop >= 0 && uint32(fields.EditStop) != a.EditStop {
         return false
     }
-    if fields.JuncLen >= 0 && uint64(fields.JuncLen) != a.JuncLen {
+    if fields.JuncLen >= 0 && uint32(fields.JuncLen) != a.JuncLen {
         return false
     }
-    if fields.JuncEnd >= 0 && uint64(fields.JuncEnd) != a.JuncEnd {
+    if fields.JuncEnd >= 0 && uint32(fields.JuncEnd) != a.JuncEnd {
         return false
     }
     if fields.HasAlt && a.AltEditing == 0 {
         return false
     }
-    if fields.AltRegion > 0 && uint64(fields.AltRegion) != a.AltEditing {
+    if fields.AltRegion > 0 && uint8(fields.AltRegion) != a.AltEditing {
         return false
     }
     gflag := false
