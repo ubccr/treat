@@ -239,40 +239,42 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
 func (a *Alignment) UnmarshalBinary(buf []byte) (error) {
     a.EditStop = binary.BigEndian.Uint32(buf[0:4])
     a.JuncStart = binary.BigEndian.Uint32(buf[4:8])
-    a.JuncLen = binary.BigEndian.Uint32(buf[8:12])
-    a.ReadCount = binary.BigEndian.Uint32(buf[12:16])
-    a.HasMutation = buf[16]
-    a.AltEditing = buf[17]
-    editVect := binary.BigEndian.Uint64(buf[18:26])
-    juncVect := binary.BigEndian.Uint64(buf[26:34])
-    normBits := binary.BigEndian.Uint64(buf[34:42])
-    seqLen := binary.BigEndian.Uint32(buf[42:46])
+    a.JuncEnd = binary.BigEndian.Uint32(buf[8:12])
+    a.JuncLen = binary.BigEndian.Uint32(buf[12:16])
+    a.ReadCount = binary.BigEndian.Uint32(buf[16:20])
+    a.HasMutation = buf[20]
+    a.AltEditing = buf[21]
+    editVect := binary.BigEndian.Uint64(buf[22:30])
+    juncVect := binary.BigEndian.Uint64(buf[30:38])
+    normBits := binary.BigEndian.Uint64(buf[38:46])
+    seqLen := binary.BigEndian.Uint32(buf[46:50])
 
     a.Norm = math.Float64frombits(normBits)
     a.GrnaEdit = big.NewInt(int64(editVect))
     a.GrnaJunc = big.NewInt(int64(juncVect))
 
-    a.JuncSeq = string(buf[46:46+int(seqLen)])
+    a.JuncSeq = string(buf[50:50+int(seqLen)])
 
     return nil
 }
 
 func (a *Alignment) MarshalBinary() ([]byte, error) {
-    buf := make([]byte, 46)
+    buf := make([]byte, 50)
 
     binary.BigEndian.PutUint32(buf[0:4], a.EditStop)
     binary.BigEndian.PutUint32(buf[4:8], a.JuncStart)
-    binary.BigEndian.PutUint32(buf[8:12], a.JuncLen)
-    binary.BigEndian.PutUint32(buf[12:16], a.ReadCount)
-    buf[16] = a.HasMutation
-    buf[17] = a.AltEditing
-    binary.BigEndian.PutUint64(buf[18:26], a.GrnaEdit.Uint64())
-    binary.BigEndian.PutUint64(buf[26:34], a.GrnaJunc.Uint64())
-    binary.BigEndian.PutUint64(buf[34:42], math.Float64bits(a.Norm))
+    binary.BigEndian.PutUint32(buf[8:12], a.JuncEnd)
+    binary.BigEndian.PutUint32(buf[12:16], a.JuncLen)
+    binary.BigEndian.PutUint32(buf[16:20], a.ReadCount)
+    buf[20] = a.HasMutation
+    buf[21] = a.AltEditing
+    binary.BigEndian.PutUint64(buf[22:30], a.GrnaEdit.Uint64())
+    binary.BigEndian.PutUint64(buf[30:38], a.GrnaJunc.Uint64())
+    binary.BigEndian.PutUint64(buf[38:46], math.Float64bits(a.Norm))
 
     seq := []byte(a.JuncSeq)
-    binary.BigEndian.PutUint32(buf[42:46], uint32(len(seq)))
-    buf = append(buf, seq[0:]...)
+    binary.BigEndian.PutUint32(buf[46:50], uint32(len(seq)))
+    buf = append(buf, seq...)
 
     return buf, nil
 }
