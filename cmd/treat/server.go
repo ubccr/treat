@@ -558,7 +558,6 @@ func NewSearchFields(url *url.URL) (*SearchFields, error) {
             fields.Gene = k
             break
         }
-        fields.Gene = "RPS12"
     }
 
     if vals.Get("edit_stop") == "" {
