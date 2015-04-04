@@ -478,6 +478,33 @@ func HeatHandler(w http.ResponseWriter, r *http.Request) {
     renderTemplate(w, "heat.html", vars)
 }
 
+func TemplateSummaryHandler(w http.ResponseWriter, r *http.Request) {
+    fields, err := NewSearchFields(r.URL)
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        errorHandler(w, r, http.StatusInternalServerError, "")
+        return
+    }
+
+    tmpl,ok := geneTemplates[fields.Gene]
+
+    if !ok {
+        log.Printf("Error fetching template for gene: %s", fields.Gene)
+        errorHandler(w, r, http.StatusInternalServerError, "No templates found for gene")
+        return
+    }
+
+    vars := map[string]interface{}{
+        "Template": tmpl,
+        "Fields": fields,
+        "Samples": geneSamples[fields.Gene],
+        "Pages": []int{10,50,100,1000},
+        "Genes": genes}
+
+    renderTemplate(w, "tmpl-report.html", vars)
+}
+
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
     fields, err := NewSearchFields(r.URL)
 
@@ -531,6 +558,7 @@ func NewSearchFields(url *url.URL) (*SearchFields, error) {
             fields.Gene = k
             break
         }
+        fields.Gene = "RPS12"
     }
 
     if vals.Get("edit_stop") == "" {
@@ -755,6 +783,89 @@ func JuncEndHistogramHandler(w http.ResponseWriter, r *http.Request) {
     })
 }
 
+func TemplateSummaryHistogramHandler(w http.ResponseWriter, r *http.Request) {
+    fields, err := NewSearchFields(r.URL)
+    fields.Limit = 0
+    fields.Offset = 0
+
+    if err != nil {
+        log.Printf("Error parsing get request: %s", err)
+        http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+        return
+    }
+
+    if len(fields.Gene) == 0 {
+        log.Printf("Missing required field gene")
+        http.Error(w, "Missing required field gene", http.StatusInternalServerError)
+        return
+    }
+
+    tmpl, ok := geneTemplates[fields.Gene]
+    if !ok {
+        log.Printf("Invalid gene: %s", fields.Gene)
+        http.Error(w, "Invalid gene", http.StatusInternalServerError)
+        return
+    }
+
+    samples := make(map[string]map[uint32]float64)
+    primer5 := (tmpl.Len()-2)-tmpl.Primer5
+
+    err = db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        ok := false
+        if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
+            ok = true
+        } else if a.EditStop == uint32(primer5) && a.JuncLen == 0 {
+            ok = true
+        }
+
+        if !ok {
+            return
+        }
+
+        if _, ok = samples[key.Sample]; !ok {
+            samples[key.Sample] = make(map[uint32]float64)
+        }
+
+        samples[key.Sample][a.EditStop] += a.Norm
+    })
+
+    if err != nil {
+        log.Printf("Fatal error: %s", err)
+        http.Error(w, "Fatal database error.", http.StatusInternalServerError)
+        return
+    }
+
+    fe := make([]map[string]interface{}, 0)
+    pe := make([]map[string]interface{}, 0)
+    for k,v := range(samples) {
+        x := []float64{v[tmpl.EditStop]}
+        y := []float64{v[uint32(primer5)]}
+
+        m := make(map[string]interface{})
+        m["data"] = x
+        m["name"] = k
+        fe = append(fe, m)
+
+        m = make(map[string]interface{})
+        m["data"] = y
+        m["name"] = k
+        pe = append(pe, m)
+    }
+
+    data := make(map[string]interface{})
+    data["pe"] = pe
+    data["fe"] = fe
+
+    out, err := json.Marshal(data)
+    if err != nil {
+        log.Printf("Error encoding data as json: %s", err)
+        http.Error(w, "Fatal system error", http.StatusInternalServerError)
+        return
+    }
+
+    w.Write(out)
+}
+
 func Server(dbpath, tmpldir string, port int) {
     dbx, err := NewStorage(dbpath)
     if err != nil {
@@ -872,9 +983,11 @@ func Server(dbpath, tmpldir string, port int) {
     mx.HandleFunc("/heat", HeatHandler)
     mx.HandleFunc("/search", SearchHandler)
     mx.HandleFunc("/show", ShowHandler)
+    mx.HandleFunc("/tmpl-report", TemplateSummaryHandler)
     mx.HandleFunc("/data/es-hist", EditHistogramHandler)
     mx.HandleFunc("/data/jl-hist", JuncLenHistogramHandler)
     mx.HandleFunc("/data/je-hist", JuncEndHistogramHandler)
+    mx.HandleFunc("/data/tmpl", TemplateSummaryHistogramHandler)
     mx.HandleFunc("/data/heat", HeatMapJson)
     http.Handle("/", mx)
     http.ListenAndServe(fmt.Sprintf(":%d", port), nil)

@@ -1,0 +1,95 @@
+{{define "content"}}
+
+<div class="page-header">
+  <h3><i class="fa fa-dashboard fa-lg"></i> Overview </h3>
+  <div>
+    <span class="label label-default"><i class="fa fa-align-justify fa-sm"></i> Alignments: {{ .Count }}</span>
+  </div>
+</div>
+
+{{template "search-form" .}}
+
+<div id="fe-chart" style="width:100%; height:400px;"></div>
+<div id="pe-chart" style="width:100%; height:400px;"></div>
+
+<script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+<script type="text/javascript">
+$(function () {
+
+    $("#search-spin").show();
+
+    $.getJSON('/data/tmpl?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
+
+    $('#fe-chart').highcharts({
+        chart: {
+            type:'column'
+        },
+        credits:{enabled:false},
+        exporting:{enabled:false},
+        title:{text:'Fully Edited'},
+        legend:{
+            enabled:true
+        },
+        tooltip:{
+            borderWidth:1,
+            formatter:function() {
+                return this.series.name+': <b>'+ this.x +' ('+ this.y + ')</b>';
+            }
+        },
+        yAxis:{
+            title:{text:''},
+            min: 0
+        },
+        xAxis:{
+            categories: ['FE']
+        },
+        plotOptions: {
+            column: {
+                pointPadding: 0.2,
+                borderWidth: 0
+            }
+        },
+        series: data.fe
+    });
+
+    $('#pe-chart').highcharts({
+        chart: {
+            type:'column'
+        },
+        credits:{enabled:false},
+        exporting:{enabled:false},
+        title:{text:'Pre Edited'},
+        legend:{
+            enabled:true
+        },
+        tooltip:{
+            borderWidth:1,
+            formatter:function() {
+                return this.series.name+': <b>'+ this.x +' ('+ this.y + ')</b>';
+            }
+        },
+        yAxis:{
+            title:{text:''},
+            min: 0
+        },
+        xAxis:{
+            categories: ['PE']
+        },
+        plotOptions: {
+            column: {
+                pointPadding: 0.2,
+                borderWidth: 0
+            }
+        },
+        series: data.pe
+    });
+
+    $("#search-spin").hide();
+
+    });
+
+});
+</script>
+
+
+{{end}}
