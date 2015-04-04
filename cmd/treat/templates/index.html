@@ -13,6 +13,8 @@
 <div id="edit-stop" style="width:100%; height:400px;"></div>
 <div><a class="btn btn-default btn-sm" href="/data/jl-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
 <div id="junction-len" style="width:100%; height:400px;"></div>
+<div><a class="btn btn-default btn-sm" href="/data/je-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
+<div id="junction-end" style="width:100%; height:400px;"></div>
 
 <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
 <script type="text/javascript">
@@ -114,6 +116,62 @@ $(function () {
                     events: {
                         click: function() {
                             location.href = '/search?junc_len='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
+                        }
+                    }
+                }
+            },
+            spline: {
+                marker: {
+                    enabled: false
+                }
+            },
+            column: {
+                groupPadding: 0,
+                pointPadding: 0,
+                borderWidth: 0.5
+            }
+        },
+        series: data.series
+    });
+    });
+
+    $.getJSON('/data/je-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
+
+    $('#junction-end').highcharts({
+        chart: {
+            type:'column',
+            zoomType: 'x'
+        },
+        credits:{enabled:false},
+        exporting:{enabled:false},
+        title:{text:'Junction End'},
+        legend:{
+            enabled:true
+        },
+        tooltip:{
+            borderWidth:1,
+            formatter:function() {
+                return this.series.name+': <b>'+ this.x +' ('+ this.y + ')</b>';
+            }
+        },
+        yAxis:{
+            title:{text:''},
+            max: data.ymax,
+            min: 0
+        },
+        xAxis:{
+            categories: data.cats,
+            labels: {
+                rotation: -90
+            }
+        },
+        plotOptions: {
+            series: {
+                cursor: 'pointer',
+                point: {
+                    events: {
+                        click: function() {
+                            location.href = '/search?junc_len={{.Fields.JuncLen}}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end='+this.category+'&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
                         }
                     }
                 }
