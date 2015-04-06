@@ -841,12 +841,12 @@ func TemplateSummaryHistogramHandler(w http.ResponseWriter, r *http.Request) {
         y := []float64{v[uint32(primer5)]}
 
         m := make(map[string]interface{})
-        m["data"] = x
+        m["data"] = y
         m["name"] = k
         fe = append(fe, m)
 
         m = make(map[string]interface{})
-        m["data"] = y
+        m["data"] = x
         m["name"] = k
         pe = append(pe, m)
     }
