@@ -33,6 +33,7 @@ func main() {
                 &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
                 &cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
                 &cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
+                &cli.BoolFlag{Name: "fastx", Usage: "Parse FASTX/Collpaser header lines"},
             },
             Action: func(c *cli.Context) {
                 Load(c.GlobalString("db"), &LoadOptions{
@@ -46,6 +47,7 @@ func main() {
                     EditBase:     c.String("base"),
                     SkipFrags:    c.Bool("skip-fragments"),
                     ExcludeSnps:  c.Bool("exclude-snps"),
+                    Fastx:        c.Bool("fastx"),
                 })
             },
         },

@@ -30,11 +30,26 @@ type LoadOptions struct {
     GrnaPath      string
     SkipFrags     bool
     ExcludeSnps   bool
+    Fastx         bool
 }
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
+var fastxPattern = regexp.MustCompile(`^\d+\-(\d+)$`)
 
-func MergeCount(rec *gofasta.SeqRecord) (uint32) {
+func MergeCount(rec *gofasta.SeqRecord, options *LoadOptions) (uint32) {
+    if options.Fastx {
+        matches := fastxPattern.FindStringSubmatch(rec.Id)
+        if len(matches) == 2 {
+            count, err := strconv.Atoi(matches[1])
+            if err != nil {
+                log.Fatalf("Invalid FASTX header line found: %s", rec.Id)
+            }
+
+            return uint32(count)
+        }
+        log.Fatalf("Invalid FASTX header line found: %s", rec.Id)
+    }
+
     mergeCount := 1
     matches := readsPattern.FindStringSubmatch(rec.Id)
     if len(matches) == 2 {
@@ -47,7 +62,7 @@ func MergeCount(rec *gofasta.SeqRecord) (uint32) {
     return uint32(mergeCount)
 }
 
-func TotalReads(path string) (uint32) {
+func TotalReads(path string, options *LoadOptions) (uint32) {
     total := uint32(0)
 
     f, err := os.Open(path)
@@ -57,7 +72,7 @@ func TotalReads(path string) (uint32) {
     defer f.Close()
 
     for rec := range gofasta.SimpleParser(f) {
-        total += MergeCount(rec)
+        total += MergeCount(rec, options)
     }
 
     return total
@@ -114,7 +129,7 @@ func Load(dbpath string, options *LoadOptions) {
     if options.Norm == 0 {
         total := uint32(0)
         for _,path := range(options.FragmentPath) {
-            total += TotalReads(path)
+            total += TotalReads(path, options)
         }
         options.Norm = float64(total) / float64(len(options.FragmentPath))
         log.Printf("Total reads across all samples: %d", total)
@@ -157,7 +172,7 @@ func Load(dbpath string, options *LoadOptions) {
 
     for _,path := range(options.FragmentPath) {
         log.Printf("Computing total read count for file: %s", path)
-        total := TotalReads(path)
+        total := TotalReads(path, options)
         scale := options.Norm / float64(total)
         log.Printf("Total reads for file: %d", total)
         log.Printf("Normalized scaling factor: %.4f", scale)
@@ -224,7 +239,7 @@ func Load(dbpath string, options *LoadOptions) {
                 fragBucket = tx.Bucket([]byte(BUCKET_FRAGMENTS)).Bucket(key)
             }
 
-            mergeCount := MergeCount(rec)
+            mergeCount := MergeCount(rec, options)
             norm := scale * float64(mergeCount)
 
             frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, norm, rune(options.EditBase[0]))
