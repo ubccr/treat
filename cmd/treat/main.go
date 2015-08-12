@@ -34,6 +34,7 @@ func main() {
                 &cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
                 &cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
                 &cli.BoolFlag{Name: "fastx", Usage: "Parse FASTX/Collpaser header lines"},
+                &cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
             },
             Action: func(c *cli.Context) {
                 Load(c.GlobalString("db"), &LoadOptions{
@@ -48,6 +49,7 @@ func main() {
                     SkipFrags:    c.Bool("skip-fragments"),
                     ExcludeSnps:  c.Bool("exclude-snps"),
                     Fastx:        c.Bool("fastx"),
+                    Force:        c.Bool("force"),
                 })
             },
         },

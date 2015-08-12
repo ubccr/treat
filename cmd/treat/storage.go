@@ -14,12 +14,16 @@ import (
     "github.com/ubccr/treat"
 )
 
-const BUCKET_ALIGNMENTS = "alignments"
-const BUCKET_TEMPLATES  = "templates"
-const BUCKET_FRAGMENTS  = "fragments"
+const BUCKET_ALIGNMENTS   = "alignments"
+const BUCKET_TEMPLATES    = "templates"
+const BUCKET_FRAGMENTS    = "fragments"
+const BUCKET_META         = "meta"
+const STORAGE_VERSION_KEY = "version"
+const STORAGE_VERSION     = 0.1
 
 type Storage struct {
     DB         *bolt.DB
+    version    float64
 }
 
 type SearchFields struct {
@@ -145,7 +149,28 @@ func NewStorage(dbpath string) (*Storage, error) {
         return nil, fmt.Errorf("Failed to open database %s - %s", dbpath, err)
     }
 
-    return &Storage{DB: db}, nil
+    storage := &Storage{DB: db}
+
+    err = db.View(func(tx *bolt.Tx) error {
+        b := tx.Bucket([]byte(BUCKET_META))
+        if b == nil {
+            return fmt.Errorf("Invalid db file. missing treat metadata")
+        }
+
+        versionBytes := b.Get([]byte(STORAGE_VERSION_KEY))
+        if versionBytes == nil {
+            return fmt.Errorf("Invalid db file. missing treat version")
+        }
+        storage.version = math.Float64frombits(binary.BigEndian.Uint64(versionBytes))
+
+        return nil
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return storage, nil
 }
 
 func (s *Storage) Search(fields *SearchFields, f func(k *treat.AlignmentKey, a *treat.Alignment)) (error) {

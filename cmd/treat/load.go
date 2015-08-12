@@ -8,6 +8,7 @@ import (
     "os"
     "log"
     "strings"
+    "math"
     "fmt"
     "regexp"
     "strconv"
@@ -31,6 +32,7 @@ type LoadOptions struct {
     SkipFrags     bool
     ExcludeSnps   bool
     Fastx         bool
+    Force         bool
 }
 
 var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
@@ -152,7 +154,27 @@ func Load(dbpath string, options *LoadOptions) {
             return err
         }
 
-        b, err := tx.CreateBucketIfNotExists([]byte(BUCKET_TEMPLATES))
+        b, err := tx.CreateBucketIfNotExists([]byte(BUCKET_META))
+        if err != nil {
+            return err
+        }
+
+        versionBytes := b.Get([]byte(STORAGE_VERSION_KEY))
+        if versionBytes != nil {
+            version := math.Float64frombits(binary.BigEndian.Uint64(versionBytes))
+            if version != STORAGE_VERSION {
+                return fmt.Errorf("treat version mismatch. Must re-load data using same version of treat. %.1f != %.1f", version, STORAGE_VERSION)
+            }
+        }
+
+        vbuf := make([]byte, 8)
+        binary.BigEndian.PutUint64(vbuf, math.Float64bits(STORAGE_VERSION))
+        err = b.Put([]byte(STORAGE_VERSION_KEY), vbuf)
+        if err != nil {
+            return err
+        }
+
+        b, err = tx.CreateBucketIfNotExists([]byte(BUCKET_TEMPLATES))
         if err != nil {
             return err
         }
@@ -197,13 +219,39 @@ func Load(dbpath string, options *LoadOptions) {
             b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
             _, err := b.CreateBucket(key)
             if err != nil {
-                return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
+                if !options.Force {
+                    return fmt.Errorf("Data already exists for gene %s and sample %s. Use --force to force delete data and reload (error: %s)", akey.Gene, akey.Sample, err)
+                }
+
+                log.Printf("Deleting existing alignment data for gene %s and sample %s", akey.Gene, akey.Sample)
+                err = b.DeleteBucket(key)
+                if err != nil {
+                    return fmt.Errorf("database error. failed to delete bucket: %s", err)
+                }
+
+                _, err := b.CreateBucket(key)
+                if err != nil {
+                    return fmt.Errorf("database error. failed to create bucket: %s", err)
+                }
             }
 
             b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
             _, err = b.CreateBucket(key)
             if err != nil {
-                return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
+                if !options.Force {
+                    return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
+                }
+
+                log.Printf("Deleting existing fragment data for gene %s and sample %s", akey.Gene, akey.Sample)
+                err = b.DeleteBucket(key)
+                if err != nil {
+                    return fmt.Errorf("database error. failed to delete bucket: %s", err)
+                }
+
+                _, err := b.CreateBucket(key)
+                if err != nil {
+                    return fmt.Errorf("database error. failed to create bucket: %s", err)
+                }
             }
 
             return nil
