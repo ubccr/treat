@@ -25,7 +25,6 @@ func main() {
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "gene, g", Usage: "Gene Name"},
                 &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
-                &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
                 &cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
                 &cli.IntFlag{Name: "primer5", Value: 0, Usage: "5' primer region"},
                 &cli.IntFlag{Name: "primer3", Value: 0, Usage: "3' primer region"},
@@ -44,7 +43,6 @@ func main() {
                     Primer5:      c.Int("primer5"),
                     Primer3:      c.Int("primer3"),
                     Norm:         c.Float64("normalize"),
-                    GrnaPath:     c.String("grna"),
                     EditBase:     c.String("base"),
                     SkipFrags:    c.Bool("skip-fragments"),
                     ExcludeSnps:  c.Bool("exclude-snps"),
@@ -58,7 +56,6 @@ func main() {
             Usage: "Align one or more fragments",
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
-                &cli.StringFlag{Name: "grna", Usage: "Path to grna file"},
                 &cli.StringFlag{Name: "fragment, f", Usage: "Path to fragment FASTA file"},
                 &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
                 &cli.StringFlag{Name: "s1, 1", Usage: "first sequence to align"},
@@ -72,7 +69,6 @@ func main() {
                     FragmentPath: c.String("fragment"),
                     Primer5:      c.Int("primer5"),
                     Primer3:      c.Int("primer3"),
-                    GrnaPath:     c.String("grna"),
                     EditBase:     c.String("base"),
                     S1:           c.String("s1"),
                     S2:           c.String("s2"),
@@ -137,8 +133,6 @@ func main() {
                 &cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
                 &cli.BoolFlag{Name: "csv", Usage: "Output in csv format"},
                 &cli.BoolFlag{Name: "no-header, x", Usage: "Exclude header from output"},
-                &cli.IntSliceFlag{Name: "grna-edit", Value: &cli.IntSlice{}, Usage: "gRNA over edit stop"},
-                &cli.IntSliceFlag{Name: "grna-junc", Value: &cli.IntSlice{}, Usage: "gRNA over junc region"},
             },
             Action: func(c *cli.Context) {
                 Search(c.GlobalString("db"), &SearchFields{
@@ -153,8 +147,6 @@ func main() {
                     HasMutation:  c.Bool("has-mutation"),
                     HasAlt:       c.Bool("has-alt"),
                     All:          c.Bool("all"),
-                    GrnaEdit:     c.IntSlice("grna-edit"),
-                    GrnaJunc:     c.IntSlice("grna-junc"),
                 }, c.Bool("csv"), c.Bool("no-header"))
             },
         }}

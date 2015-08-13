@@ -29,7 +29,6 @@ type Template struct {
     EditSite     [][]BaseCountType
     BaseIndex    []uint32
     AltRegion    []*AltRegion
-    Grna         []*Grna
     Primer5      int
     Primer3      int
 }

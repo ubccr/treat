@@ -18,12 +18,6 @@
     {{ if eq .Alignment.HasMutation 1 }}
     <span class="label label-danger"><i class="fa fa-warning fa-sm"></i> Mutation</span>
     {{ end }}
-    {{ if gt .Alignment.GrnaEdit.Uint64 0 }}
-        <span class="label label-success"><i class="fa fa-edit fa-sm"></i> {{ .Alignment.GrnaEditString }}</span>
-    {{ end }}
-    {{ if gt .Alignment.GrnaJunc.Uint64 0 }}
-        <span class="label label-success"><i class="fa fa-link fa-sm"></i> {{ .Alignment.GrnaJuncString }}</span>
-    {{ end }}
     </div>
 </div>
 

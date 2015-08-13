@@ -17,15 +17,6 @@
     </select>
   </div>
   <div class="form-group">
-    <select name="grna_edit" class="selectpicker show-tick" title="gRNA..">
-        <option></option>
-        {{ range $i, $g := .Template.Grna }}
-        {{ $check := $.Fields.HasGrnaEdit $i }}
-            <option{{if $check }} selected="selected"{{end}} value="{{ $i }}">{{ $g.Name }} ({{$g.Start}}-{{$g.End}})</option>
-        {{ end }}
-    </select>
-  </div>
-  <div class="form-group">
     <select name="alt" class="selectpicker show-tick" title="Alts..">
         <option></option>
         {{ range $i, $a := .Template.AltRegion }}

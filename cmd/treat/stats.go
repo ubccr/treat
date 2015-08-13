@@ -60,7 +60,6 @@ func Stats(dbpath, gene string) {
         fmt.Printf("%20s%11d\n", "Edit Stop:", tmpl.EditStop)
         fmt.Printf("%20s%11s\n", "Edit Base:", string(tmpl.EditBase))
         fmt.Printf("%20s%11d\n", "Alt Templates:", len(tmpl.AltRegion))
-        fmt.Printf("%20s%11d\n", "Guide RNAs:", len(tmpl.Grna))
         fmt.Println(strings.Repeat("-", 80))
         fmt.Printf("%-25s%11s%15s%8s%11s%8s\n", "Sample", "Total", "Non-Mutant", "%", "Mutant", "%")
         fmt.Println(strings.Repeat("-", 80))

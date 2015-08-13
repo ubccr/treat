@@ -28,7 +28,6 @@ type LoadOptions struct {
     Primer3       int
     Replicate     int
     Norm          float64
-    GrnaPath      string
     SkipFrags     bool
     ExcludeSnps   bool
     Fastx         bool
@@ -96,21 +95,11 @@ func Load(dbpath string, options *LoadOptions) {
 
     options.Gene = strings.Replace(options.Gene, " ", "_", -1)
 
-    grna := make([]*treat.Grna, 0)
-    if len(options.GrnaPath) != 0 {
-        g, err := treat.GrnaFromFile(options.GrnaPath)
-        if err != nil {
-            log.Fatalln("ERROR parsing grna file: %s", err)
-        }
-        grna = g
-    }
-
     tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
     if err != nil {
         log.Fatalln(err)
     }
 
-    tmpl.Grna = grna
     tmpl.Primer3 = options.Primer3
     tmpl.Primer5 = options.Primer5
 

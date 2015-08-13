@@ -9,9 +9,9 @@
 {{template "search-form" .}}
 
 <ul class="pagination pagination-sm">
-<li><a href="/search?page={{ decrement .Page }}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Previous</a></li>
-<li><a href="/search?page={{ increment .Page }}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Next</a></li>
-<li><a href="/search?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></li>
+<li><a href="/search?page={{ decrement .Page }}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Previous</a></li>
+<li><a href="/search?page={{ increment .Page }}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Next</a></li>
+<li><a href="/search?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></li>
 </ul>
 
 <div class="table-responsive">
@@ -29,7 +29,6 @@
       <th class="text-right">Editing Stop</th>
       <th class="text-right">Junction End</th>
       <th class="text-right">Junction Len</th>
-      <th class="text-right">Edit gRNAs</th>
       <th class="text-right">Flags</th>
       <th>Junction Sequence</th>
     </tr>
@@ -48,7 +47,6 @@
       <td class="text-right">{{ $a.EditStop }}</td>
       <td class="text-right">{{ $a.JuncEnd }}</td>
       <td class="text-right">{{ $a.JuncLen }}</td>
-      <td class="text-right">{{ grna $a }}</td>
       <td class="text-center">
         {{ if gt $a.AltEditing 0 }}
         <span class="label label-warning"><i class="fa fa-magic fa-sm"></i> A{{ $a.AltEditing }}</span>

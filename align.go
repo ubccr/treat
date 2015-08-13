@@ -31,8 +31,6 @@ type Alignment struct {
     Norm           float64         `json:"norm_count"`
     HasMutation    uint8           `json:"has_mutation"`
     AltEditing     uint8           `json:"alt_editing"`
-    GrnaEdit       *big.Int        `json:"-"`
-    GrnaJunc       *big.Int        `json:"-"`
     JuncSeq        string          `json:"-"`
 }
 
@@ -197,42 +195,6 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) (*Alignm
     alignment.ReadCount = frag.ReadCount
     alignment.Norm = frag.Norm
 
-
-    editVect := big.NewInt(int64(0))
-    juncVect := big.NewInt(int64(0))
-
-    // check for gRNA coverage over the edit stop site
-    for i, g := range(template.Grna) {
-        gstart := g.Start-uint32(11)
-        gend := g.End
-        sidx := ti-int(alignment.EditStop)
-        start := template.BaseIndex[sidx]
-        end := template.BaseIndex[sidx]
-        if ( (gend >= end && gstart <= start) ||
-                (end > gend && start < gstart) ||
-                (end <= gstart && end > gend) ||
-                (start >= gend && start < gstart) ) {
-            editVect.SetBit(editVect, i, 1)
-        }
-    }
-
-    // check for gRNA coverage over the junction region
-    for i, g := range(template.Grna) {
-        gstart := g.Start
-        gend := g.End
-        start := template.BaseIndex[ti-int(alignment.JuncStart)]
-        end := template.BaseIndex[ti-int(alignment.JuncEnd)]
-        if ( (gend >= end && gstart <= start) ||
-                (end > gend && start < gstart) ||
-                (end <= gstart && end > gend) ||
-                (start >= gend && start < gstart) ) {
-            juncVect.SetBit(juncVect, i, 1)
-        }
-    }
-
-    alignment.GrnaEdit = editVect
-    alignment.GrnaJunc = juncVect
-
     return alignment
 }
 
@@ -244,14 +206,10 @@ func (a *Alignment) UnmarshalBinary(buf []byte) (error) {
     a.ReadCount = binary.BigEndian.Uint32(buf[16:20])
     a.HasMutation = buf[20]
     a.AltEditing = buf[21]
-    editVect := binary.BigEndian.Uint64(buf[22:30])
-    juncVect := binary.BigEndian.Uint64(buf[30:38])
     normBits := binary.BigEndian.Uint64(buf[38:46])
     seqLen := binary.BigEndian.Uint32(buf[46:50])
 
     a.Norm = math.Float64frombits(normBits)
-    a.GrnaEdit = big.NewInt(int64(editVect))
-    a.GrnaJunc = big.NewInt(int64(juncVect))
 
     a.JuncSeq = string(buf[50:50+int(seqLen)])
 
@@ -268,8 +226,6 @@ func (a *Alignment) MarshalBinary() ([]byte, error) {
     binary.BigEndian.PutUint32(buf[16:20], a.ReadCount)
     buf[20] = a.HasMutation
     buf[21] = a.AltEditing
-    binary.BigEndian.PutUint64(buf[22:30], a.GrnaEdit.Uint64())
-    binary.BigEndian.PutUint64(buf[30:38], a.GrnaJunc.Uint64())
     binary.BigEndian.PutUint64(buf[38:46], math.Float64bits(a.Norm))
 
     seq := []byte(a.JuncSeq)
@@ -277,26 +233,6 @@ func (a *Alignment) MarshalBinary() ([]byte, error) {
     buf = append(buf, seq...)
 
     return buf, nil
-}
-
-func (a *Alignment) GrnaEditString() (string) {
-    s := ""
-    for i := 0; i < a.GrnaEdit.BitLen(); i++ {
-        if a.GrnaEdit.Bit(i) == 1 {
-            s += fmt.Sprintf("gRNA%d;", i+1)
-        }
-    }
-    return s
-}
-
-func (a *Alignment) GrnaJuncString() (string) {
-    s := ""
-    for i := 0; i < a.GrnaJunc.BitLen(); i++ {
-        if a.GrnaJunc.Bit(i) == 1 {
-            s += fmt.Sprintf("gRNA%d;", i+1)
-        }
-    }
-    return s
 }
 
 func (a *Alignment) SimpleAlign(f1, f2 *Fragment) (string, string) {

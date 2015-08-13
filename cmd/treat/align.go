@@ -18,7 +18,6 @@ type AlignOptions struct {
     FragmentPath  string
     Primer5       int
     Primer3       int
-    GrnaPath      string
     EditBase      string
     S1            string
     S2            string
@@ -71,18 +70,6 @@ func Align(options *AlignOptions) {
             log.Fatal(err)
         }
         tmpl = t
-
-        grna := make([]*treat.Grna, 0)
-        if len(options.GrnaPath) != 0 {
-            g, err := treat.GrnaFromFile(options.GrnaPath)
-            if err != nil {
-                log.Fatalf("ERROR parsing grna file: %s", err)
-            }
-            grna = g
-        }
-
-
-        tmpl.Grna = grna
         tmpl.Primer3 = options.Primer3
         tmpl.Primer5 = options.Primer5
     }

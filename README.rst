@@ -156,9 +156,9 @@ A new database file has been created called "treat.db". We can now search the
 data using the TREAT command line tool::
 
   $ treat --db treat.db search -g RPS12 -l 10 --csv
-  gene,sample,norm,read_count,alt_editing,has_mutation,edit_stop,junc_end,junc_len,grna,junc_seq
-  RPS12,sample-1,10.0000,10,0,0,137,143,6,,ATATAATATTTTTG
-  RPS12,sample-1,9.0000,9,0,0,95,123,28,,TTCGGTATTTGTTTTATGTTATTATATGAGTCCGCGATTGCCCAGCTCTG
+  gene,sample,norm,read_count,alt_editing,has_mutation,edit_stop,junc_end,junc_len,junc_seq
+  RPS12,sample-1,10.0000,10,0,0,137,143,6,ATATAATATTTTTG
+  RPS12,sample-1,9.0000,9,0,0,95,123,28,TTCGGTATTTGTTTTATGTTATTATATGAGTCCGCGATTGCCCAGCTCTG
 
 Search options are described below::
 
@@ -183,8 +183,6 @@ Search options are described below::
      --has-alt                        Has Alternative Editing
      --csv                            Output in csv format
      --no-header, -x                  Exclude header from output
-     --grna-edit                      gRNA over edit stop
-     --grna-junc                      gRNA over junc region
 
 Start the TREAT server and view the sequences in a web browser::
 

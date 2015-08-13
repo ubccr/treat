@@ -9,11 +9,11 @@
 
 {{template "search-form" .}}
 
-<div><a class="btn btn-default btn-sm" href="/data/es-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
+<div><a class="btn btn-default btn-sm" href="/data/es-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
 <div id="edit-stop" style="width:100%; height:400px;"></div>
-<div><a class="btn btn-default btn-sm" href="/data/jl-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
+<div><a class="btn btn-default btn-sm" href="/data/jl-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
 <div id="junction-len" style="width:100%; height:400px;"></div>
-<div><a class="btn btn-default btn-sm" href="/data/je-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
+<div><a class="btn btn-default btn-sm" href="/data/je-hist?export=1&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}">Export</a></div>
 <div id="junction-end" style="width:100%; height:400px;"></div>
 
 <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
@@ -23,7 +23,7 @@ $(function () {
 
     $("#search-spin").show();
 
-    $.getJSON('/data/es-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
+    $.getJSON('/data/es-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
 
     $('#edit-stop').highcharts({
         chart: {
@@ -59,7 +59,7 @@ $(function () {
                 point: {
                     events: {
                         click: function() {
-                            location.href = '/search?edit_stop='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;junc_len={{.Fields.JuncLen}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
+                            location.href = '/search?edit_stop='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;junc_len={{.Fields.JuncLen}}&amp;sample='+encodeURIComponent(this.series.name)+'&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
                         }
                     }
                 }
@@ -80,7 +80,7 @@ $(function () {
 
     });
 
-    $.getJSON('/data/jl-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
+    $.getJSON('/data/jl-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
 
     $('#junction-len').highcharts({
         chart: {
@@ -116,7 +116,7 @@ $(function () {
                 point: {
                     events: {
                         click: function() {
-                            location.href = '/search?junc_len='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
+                            location.href = '/search?junc_len='+this.category+'&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
                         }
                     }
                 }
@@ -136,7 +136,7 @@ $(function () {
     });
     });
 
-    $.getJSON('/data/je-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
+    $.getJSON('/data/je-hist?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function (data) {
 
     $('#junction-end').highcharts({
         chart: {
@@ -172,7 +172,7 @@ $(function () {
                 point: {
                     events: {
                         click: function() {
-                            location.href = '/search?junc_len={{.Fields.JuncLen}}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end='+this.category+'&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'{{range $g := $.Fields.GrnaEdit}}&amp;grna_edit={{$g|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
+                            location.href = '/search?junc_len={{.Fields.JuncLen}}&amp;gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end='+this.category+'&amp;edit_stop={{.Fields.EditStop}}&amp;sample='+encodeURIComponent(this.series.name)+'&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}';
                         }
                     }
                 }

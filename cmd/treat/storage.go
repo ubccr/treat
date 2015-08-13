@@ -37,8 +37,6 @@ type SearchFields struct {
     HasMutation   bool        `schema:"has_mutation"`
     HasAlt        bool        `schema:"has_alt"`
     All           bool        `schema:"all"`
-    GrnaEdit      []int       `schema:"grna_edit"`
-    GrnaJunc      []int       `schema:"grna_junc"`
     AltRegion     int         `schema:"alt"`
 }
 
@@ -53,16 +51,6 @@ func (s ByReadCount) Less(i, j int) bool { return s.AlignmentResults[i].ReadCoun
 func (fields *SearchFields) HasSample(val string) bool {
     for _, s := range(fields.Sample) {
         if s == val  {
-            return true
-        }
-    }
-
-    return false
-}
-
-func (fields *SearchFields) HasGrnaEdit(val int) bool {
-    for _, i := range(fields.GrnaEdit) {
-        if i == val  {
             return true
         }
     }
@@ -113,20 +101,6 @@ func (fields *SearchFields) HasMatch(a *treat.Alignment) bool {
         return false
     }
     if fields.AltRegion > 0 && uint8(fields.AltRegion) != a.AltEditing {
-        return false
-    }
-    gflag := false
-    for _, g := range(fields.GrnaEdit) {
-        if a.GrnaEdit.Bit(g) == 0 {
-            gflag = true
-        }
-    }
-    for _, g := range(fields.GrnaJunc) {
-        if a.GrnaJunc.Bit(g) == 0 {
-            gflag = true
-        }
-    }
-    if gflag {
         return false
     }
 

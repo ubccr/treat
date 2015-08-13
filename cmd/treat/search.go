@@ -36,7 +36,6 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
             "edit_stop",
             "junc_end",
             "junc_len",
-            "grna",
             "junc_seq"})
     }
 
@@ -56,7 +55,6 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
             fmt.Sprintf("%d", a.EditStop),
             fmt.Sprintf("%d", a.JuncEnd),
             fmt.Sprintf("%d", a.JuncLen),
-            a.GrnaEditString(),
             a.JuncSeq})
 
         csvout.Flush()

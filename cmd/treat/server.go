@@ -73,7 +73,6 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         "juncseq": juncseqFunc,
         "pctSearch": pctSearchFunc,
         "pctEditStop": pctEditStopFunc,
-        "grna": grnaFunc,
         "align": alignFunc,
     }
 
@@ -419,16 +418,6 @@ func pctEditStopFunc(a *treat.Alignment, totals map[uint32]map[string]float64) (
 
     d := (a.Norm / y)*100
     return fmt.Sprintf("%.4f", d)
-}
-
-func grnaFunc(a *treat.Alignment) (template.HTML) {
-    html := ""
-    for i := 0; i < a.GrnaEdit.BitLen(); i++ {
-        if a.GrnaEdit.Bit(i) == 1 {
-            html += `<span class="label label-success">`+fmt.Sprintf("gRNA%d", i+1)+`</span> `
-        }
-    }
-    return template.HTML(html)
 }
 
 func juncseqFunc(val string) (template.HTML) {
