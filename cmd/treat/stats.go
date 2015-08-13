@@ -23,7 +23,7 @@ func Stats(dbpath, gene string) {
     fmt.Printf("db path: %s\n", dbpath)
     fmt.Printf("version: %.1f\n\n", s.version)
 
-    geneTemplates, err = s.TemplateMap()
+    geneTemplates, err := s.TemplateMap()
     if err != nil {
         log.Fatal(err)
     }
