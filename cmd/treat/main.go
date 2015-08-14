@@ -6,6 +6,8 @@ package main
 
 import (
     "os"
+    "log"
+    "path/filepath"
     "github.com/codegangsta/cli"
 )
 
@@ -29,6 +31,7 @@ func main() {
                 &cli.StringFlag{Name: "primer5", Usage: "5' primer sequence"},
                 &cli.StringFlag{Name: "primer3", Usage: "3' primer sequence"},
                 &cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
+                &cli.StringFlag{Name: "dir", Usage: "Directory of fragment FASTA files"},
                 &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
                 &cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
                 &cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
@@ -36,10 +39,30 @@ func main() {
                 &cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
             },
             Action: func(c *cli.Context) {
+                dir := c.String("dir")
+                fragPaths := c.StringSlice("fragment")
+                if fragPaths != nil && len(fragPaths) > 0 && len(dir) > 0 {
+                    log.Fatalln("ERROR Use --fragment or --dir not both.")
+                }
+
+                if len(dir) > 0 {
+                    fa, err := filepath.Glob(dir + "/*.fasta")
+                    fasta, err := filepath.Glob(dir + "/*.fa")
+                    if err != nil {
+                        log.Fatalf("ERROR Failed to find *.fa(sta) files in dir: %s", dir)
+                    }
+                    fgmts := append(fa, fasta...)
+
+                    for _, f := range fgmts {
+                        abs, _ := filepath.Abs(f)
+                        fragPaths = append(fragPaths, abs)
+                    }
+                }
+
                 Load(c.GlobalString("db"), &LoadOptions{
                     Gene:         c.String("gene"),
                     TemplatePath: c.String("template"),
-                    FragmentPath: c.StringSlice("fragment"),
+                    FragmentPath: fragPaths,
                     Primer5:      c.String("primer5"),
                     Primer3:      c.String("primer3"),
                     Norm:         c.Float64("normalize"),
