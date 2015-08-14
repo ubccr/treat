@@ -16,8 +16,8 @@ import (
 type AlignOptions struct {
     TemplatePath  string
     FragmentPath  string
-    Primer5       int
-    Primer3       int
+    Primer5       string
+    Primer3       string
     EditBase      string
     S1            string
     S2            string
@@ -70,8 +70,20 @@ func Align(options *AlignOptions) {
             log.Fatal(err)
         }
         tmpl = t
-        tmpl.Primer3 = options.Primer3
-        tmpl.Primer5 = options.Primer5
+
+        if len(options.Primer3) > 0 {
+            err = tmpl.SetPrimer3(options.Primer3)
+            if err != nil {
+                log.Fatal(err)
+            }
+        }
+
+        if len(options.Primer5) > 0 {
+            err = tmpl.SetPrimer5(options.Primer5)
+            if err != nil {
+                log.Fatal(err)
+            }
+        }
     }
 
     f, err := os.Open(options.FragmentPath)

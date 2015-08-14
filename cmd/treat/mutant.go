@@ -53,8 +53,19 @@ func Mutant(options *AlignOptions, fragments []string, n int) {
         log.Fatalln(err)
     }
 
-    tmpl.Primer3 = options.Primer3
-    tmpl.Primer5 = options.Primer5
+    if len(options.Primer3) > 0 {
+        err = tmpl.SetPrimer3(options.Primer3)
+        if err != nil {
+            log.Fatalln(err)
+        }
+    }
+
+    if len(options.Primer5) > 0 {
+        err = tmpl.SetPrimer5(options.Primer5)
+        if err != nil {
+            log.Fatalln(err)
+        }
+    }
 
     tm := make(map[string]int)
     fm := make(map[string]int)

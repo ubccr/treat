@@ -24,8 +24,8 @@ type LoadOptions struct {
     EditBase      string
     TemplatePath  string
     FragmentPath  []string
-    Primer5       int
-    Primer3       int
+    Primer5       string
+    Primer3       string
     Replicate     int
     Norm          float64
     SkipFrags     bool
@@ -100,8 +100,19 @@ func Load(dbpath string, options *LoadOptions) {
         log.Fatalln(err)
     }
 
-    tmpl.Primer3 = options.Primer3
-    tmpl.Primer5 = options.Primer5
+    if len(options.Primer3) > 0 {
+        err = tmpl.SetPrimer3(options.Primer3)
+        if err != nil {
+            log.Fatalln(err)
+        }
+    }
+
+    if len(options.Primer5) > 0 {
+        err = tmpl.SetPrimer5(options.Primer5)
+        if err != nil {
+            log.Fatalln(err)
+        }
+    }
 
     // Compute Edit Stop Site
     tmpl.EditStop = uint32((tmpl.Len()-1)-tmpl.Primer3)
