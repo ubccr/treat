@@ -11,6 +11,14 @@ import (
     "encoding/gob"
 )
 
+var BASE_COMP = map[byte]byte{
+    []byte("A")[0]: []byte("T")[0],
+    []byte("C")[0]: []byte("G")[0],
+    []byte("G")[0]: []byte("C")[0],
+    []byte("T")[0]: []byte("A")[0],
+    []byte("N")[0]: []byte("N")[0],
+}
+
 type Fragment struct {
     Name         string
     ReadCount    uint32

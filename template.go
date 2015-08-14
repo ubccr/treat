@@ -8,6 +8,7 @@ import (
     "github.com/aebruno/gofasta"
     "os"
     "fmt"
+    "strings"
     "regexp"
     "strconv"
     "bytes"
@@ -125,6 +126,47 @@ func (tmpl *Template) Size() (int) {
 
 func (tmpl *Template) Len() (int) {
     return len(tmpl.EditSite[0])
+}
+
+func (tmpl *Template) SetPrimer5(primer string) error {
+    p5 := NewFragment("primer5", primer, FORWARD, 0, 0, tmpl.EditBase)
+    if !strings.HasPrefix(tmpl.Bases, p5.Bases) {
+        return fmt.Errorf("Invalid primer sequence")
+    }
+
+    tmpl.Primer5 = len(p5.Bases)
+
+    return nil
+}
+
+func (tmpl *Template) SetPrimer3(primer string) error {
+    bases := []byte(primer)
+    // complement
+    for i := 0; i < len(bases); i++ {
+        bases[i] = BASE_COMP[bases[i]]
+    }
+    p3 := NewFragment("primer3", string(bases), REVERSE, 0, 0, tmpl.EditBase)
+
+    if !strings.HasSuffix(tmpl.Bases, p3.Bases) {
+        return fmt.Errorf("Invalid primer sequence")
+    }
+
+    tmpl.Primer3 = len(p3.Bases)
+
+    return nil
+}
+
+func (tmpl *Template) String() (string) {
+    var buf bytes.Buffer
+
+    for i,b := range tmpl.EditSite[0] {
+        buf.WriteString(strings.Repeat(string(tmpl.EditBase), int(b)))
+        if i < len(tmpl.Bases) {
+            buf.WriteString(string(tmpl.Bases[i]))
+        }
+    }
+
+    return buf.String()
 }
 
 func (tmpl *Template) Max(i int) (BaseCountType) {

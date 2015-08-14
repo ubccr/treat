@@ -6,11 +6,8 @@ package treat
 
 import (
     "testing"
-    "os"
     "fmt"
     "bytes"
-    "math/big"
-    "github.com/aebruno/gofasta"
 )
 
 func TestAlign(t *testing.T) {
