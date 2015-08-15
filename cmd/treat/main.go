@@ -37,6 +37,7 @@ func main() {
                 &cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
                 &cli.BoolFlag{Name: "fastx", Usage: "Parse FASTX/Collpaser header lines"},
                 &cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
+                &cli.BoolFlag{Name: "collapse", Usage: "Collapse fragments excluding primer regions  into a single sequence (while maintaining reads counts)"},
             },
             Action: func(c *cli.Context) {
                 dir := c.String("dir")
@@ -71,6 +72,7 @@ func main() {
                     ExcludeSnps:  c.Bool("exclude-snps"),
                     Fastx:        c.Bool("fastx"),
                     Force:        c.Bool("force"),
+                    Collapse:        c.Bool("collapse"),
                 })
             },
         },

@@ -8,6 +8,7 @@ import (
     "strings"
     "unicode"
     "bytes"
+    "fmt"
     "encoding/gob"
 )
 
@@ -68,6 +69,15 @@ func NewFragment(name, seq string, orientation OrientationType, reads uint32, no
     return &Fragment{Name: name, ReadCount: reads, Norm: norm, Bases: bases, EditBase: base, EditSite: editSite}
 }
 
+func (f *Fragment) ToFasta() (string) {
+    var buf bytes.Buffer
+    buf.WriteString(">")
+    buf.WriteString(f.Name)
+    buf.WriteString("\n")
+    buf.WriteString(f.String())
+    return buf.String()
+}
+
 func (f *Fragment) String() (string) {
     var buf bytes.Buffer
 
@@ -79,6 +89,34 @@ func (f *Fragment) String() (string) {
     }
 
     return buf.String()
+}
+
+func (f *Fragment) SequenceNoPrimer(primer5, primer3 int) (string, error) {
+    var buf bytes.Buffer
+
+    size := len(f.EditSite)
+
+    if primer3 > size || primer5 > size {
+        return "", fmt.Errorf("Invalid primers")
+    }
+
+    start := primer5 - 1
+    if start < 0 {
+        start = 0
+    }
+
+    end := size - primer3 - 1
+
+    for i,b := range f.EditSite {
+        if i > start && i < end {
+            buf.WriteString(strings.Repeat(string(f.EditBase), int(b)))
+            if i < len(f.Bases) {
+                buf.WriteString(string(f.Bases[i]))
+            }
+        }
+    }
+
+    return buf.String(), nil
 }
 
 func (f *Fragment) UnmarshalBytes(data []byte) (error) {
