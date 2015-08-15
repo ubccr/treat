@@ -31,38 +31,29 @@ type LoadOptions struct {
     Norm          float64
     SkipFrags     bool
     ExcludeSnps   bool
-    Fastx         bool
     Force         bool
     Collapse      bool
 }
 
-var readsPattern = regexp.MustCompile(`\s*merge_count=(\d+)\s*`)
 var fastxPattern = regexp.MustCompile(`^\d+\-(\d+)$`)
 
 func MergeCount(rec *gofasta.SeqRecord, options *LoadOptions) (uint32) {
-    if options.Fastx {
-        matches := fastxPattern.FindStringSubmatch(rec.Id)
-        if len(matches) == 2 {
-            count, err := strconv.Atoi(matches[1])
-            if err != nil {
-                logrus.Fatalf("Invalid FASTX header line found: %s", rec.Id)
-            }
-
-            return uint32(count)
-        }
-        logrus.Fatalf("Invalid FASTX header line found: %s", rec.Id)
-    }
-
-    mergeCount := 1
-    matches := readsPattern.FindStringSubmatch(rec.Id)
+    // First try and parse fastx-collapser header lines
+    matches := fastxPattern.FindStringSubmatch(rec.Id)
     if len(matches) == 2 {
         count, err := strconv.Atoi(matches[1])
-        if err == nil {
-            mergeCount = count
+        if err != nil {
+            logrus.WithFields(logrus.Fields{
+                "error": err,
+                "id": rec.Id,
+            }).Warn("Looks like a FASTX header line but failed to parse. Skipping.")
+            return uint32(1)
         }
+
+        return uint32(count)
     }
 
-    return uint32(mergeCount)
+    return uint32(1)
 }
 
 func TotalReads(path string, options *LoadOptions) (uint32) {

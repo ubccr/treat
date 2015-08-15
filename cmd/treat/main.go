@@ -35,7 +35,6 @@ func main() {
                 &cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
                 &cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
                 &cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
-                &cli.BoolFlag{Name: "fastx", Usage: "Parse FASTX/Collpaser header lines"},
                 &cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
                 &cli.BoolFlag{Name: "collapse", Usage: "Collapse fragments excluding primer regions  into a single sequence (while maintaining reads counts)"},
             },
@@ -70,7 +69,6 @@ func main() {
                     EditBase:     c.String("base"),
                     SkipFrags:    c.Bool("skip-fragments"),
                     ExcludeSnps:  c.Bool("exclude-snps"),
-                    Fastx:        c.Bool("fastx"),
                     Force:        c.Bool("force"),
                     Collapse:        c.Bool("collapse"),
                 })
