@@ -74,6 +74,7 @@ func TotalReads(path string, options *LoadOptions) (uint32) {
 
 func collapse(tmpl *treat.Template, options *LoadOptions) {
     logrus.Info("Collapsing fragment files excluding primer regions")
+    collapsedFiles := make([]string, 0)
     for _,path := range(options.FragmentPath) {
         logrus.Printf("Processing file: %s", path)
         inFile, err := os.Open(path)
@@ -96,8 +97,9 @@ func collapse(tmpl *treat.Template, options *LoadOptions) {
             mergeCounts[seqNoPrimer] += frag.ReadCount
         }
 
-        outPath := strings.Replace(path, filepath.Ext(path), "", 1)
-        outFile, err := os.Create(outPath+"-primer-collapsed.fa")
+        outPath := path[:len(path)-len(filepath.Ext(path))]
+        outPath += "-primer-collapsed.fasta"
+        outFile, err := os.Create(outPath)
         if err != nil {
             logrus.Fatal(err)
         }
@@ -124,7 +126,11 @@ func collapse(tmpl *treat.Template, options *LoadOptions) {
             i++
         }
         writer.Flush()
+        collapsedFiles = append(collapsedFiles, outPath)
     }
+
+    // Process new collapsed files
+    options.FragmentPath = collapsedFiles
 }
 
 func Load(dbpath string, options *LoadOptions) {
@@ -164,7 +170,6 @@ func Load(dbpath string, options *LoadOptions) {
 
     if options.Collapse {
         collapse(tmpl, options)
-        return
     }
 
     // Compute Edit Stop Site
@@ -260,6 +265,8 @@ func Load(dbpath string, options *LoadOptions) {
 
         fname := filepath.Base(path)
         sample := fname[:len(fname)-len(filepath.Ext(path))]
+        // clean up sample name
+        sample = strings.Replace(sample, "-primer-collapsed", "", 1)
         sample = strings.Replace(sample, " ", "_", -1)
 
         akey := &treat.AlignmentKey{options.Gene, sample}
