@@ -382,10 +382,9 @@ func Load(dbpath string, options *LoadOptions) {
             count++
         }
 
-        if count % 100 != 0 {
-            if err := tx.Commit(); err != nil {
-                logrus.Fatal(err)
-            }
+        // final transaction commit
+        if err := tx.Commit(); err != nil {
+            logrus.Fatal(err)
         }
 
         logrus.Printf("Loaded %d fragment sequences for sample %s", count, sample)
