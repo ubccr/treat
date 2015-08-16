@@ -6,7 +6,6 @@ package main
 
 import (
     "bytes"
-    "html/template"
     "net/http"
     "encoding/json"
     "encoding/csv"
@@ -20,8 +19,15 @@ import (
 )
 
 
-func renderTemplate(w http.ResponseWriter, t *template.Template, data interface{}) {
+func renderTemplate(app *Application, tmpl string, w http.ResponseWriter, data interface{}) {
+    if data == nil {
+        data = map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb}
+    }
+
     var buf bytes.Buffer
+    t := app.templates[tmpl]
     err := t.ExecuteTemplate(&buf, "layout", data)
 
     if err != nil {
@@ -35,8 +41,7 @@ func renderTemplate(w http.ResponseWriter, t *template.Template, data interface{
 
 func errorHandler(app *Application, w http.ResponseWriter, status int) {
     w.WriteHeader(status)
-
-    renderTemplate(w, app.templates["error.html"], nil)
+    renderTemplate(app, "error.html", w, nil)
 }
 
 func IndexHandler(app *Application) http.Handler {
@@ -69,6 +74,8 @@ func IndexHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb,
             "Template": tmpl,
             "Count": count,
             "Fields": fields,
@@ -76,7 +83,7 @@ func IndexHandler(app *Application) http.Handler {
             "Pages": []int{10,50,100,1000},
             "Genes": app.genes}
 
-        renderTemplate(w, app.templates["index.html"], vars)
+        renderTemplate(app, "index.html", w, vars)
     })
 }
 
@@ -256,7 +263,7 @@ func ShowHandler(app *Application) http.Handler {
         if err != nil || frag == nil {
             logrus.Printf("fragment not found: %s", err)
             w.WriteHeader(http.StatusNotFound)
-            renderTemplate(w, app.templates["404.html"], nil)
+            renderTemplate(app, "404.html", w, nil)
             return
         }
 
@@ -264,17 +271,19 @@ func ShowHandler(app *Application) http.Handler {
         if err != nil || alignment == nil {
             logrus.Printf("alignment not found")
             w.WriteHeader(http.StatusNotFound)
-            renderTemplate(w, app.templates["404.html"], nil)
+            renderTemplate(app, "404.html", w, nil)
             return
         }
 
         vars := map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb,
             "Template": tmpl,
             "Fragment": frag,
             "Alignment": alignment,
             "Key": key}
 
-        renderTemplate(w, app.templates["show.html"], vars)
+        renderTemplate(app, "show.html", w, vars)
     })
 }
 
@@ -377,6 +386,8 @@ func SearchHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb,
             "Template": tmpl,
             "Count": count,
             "SearchTotals": totalMap,
@@ -390,7 +401,7 @@ func SearchHandler(app *Application) http.Handler {
             "Pages": []int{10,50,100,1000},
             "Genes": app.genes}
 
-        renderTemplate(w, app.templates["search.html"], vars)
+        renderTemplate(app, "search.html", w, vars)
     })
 }
 
@@ -413,13 +424,15 @@ func HeatHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb,
             "Template": tmpl,
             "Fields": fields,
             "Samples": app.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
             "Genes": app.genes}
 
-        renderTemplate(w, app.templates["heat.html"], vars)
+        renderTemplate(app, "heat.html", w, vars)
     })
 }
 
@@ -520,13 +533,15 @@ func TemplateSummaryHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
+            "dbs": app.dbpaths,
+            "curdb": app.curdb,
             "Template": tmpl,
             "Fields": fields,
             "Samples": app.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
             "Genes": app.genes}
 
-        renderTemplate(w, app.templates["tmpl-report.html"], vars)
+        renderTemplate(app, "tmpl-report.html", w, vars)
     })
 }
 
@@ -612,5 +627,34 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
         }
 
         w.Write(out)
+    })
+}
+
+func DbHandler(app *Application) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        name := r.URL.Query().Get("name")
+        dbpath, ok := app.dbpaths[name]
+        if !ok {
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        err := app.db.DB.Close()
+        if err != nil {
+            logrus.Printf("Failed to close DB: %s", err)
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        err = app.loadDb(dbpath)
+        if err != nil {
+            logrus.Printf("Failed to open DB: %s", err)
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        app.curdb = name
+
+        http.Redirect(w, r, "/", 302)
     })
 }

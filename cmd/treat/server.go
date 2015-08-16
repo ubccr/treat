@@ -20,14 +20,14 @@ import (
     "github.com/carbocation/interpose"
     "github.com/gorilla/mux"
     "github.com/gorilla/schema"
-    "github.com/gorilla/sessions"
 )
 
 type Application struct {
     templates            map[string]*template.Template
     tmpldir              string
+    dbpaths              map[string]string
+    curdb                string
     db                   *Storage
-    cookieStore          *sessions.CookieStore
     decoder              *schema.Decoder
     geneTemplates        map[string]*treat.Template
     geneSamples          map[string][]string
@@ -41,8 +41,40 @@ type Application struct {
 
 func NewApplication(dbpath, tmpldir string) (*Application, error) {
     app := &Application{}
+    app.dbpaths = make(map[string]string)
 
-    err := app.loadDb(dbpath)
+    fi, err := os.Stat(dbpath)
+    if err != nil {
+        return nil, err
+    }
+
+    if fi.IsDir() {
+        dbabs,_ := filepath.Abs(dbpath)
+        dbfiles, err := filepath.Glob(dbabs + "/*.db")
+        if err != nil {
+            return nil, err
+        }
+        for _, d := range dbfiles {
+            abs,_ := filepath.Abs(d)
+            base := filepath.Base(abs)
+            app.dbpaths[base] = abs
+
+            if len(app.curdb) == 0 {
+                app.curdb = base
+            }
+        }
+    } else {
+        abs,_ := filepath.Abs(dbpath)
+        base := filepath.Base(abs)
+        app.dbpaths[base] = abs
+        app.curdb = base
+    }
+
+    if len(app.dbpaths) == 0 {
+        return nil, fmt.Errorf("No db files found")
+    }
+
+    err = app.loadDb(app.dbpaths[app.curdb])
     if err != nil {
         return nil, err
     }
@@ -87,7 +119,6 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
     }
 
     app.tmpldir = tmpldir
-    app.cookieStore = sessions.NewCookieStore()
     app.decoder = schema.NewDecoder()
     app.decoder.IgnoreUnknownKeys(true)
 
@@ -204,7 +235,7 @@ func (a *Application) router() *mux.Router {
 
     router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusNotFound)
-        renderTemplate(w, a.templates["404.html"], nil)
+        renderTemplate(a, "404.html", w, nil)
     })
     router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(fmt.Sprintf("%s/static", a.tmpldir)))))
 
@@ -217,6 +248,7 @@ func (a *Application) router() *mux.Router {
     router.Path("/heat").Handler(HeatHandler(a)).Methods("GET")
     router.Path("/search").Handler(SearchHandler(a)).Methods("GET")
     router.Path("/show").Handler(ShowHandler(a)).Methods("GET")
+    router.Path("/db").Handler(DbHandler(a)).Methods("GET")
     router.Path("/tmpl-report").Handler(TemplateSummaryHandler(a)).Methods("GET")
 
     return router
