@@ -13,7 +13,7 @@ protozoa such as Trypanosoma brucei which causes African sleeping sickness. The
 pre-mRNA sequences in trypanosomes are posttranscriptionally edited by the
 insertion/deletion of uridylate residues. By default, TREAT aligns sequences
 using 3 bases (A,C,G) and assembles editing sites to detect the extent of
-uridine (T) editing. TREAT is written in Go and is released under the GPLv3.0
+uridine (T) editing. TREAT is written in Go and is released under a BSD style
 free software license. 
 
 ------------------------------------------------------------------------
@@ -197,5 +197,4 @@ Start the TREAT server and view the sequences in a web browser::
 License
 ------------------------------------------------------------------------
 
-TREAT is released under the GNU General Public License ("GPL") Version 3.0.
-See the LICENSE file. 
+TREAT is released under a BSD style license. See the LICENSE file. 
