@@ -118,7 +118,7 @@ func (f *Fragment) SequenceNoPrimer(primer5, primer3 int) (string, error) {
 func (f *Fragment) UnmarshalBytes(data []byte) (error) {
     buf := bytes.NewReader(data)
     dec := gob.NewDecoder(buf)
-    err := dec.Decode(&f)
+    err := dec.Decode(f)
     if err != nil {
         return err
     }

@@ -254,7 +254,7 @@ func ShowHandler(app *Application) http.Handler {
 
         frag, err := app.db.GetFragment(key, uint64(id))
         if err != nil || frag == nil {
-            logrus.Printf("fragment not found")
+            logrus.Printf("fragment not found: %s", err)
             w.WriteHeader(http.StatusNotFound)
             renderTemplate(w, app.templates["404.html"], nil)
             return
