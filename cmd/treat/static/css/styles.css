@@ -62,3 +62,9 @@ body {
     padding: 8px;
     z-index: 2;
 }
+
+.footer {
+    padding-top: 19px;
+    color: #777;
+    border-top: 1px solid #e5e5e5;
+}
