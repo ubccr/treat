@@ -62,10 +62,15 @@ func IndexHandler(app *Application) http.Handler {
             return
         }
 
+        limit := fields.Limit
+        fields.Limit = 0
+
         count := 0
         err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
             count++
         })
+
+        fields.Limit = limit
 
         if err != nil {
             logrus.Printf("Error fetching alignment count for gene: %s", fields.Gene)
