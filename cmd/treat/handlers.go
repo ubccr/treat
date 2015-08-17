@@ -16,14 +16,15 @@ import (
 
     "github.com/Sirupsen/logrus"
     "github.com/ubccr/treat"
+    "github.com/gorilla/context"
 )
 
 
 func renderTemplate(app *Application, tmpl string, w http.ResponseWriter, data interface{}) {
     if data == nil {
         data = map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb}
+            "dbs": app.dbs,
+            "curdb": ""}
     }
 
     var buf bytes.Buffer
@@ -46,7 +47,15 @@ func errorHandler(app *Application, w http.ResponseWriter, status int) {
 
 func IndexHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("index handler: database not found in request context")
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+
+        fields, err := app.NewSearchFields(r.URL, db)
 
         if err != nil {
             logrus.Printf("Error parsing get request: %s", err)
@@ -54,7 +63,7 @@ func IndexHandler(app *Application) http.Handler {
             return
         }
 
-        tmpl,ok := app.geneTemplates[fields.Gene]
+        tmpl,ok := db.geneTemplates[fields.Gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", fields.Gene)
@@ -66,7 +75,7 @@ func IndexHandler(app *Application) http.Handler {
         fields.Limit = 0
 
         count := 0
-        err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        err = db.storage.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
             count++
         })
 
@@ -79,14 +88,14 @@ func IndexHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb,
+            "dbs": app.dbs,
+            "curdb": db.name,
             "Template": tmpl,
             "Count": count,
             "Fields": fields,
-            "Samples": app.geneSamples[fields.Gene],
+            "Samples": db.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
-            "Genes": app.genes}
+            "Genes": db.genes}
 
         renderTemplate(app, "index.html", w, vars)
     })
@@ -94,7 +103,14 @@ func IndexHandler(app *Application) http.Handler {
 
 func JuncLenHistogramHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        highChartHist(app, w, r, app.maxJuncEnd, func(a *treat.Alignment) uint32 {
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("juncLenHist handler: database not found in request context")
+            http.Error(w, "Fatal system error", http.StatusInternalServerError)
+            return
+        }
+
+        highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
             return a.JuncLen
         })
     })
@@ -102,7 +118,14 @@ func JuncLenHistogramHandler(app *Application) http.Handler {
 
 func EditHistogramHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        highChartHist(app, w, r, app.maxJuncEnd, func(a *treat.Alignment) uint32 {
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("editHist handler: database not found in request context")
+            http.Error(w, "Fatal system error", http.StatusInternalServerError)
+            return
+        }
+
+        highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
             return a.EditStop
         })
     })
@@ -110,19 +133,33 @@ func EditHistogramHandler(app *Application) http.Handler {
 
 func JuncEndHistogramHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        highChartHist(app, w, r, app.maxJuncEnd, func(a *treat.Alignment) uint32 {
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("JunEndHist handler: database not found in request context")
+            http.Error(w, "Fatal system error", http.StatusInternalServerError)
+            return
+        }
+
+        highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
             return a.JuncEnd
         })
     })
 }
 
 func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]uint32, f func(a *treat.Alignment) uint32) {
-    if _, ok := app.cache[r.URL.String()]; ok {
-        w.Write(app.cache[r.URL.String()])
+    db := context.Get(r, "db").(*Database)
+    if db == nil {
+        logrus.Error("highChartHist handler: database not found in request context")
+        http.Error(w, "Fatal system error", http.StatusInternalServerError)
         return
     }
 
-    fields, err := app.NewSearchFields(r.URL)
+    if _, ok := db.cache[r.URL.String()]; ok {
+        w.Write(db.cache[r.URL.String()])
+        return
+    }
+
+    fields, err := app.NewSearchFields(r.URL, db)
     fields.Limit = 0
     fields.Offset = 0
 
@@ -138,7 +175,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
         return
     }
 
-    tmpl, ok := app.geneTemplates[fields.Gene]
+    tmpl, ok := db.geneTemplates[fields.Gene]
     if !ok {
         logrus.Printf("Invalid gene: %s", fields.Gene)
         http.Error(w, "Invalid gene", http.StatusInternalServerError)
@@ -148,7 +185,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
     samples := make(map[string]map[uint32]float64)
 
     max := maxMap[fields.Gene]
-    err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+    err = db.storage.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
         if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
             return
         }
@@ -226,15 +263,22 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
         return
     }
 
-    app.cache[r.URL.String()] = out
+    db.cache[r.URL.String()] = out
     w.Write(out)
     //json.NewEncoder(w).Encode(data)
 }
 
 func ShowHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("show handler: database not found in request context")
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
         gene := r.URL.Query().Get("gene")
-        tmpl,ok := app.geneTemplates[gene]
+        tmpl,ok := db.geneTemplates[gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", gene)
@@ -243,7 +287,7 @@ func ShowHandler(app *Application) http.Handler {
         }
 
         sample := ""
-        for _, s := range(app.geneSamples[gene]) {
+        for _, s := range(db.geneSamples[gene]) {
             if s == r.URL.Query().Get("sample") {
                 sample = s
             }
@@ -264,7 +308,7 @@ func ShowHandler(app *Application) http.Handler {
 
         key := &treat.AlignmentKey{Gene: gene, Sample: sample}
 
-        frag, err := app.db.GetFragment(key, uint64(id))
+        frag, err := db.storage.GetFragment(key, uint64(id))
         if err != nil || frag == nil {
             logrus.Printf("fragment not found: %s", err)
             w.WriteHeader(http.StatusNotFound)
@@ -272,7 +316,7 @@ func ShowHandler(app *Application) http.Handler {
             return
         }
 
-        alignment, err := app.db.GetAlignment(key, uint64(id))
+        alignment, err := db.storage.GetAlignment(key, uint64(id))
         if err != nil || alignment == nil {
             logrus.Printf("alignment not found")
             w.WriteHeader(http.StatusNotFound)
@@ -281,8 +325,8 @@ func ShowHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb,
+            "dbs": app.dbs,
+            "curdb": db.name,
             "Template": tmpl,
             "Fragment": frag,
             "Alignment": alignment,
@@ -294,7 +338,14 @@ func ShowHandler(app *Application) http.Handler {
 
 func SearchHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("search handler: database not found in request context")
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        fields, err := app.NewSearchFields(r.URL, db)
 
         if err != nil {
             logrus.Printf("Error parsing get request: %s", err)
@@ -302,7 +353,7 @@ func SearchHandler(app *Application) http.Handler {
             return
         }
 
-        tmpl,ok := app.geneTemplates[fields.Gene]
+        tmpl,ok := db.geneTemplates[fields.Gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", fields.Gene)
@@ -316,7 +367,7 @@ func SearchHandler(app *Application) http.Handler {
         fields.Limit = 0
         fields.Offset = 0
         alignments := make([]*treat.Alignment, 0)
-        err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        err = db.storage.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
             a.Key = key
             alignments = append(alignments, a)
 
@@ -347,7 +398,7 @@ func SearchHandler(app *Application) http.Handler {
                     strconv.Itoa(int(a.ReadCount)),
                     fmt.Sprintf("%.4f", a.Norm),
                     pctSearchFunc(a, totalMap),
-                    pctEditStopFunc(a, app.cacheEditStopTotals[fields.Gene]),
+                    pctEditStopFunc(a, db.cacheEditStopTotals[fields.Gene]),
                     strconv.Itoa(int(a.EditStop)),
                     strconv.Itoa(int(a.JuncEnd)),
                     strconv.Itoa(int(a.JuncLen)),
@@ -391,20 +442,20 @@ func SearchHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb,
+            "dbs": app.dbs,
+            "curdb": db.name,
             "Template": tmpl,
             "Count": count,
             "SearchTotals": totalMap,
-            "EditStopTotals": app.cacheEditStopTotals[fields.Gene],
+            "EditStopTotals": db.cacheEditStopTotals[fields.Gene],
             "Showing": showing,
             "Page": page,
             "Query": r.URL.RawQuery,
             "Fields": fields,
             "Alignments": alignments[fields.Offset:end],
-            "Samples": app.geneSamples[fields.Gene],
+            "Samples": db.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
-            "Genes": app.genes}
+            "Genes": db.genes}
 
         renderTemplate(app, "search.html", w, vars)
     })
@@ -412,7 +463,14 @@ func SearchHandler(app *Application) http.Handler {
 
 func HeatHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("heat handler: database not found in request context")
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        fields, err := app.NewSearchFields(r.URL, db)
 
         if err != nil {
             logrus.Printf("Error parsing get request: %s", err)
@@ -420,7 +478,7 @@ func HeatHandler(app *Application) http.Handler {
             return
         }
 
-        tmpl,ok := app.geneTemplates[fields.Gene]
+        tmpl,ok := db.geneTemplates[fields.Gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", fields.Gene)
@@ -429,13 +487,13 @@ func HeatHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb,
+            "dbs": app.dbs,
+            "curdb": db.name,
             "Template": tmpl,
             "Fields": fields,
-            "Samples": app.geneSamples[fields.Gene],
+            "Samples": db.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
-            "Genes": app.genes}
+            "Genes": db.genes}
 
         renderTemplate(app, "heat.html", w, vars)
     })
@@ -443,7 +501,14 @@ func HeatHandler(app *Application) http.Handler {
 
 func HeatMapJson(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("heatmap json handler: database not found in request context")
+            http.Error(w, "Fatal error", http.StatusInternalServerError)
+            return
+        }
+
+        fields, err := app.NewSearchFields(r.URL, db)
         fields.Limit = 0
         fields.Offset = 0
 
@@ -459,7 +524,7 @@ func HeatMapJson(app *Application) http.Handler {
             return
         }
 
-        tmpl, ok := app.geneTemplates[fields.Gene]
+        tmpl, ok := db.geneTemplates[fields.Gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", fields.Gene)
@@ -474,7 +539,7 @@ func HeatMapJson(app *Application) http.Handler {
             heat[i] = make([]float64, n)
         }
 
-        err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        err = db.storage.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
             heat[int(a.EditStop)][int(a.JuncLen)] += a.Norm
         })
 
@@ -521,7 +586,14 @@ func HeatMapJson(app *Application) http.Handler {
 
 func TemplateSummaryHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("tmpl summary handler: database not found in request context")
+            errorHandler(app, w, http.StatusInternalServerError)
+            return
+        }
+
+        fields, err := app.NewSearchFields(r.URL, db)
 
         if err != nil {
             logrus.Printf("Error parsing get request: %s", err)
@@ -529,7 +601,7 @@ func TemplateSummaryHandler(app *Application) http.Handler {
             return
         }
 
-        tmpl,ok := app.geneTemplates[fields.Gene]
+        tmpl,ok := db.geneTemplates[fields.Gene]
 
         if !ok {
             logrus.Printf("Error fetching template for gene: %s", fields.Gene)
@@ -538,13 +610,13 @@ func TemplateSummaryHandler(app *Application) http.Handler {
         }
 
         vars := map[string]interface{}{
-            "dbs": app.dbpaths,
-            "curdb": app.curdb,
+            "dbs": app.dbs,
+            "curdb": db.name,
             "Template": tmpl,
             "Fields": fields,
-            "Samples": app.geneSamples[fields.Gene],
+            "Samples": db.geneSamples[fields.Gene],
             "Pages": []int{10,50,100,1000},
-            "Genes": app.genes}
+            "Genes": db.genes}
 
         renderTemplate(app, "tmpl-report.html", w, vars)
     })
@@ -552,7 +624,14 @@ func TemplateSummaryHandler(app *Application) http.Handler {
 
 func TemplateSummaryHistogramHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        fields, err := app.NewSearchFields(r.URL)
+        db := context.Get(r, "db").(*Database)
+        if db == nil {
+            logrus.Error("tmpl summary json handler: database not found in request context")
+            http.Error(w, "Fatal error", http.StatusInternalServerError)
+            return
+        }
+
+        fields, err := app.NewSearchFields(r.URL, db)
         fields.Limit = 0
         fields.Offset = 0
 
@@ -568,7 +647,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
             return
         }
 
-        tmpl, ok := app.geneTemplates[fields.Gene]
+        tmpl, ok := db.geneTemplates[fields.Gene]
         if !ok {
             logrus.Printf("Invalid gene: %s", fields.Gene)
             http.Error(w, "Invalid gene", http.StatusInternalServerError)
@@ -578,7 +657,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
         samples := make(map[string]map[uint32]float64)
         primer5 := (tmpl.Len()-2)-tmpl.Primer5
 
-        err = app.db.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
+        err = db.storage.Search(fields, func (key *treat.AlignmentKey, a *treat.Alignment) {
             ok := false
             if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
                 ok = true
@@ -637,28 +716,27 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 
 func DbHandler(app *Application) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        session, _ := app.cookieStore.Get(r, TREAT_COOKIE_SESSION)
+
         name := r.URL.Query().Get("name")
-        dbpath, ok := app.dbpaths[name]
-        if !ok {
-            errorHandler(app, w, http.StatusInternalServerError)
-            return
-        }
-
-        err := app.db.DB.Close()
+        _, err := app.GetDb(name)
         if err != nil {
-            logrus.Printf("Failed to close DB: %s", err)
+            logrus.WithFields(logrus.Fields{
+                "dbname": name,
+            }).Error("Invalid database name")
             errorHandler(app, w, http.StatusInternalServerError)
             return
         }
 
-        err = app.loadDb(dbpath)
+        session.Values[TREAT_COOKIE_DB] = name
+        err = session.Save(r, w)
         if err != nil {
-            logrus.Printf("Failed to open DB: %s", err)
+            logrus.WithFields(logrus.Fields{
+                "error": err.Error(),
+            }).Error("Db handler: failed to save session")
             errorHandler(app, w, http.StatusInternalServerError)
             return
         }
-
-        app.curdb = name
 
         http.Redirect(w, r, "/", 302)
     })

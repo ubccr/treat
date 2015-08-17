@@ -20,28 +20,40 @@ import (
     "github.com/carbocation/interpose"
     "github.com/gorilla/mux"
     "github.com/gorilla/schema"
+    "github.com/gorilla/sessions"
+)
+
+const (
+    TREAT_COOKIE_SESSION = "treat-session"
+    TREAT_COOKIE_DB      = "dbname"
 )
 
 type Application struct {
     templates            map[string]*template.Template
     tmpldir              string
-    dbpaths              map[string]string
-    curdb                string
-    db                   *Storage
+    dbs                  map[string]*Database
+    defaultDb            string
     decoder              *schema.Decoder
+    cookieStore          *sessions.CookieStore
+}
+
+type Database struct {
+    name                 string
+    storage              *Storage
     geneTemplates        map[string]*treat.Template
     geneSamples          map[string][]string
     maxEditStop          map[string]uint32
     maxJuncLen           map[string]uint32
     maxJuncEnd           map[string]uint32
     genes                []string
+    defaultGene          string
     cache                map[string][]byte
     cacheEditStopTotals  map[string]map[uint32]map[string]float64
 }
 
 func NewApplication(dbpath, tmpldir string) (*Application, error) {
     app := &Application{}
-    app.dbpaths = make(map[string]string)
+    app.dbs = make(map[string]*Database)
 
     fi, err := os.Stat(dbpath)
     if err != nil {
@@ -57,27 +69,30 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         for _, d := range dbfiles {
             abs,_ := filepath.Abs(d)
             base := filepath.Base(abs)
-            app.dbpaths[base] = abs
 
-            if len(app.curdb) == 0 {
-                app.curdb = base
+            err = app.loadDb(base, abs)
+            if err != nil {
+                return nil, err
+            }
+
+            if len(app.defaultDb) == 0 {
+                app.defaultDb = base
             }
         }
     } else {
         abs,_ := filepath.Abs(dbpath)
         base := filepath.Base(abs)
-        app.dbpaths[base] = abs
-        app.curdb = base
+        err = app.loadDb(base, abs)
+        if err != nil {
+            return nil, err
+        }
+        app.defaultDb = base
     }
 
-    if len(app.dbpaths) == 0 {
+    if len(app.dbs) == 0 {
         return nil, fmt.Errorf("No db files found")
     }
 
-    err = app.loadDb(app.dbpaths[app.curdb])
-    if err != nil {
-        return nil, err
-    }
 
     if len(tmpldir) == 0 {
         // default to directory of current executable 
@@ -120,37 +135,45 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
 
     app.tmpldir = tmpldir
     app.decoder = schema.NewDecoder()
+    // Create secure cookie with in-secure key. Make this configurable in the future 
+    app.cookieStore = sessions.NewCookieStore([]byte("not-secure"))
     app.decoder.IgnoreUnknownKeys(true)
 
     return app, nil
 }
 
-func (a *Application) loadDb(dbpath string) (error) {
-    db, err := NewStorage(dbpath)
+func (a *Application) loadDb(base, dbpath string) (error) {
+    db := &Database{name: base}
+    stg, err := NewStorage(dbpath)
     if err != nil {
         return err
     }
+    db.storage = stg
 
-    a.db = db
-
-    a.geneTemplates, err = a.db.TemplateMap()
+    db.geneTemplates, err = db.storage.TemplateMap()
     if err != nil {
         return err
     }
-    if len(a.geneTemplates) == 0 {
+    if len(db.geneTemplates) == 0 {
         return fmt.Errorf("No genes/templates found. Please load some data first")
     }
 
-    a.cacheEditStopTotals = make(map[string]map[uint32]map[string]float64)
-    a.maxEditStop = make(map[string]uint32)
-    a.maxJuncLen = make(map[string]uint32)
-    a.maxJuncEnd = make(map[string]uint32)
-    a.geneSamples = make(map[string][]string)
-    a.genes = make([]string, 0)
-    for k := range(a.geneTemplates) {
-        a.genes = append(a.genes, k)
+    // Set default gene for dropdown menu
+    for k := range(db.geneTemplates) {
+        db.defaultGene = k
+        break
+    }
 
-        s, err := a.db.Samples(k)
+    db.cacheEditStopTotals = make(map[string]map[uint32]map[string]float64)
+    db.maxEditStop = make(map[string]uint32)
+    db.maxJuncLen = make(map[string]uint32)
+    db.maxJuncEnd = make(map[string]uint32)
+    db.geneSamples = make(map[string][]string)
+    db.genes = make([]string, 0)
+    for k := range(db.geneTemplates) {
+        db.genes = append(db.genes, k)
+
+        s, err := db.storage.Samples(k)
         if err != nil {
             return err
         }
@@ -159,28 +182,28 @@ func (a *Application) loadDb(dbpath string) (error) {
             return fmt.Errorf("No samples found for gene %s. Please load some data first", k)
         }
 
-        a.geneSamples[k] = s
+        db.geneSamples[k] = s
 
         log.Printf("Computing edit stop site cache for gene %s...", k)
-        if _, ok := a.cacheEditStopTotals[k]; !ok {
-            a.cacheEditStopTotals[k] = make(map[uint32]map[string]float64)
+        if _, ok := db.cacheEditStopTotals[k]; !ok {
+            db.cacheEditStopTotals[k] = make(map[uint32]map[string]float64)
         }
 
         fields := &SearchFields{Gene: k, EditStop: -1, JuncEnd: -1, JuncLen: -1}
-        err = a.db.Search(fields, func (key *treat.AlignmentKey, aln *treat.Alignment) {
-            if _, ok := a.cacheEditStopTotals[k][aln.EditStop]; !ok {
-                a.cacheEditStopTotals[k][aln.EditStop] = make(map[string]float64)
+        err = db.storage.Search(fields, func (key *treat.AlignmentKey, aln *treat.Alignment) {
+            if _, ok := db.cacheEditStopTotals[k][aln.EditStop]; !ok {
+                db.cacheEditStopTotals[k][aln.EditStop] = make(map[string]float64)
             }
-            a.cacheEditStopTotals[k][aln.EditStop][key.Sample] += aln.Norm
+            db.cacheEditStopTotals[k][aln.EditStop][key.Sample] += aln.Norm
 
-            if aln.EditStop > a.maxEditStop[k] {
-                a.maxEditStop[k] = aln.EditStop
+            if aln.EditStop > db.maxEditStop[k] {
+                db.maxEditStop[k] = aln.EditStop
             }
-            if aln.JuncLen > a.maxJuncLen[k] {
-                a.maxJuncLen[k] = aln.JuncLen
+            if aln.JuncLen > db.maxJuncLen[k] {
+                db.maxJuncLen[k] = aln.JuncLen
             }
-            if aln.JuncEnd > a.maxJuncEnd[k] {
-                a.maxJuncEnd[k] = aln.JuncEnd
+            if aln.JuncEnd > db.maxJuncEnd[k] {
+                db.maxJuncEnd[k] = aln.JuncEnd
             }
         })
 
@@ -189,12 +212,22 @@ func (a *Application) loadDb(dbpath string) (error) {
         }
     }
 
-    a.cache = make(map[string][]byte)
+    db.cache = make(map[string][]byte)
+    a.dbs[base] = db
 
     return nil
 }
 
-func (a *Application) NewSearchFields(url *url.URL) (*SearchFields, error) {
+func (a *Application) GetDb(name string) (*Database, error) {
+    db, ok := a.dbs[name]
+    if !ok {
+        return nil, fmt.Errorf("Database not found: %s", name)
+    }
+
+    return db, nil
+}
+
+func (a *Application) NewSearchFields(url *url.URL, db *Database) (*SearchFields, error) {
     vals := url.Query()
     fields := new(SearchFields)
     err := a.decoder.Decode(fields, vals)
@@ -204,10 +237,7 @@ func (a *Application) NewSearchFields(url *url.URL) (*SearchFields, error) {
     }
 
     if len(fields.Gene) == 0 {
-        for k := range(a.geneTemplates) {
-            fields.Gene = k
-            break
-        }
+        fields.Gene = db.defaultGene
     }
 
     if vals.Get("edit_stop") == "" {
@@ -225,6 +255,7 @@ func (a *Application) NewSearchFields(url *url.URL) (*SearchFields, error) {
 
 func (a *Application) middlewareStruct() (*interpose.Middleware, error) {
     mw := interpose.New()
+    mw.UseHandler(DbContext(a))
     mw.UseHandler(a.router())
 
     return mw, nil
