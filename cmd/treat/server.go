@@ -269,7 +269,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) (
     for i := range(tmpl.AltRegion) {
         labels = append(labels, fmt.Sprintf("A%d", i+1))
     }
-    labels = append(labels, "CL")
+    labels = append(labels, "RD")
 
 
     aln1, aln2, _ := nwalgo.Align(tmpl.Bases, frag.Bases, 1, -1, -1)
