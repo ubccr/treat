@@ -9,6 +9,7 @@ import (
     "log"
     "strings"
     "os"
+    "sort"
     "html/template"
     "path/filepath"
     "net/http"
@@ -158,12 +159,6 @@ func (a *Application) loadDb(base, dbpath string) (error) {
         return fmt.Errorf("No genes/templates found. Please load some data first")
     }
 
-    // Set default gene for dropdown menu
-    for k := range(db.geneTemplates) {
-        db.defaultGene = k
-        break
-    }
-
     db.cacheEditStopTotals = make(map[string]map[uint32]map[string]float64)
     db.maxEditStop = make(map[string]uint32)
     db.maxJuncLen = make(map[string]uint32)
@@ -211,6 +206,10 @@ func (a *Application) loadDb(base, dbpath string) (error) {
             return fmt.Errorf("Failed computing edit stop totals for gene: %s", k)
         }
     }
+
+    sort.Strings(db.genes)
+    // Set default gene for dropdown menu
+    db.defaultGene = db.genes[0]
 
     db.cache = make(map[string][]byte)
     a.dbs[base] = db
