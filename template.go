@@ -5,7 +5,6 @@
 package treat
 
 import (
-    "github.com/aebruno/gofasta"
     "os"
     "fmt"
     "strings"
@@ -13,6 +12,9 @@ import (
     "strconv"
     "bytes"
     "encoding/gob"
+
+    "github.com/Sirupsen/logrus"
+    "github.com/aebruno/gofasta"
 )
 
 var startPattern = regexp.MustCompile(`\s*alt_start=(\d+)\s*`)
@@ -82,6 +84,10 @@ func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (
 
 func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (*Template, error) {
     if full.Bases != pre.Bases || full.EditBase != pre.EditBase {
+        logrus.WithFields(logrus.Fields{
+            "full": full,
+            "pre": pre,
+        }).Error("Invalid template sequences")
         return nil, fmt.Errorf("Invalid template sequences. Full and Pre templates must have the same non-edit bases")
     }
 
