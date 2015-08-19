@@ -7,14 +7,15 @@ About
 ------------------------------------------------------------------------
 
 TREAT is a multiple sequence alignment and visualization tool specifically
-designed for sequences containing uridine insertion/deletion RNA editing. This
-phenomenon occurs in trypanosomes, a group of unicellular parasitic flagellate
-protozoa such as Trypanosoma brucei which causes African sleeping sickness. The
-pre-mRNA sequences in trypanosomes are posttranscriptionally edited by the
-insertion/deletion of uridylate residues. By default, TREAT aligns sequences
-using 3 bases (A,C,G) and assembles editing sites to detect the extent of
-uridine (T) editing. TREAT is written in Go and is released under a BSD style
-free software license. 
+designed to permit the user to analyze variation in sequences caused by Uridine
+insertion/deletion RNA editing. This phenomenon occurs in trypanosomes, a group
+of unicellular parasitic flagellate protozoa such as Trypanosoma brucei which
+causes African sleeping sickness. The pre-mRNA sequences in trypanosomes are
+posttranscriptionally edited by the insertion/deletion of uridylate residues.
+TREAT aligns sequences using three bases and assembles editing sites to detect
+the extent of editing of the fourth base, called the edit base. The edit base
+is configurable in TREAT and by default uses 'T'. TREAT is written in Go and is
+released under a BSD style free software license. 
 
 ------------------------------------------------------------------------
 Installation
@@ -51,14 +52,12 @@ base"). The default edit base in TREAT is "T". For example::
 Alignment with Templates
 ------------------------------------------------------------------------
 
-TREAT can perform global alignments using template sequences. TREAT accepts 2
-files in FASTA format as input. The sequence fragments (reads) to align and 2
-template sequences: Fully Edited and Pre-Edited. The Fully Edited template
-represents a mature edited mRNA (completely precisely edited mRNA). The
-Pre-Edited template represents the sequence that will be edited in the mature
-RNA. The template input file should include the Fully Edited template sequence
-first, followed by the Pre-Edited template, and optionally any alternative
-edited sequences. For example::
+TREAT can perform global alignments using template sequences.  TREAT requires
+two user provided template sequences: fully edited and pre-edited. The fully
+edited template represents a mature edited mRNA transcript (completely
+precisely edited mRNA). The pre-edited template represents the sequence that
+will be edited in the mature RNA. TREAT accepts in put sequences in FASTA
+format. For example::
 
   # simple-templates.fa
   >Fully Edited
