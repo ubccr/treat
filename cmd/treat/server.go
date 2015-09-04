@@ -105,11 +105,11 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         if err != nil {
             return nil, err
         }
-        tmpldir = dir
+        tmpldir = dir + "/templates"
     }
     log.Printf("Using template dir: %s\n", tmpldir)
 
-    tmpls, err := filepath.Glob(tmpldir + "/templates/*.html")
+    tmpls, err := filepath.Glob(tmpldir + "/*.html")
     if err != nil {
         return nil, err
     }
@@ -129,8 +129,8 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         base := filepath.Base(t)
         if base != "layout.html" && base != "search-form.html" {
             app.templates[base] = template.Must(template.New("layout").Funcs(funcMap).ParseFiles(t,
-                                                        tmpldir + "/templates/layout.html",
-                                                        tmpldir + "/templates/search-form.html"))
+                                                        tmpldir + "/layout.html",
+                                                        tmpldir + "/search-form.html"))
         }
     }
 
