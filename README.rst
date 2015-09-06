@@ -7,11 +7,11 @@ About
 ------------------------------------------------------------------------
 
 TREAT is a multiple sequence alignment and visualization tool specifically
-designed to permit the user to analyze variation in sequences caused by Uridine
-insertion/deletion RNA editing. This phenomenon occurs in trypanosomes, a group
-of unicellular parasitic flagellate protozoa such the subspecies of Trypanosoma
-brucei which are the causative agents of Human African Trypanosomiasis (HAT or
-African Sleeping Sickness). The pre-mRNA sequences in trypanosomes are
+designed to analyze variation in sequences caused by Uridine insertion/deletion
+RNA editing. This phenomenon occurs in trypanosomes, a group of unicellular
+parasitic flagellate protozoa such the subspecies of Trypanosoma brucei which
+are the causative agents of Human African Trypanosomiasis (HAT or African
+Sleeping Sickness). The pre-mRNA sequences in trypanosomes are
 posttranscriptionally edited by the insertion/deletion of uridylate residues.
 TREAT aligns sequences using three bases and assembles editing sites to detect
 the extent of editing of the fourth base, called the edit base. The edit base
