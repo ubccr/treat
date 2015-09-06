@@ -154,9 +154,11 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
         return
     }
 
-    if _, ok := db.cache[r.URL.String()]; ok {
-        w.Write(db.cache[r.URL.String()])
-        return
+    if app.enableCache {
+        if _, ok := db.cache[r.URL.String()]; ok {
+            w.Write(db.cache[r.URL.String()])
+            return
+        }
     }
 
     fields, err := app.NewSearchFields(r.URL, db)
@@ -263,7 +265,10 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
         return
     }
 
-    db.cache[r.URL.String()] = out
+    if app.enableCache {
+        db.cache[r.URL.String()] = out
+    }
+
     w.Write(out)
     //json.NewEncoder(w).Encode(data)
 }

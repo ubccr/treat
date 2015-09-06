@@ -122,9 +122,10 @@ func main() {
             Flags: []cli.Flag{
                 &cli.StringFlag{Name: "templates, t", Usage: "Path to html templates directory"},
                 &cli.IntFlag{Name: "port, p", Value: 8080, Usage: "Port to listen on"},
+                &cli.BoolFlag{Name: "enable-cache", Usage: "Enable url caching"},
             },
             Action: func(c *cli.Context) {
-                Server(c.GlobalString("db"), c.String("templates"), c.Int("port"))
+                Server(c.GlobalString("db"), c.String("templates"), c.Int("port"), c.Bool("enable-cache"))
             },
         },
         {

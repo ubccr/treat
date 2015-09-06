@@ -31,6 +31,7 @@ const (
 type Application struct {
     templates            map[string]*template.Template
     tmpldir              string
+    enableCache          bool
     dbs                  map[string]*Database
     defaultDb            string
     decoder              *schema.Decoder
@@ -51,7 +52,7 @@ type Database struct {
     cacheEditStopTotals  map[string]map[uint32]map[string]float64
 }
 
-func NewApplication(dbpath, tmpldir string) (*Application, error) {
+func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, error) {
     app := &Application{}
     app.dbs = make(map[string]*Database)
 
@@ -133,6 +134,7 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         }
     }
 
+    app.enableCache = enableCache
     app.tmpldir = tmpldir
     app.decoder = schema.NewDecoder()
     // Create secure cookie with in-secure key. Make this configurable in the future 
@@ -495,9 +497,9 @@ func juncseqFunc(val string) (template.HTML) {
 }
 
 
-func Server(dbpath, tmpldir string, port int) {
+func Server(dbpath, tmpldir string, port int, enableCache bool) {
 
-    app, err := NewApplication(dbpath, tmpldir)
+    app, err := NewApplication(dbpath, tmpldir, enableCache)
     if err != nil {
         logrus.Fatal(err.Error())
     }
