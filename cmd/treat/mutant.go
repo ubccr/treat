@@ -6,13 +6,13 @@ package main
 
 import (
     "os"
-    "log"
     "fmt"
     "sort"
     "strings"
     "github.com/aebruno/nwalgo"
     "github.com/aebruno/gofasta"
     "github.com/ubccr/treat"
+    "github.com/Sirupsen/logrus"
 )
 
 // From: https://groups.google.com/d/msg/golang-nuts/FT7cjmcL7gw/Gj4_aEsE_IsJ
@@ -39,31 +39,31 @@ func sortMapByValue(m map[string]int) PairList {
 
 func Mutant(options *AlignOptions, fragments []string, n int) {
     if len(options.TemplatePath) == 0 {
-        log.Fatalln("ERROR Please provide path to templates file")
+        logrus.Fatal("Please provide path to templates file")
     }
     if len(fragments) == 0 {
-        log.Fatalln("ERROR Please provide path to fragment file")
+        logrus.Fatal("Please provide path to fragment file")
     }
     if len(options.EditBase) != 1 {
-        log.Fatalln("ERROR Please provide the edit base")
+        logrus.Fatal("Please provide the edit base")
     }
 
     tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
     if err != nil {
-        log.Fatalln(err)
+        logrus.Fatal(err)
     }
 
     if len(options.Primer3) > 0 {
         err = tmpl.SetPrimer3(options.Primer3)
         if err != nil {
-            log.Fatalln(err)
+            logrus.Fatal(err)
         }
     }
 
     if len(options.Primer5) > 0 {
         err = tmpl.SetPrimer5(options.Primer5)
         if err != nil {
-            log.Fatalln(err)
+            logrus.Fatal(err)
         }
     }
 
@@ -72,7 +72,7 @@ func Mutant(options *AlignOptions, fragments []string, n int) {
     for _, path := range(fragments) {
         f, err := os.Open(path)
         if err != nil {
-            log.Fatal(err)
+            logrus.Fatal(err)
         }
         defer f.Close()
 

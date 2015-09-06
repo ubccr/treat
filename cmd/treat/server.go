@@ -6,7 +6,6 @@ package main
 
 import (
     "fmt"
-    "log"
     "strings"
     "os"
     "sort"
@@ -63,7 +62,7 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
 
     if fi.IsDir() {
         dbabs,_ := filepath.Abs(dbpath)
-        dbfiles, err := filepath.Glob(dbabs + "/*.db")
+        dbfiles, err := filepath.Glob(filepath.Join(dbabs, "*.db"))
         if err != nil {
             return nil, err
         }
@@ -105,11 +104,11 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         if err != nil {
             return nil, err
         }
-        tmpldir = dir + "/templates"
+        tmpldir = filepath.Join(dir, "/templates")
     }
-    log.Printf("Using template dir: %s\n", tmpldir)
+    logrus.Printf("Using template dir: %s\n", tmpldir)
 
-    tmpls, err := filepath.Glob(tmpldir + "/*.html")
+    tmpls, err := filepath.Glob(filepath.Join(tmpldir, "*.html"))
     if err != nil {
         return nil, err
     }
@@ -129,8 +128,8 @@ func NewApplication(dbpath, tmpldir string) (*Application, error) {
         base := filepath.Base(t)
         if base != "layout.html" && base != "search-form.html" {
             app.templates[base] = template.Must(template.New("layout").Funcs(funcMap).ParseFiles(t,
-                                                        tmpldir + "/layout.html",
-                                                        tmpldir + "/search-form.html"))
+                                                        filepath.Join(tmpldir, "layout.html"),
+                                                        filepath.Join(tmpldir, "search-form.html")))
         }
     }
 
@@ -179,7 +178,7 @@ func (a *Application) loadDb(base, dbpath string) (error) {
 
         db.geneSamples[k] = s
 
-        log.Printf("Computing edit stop site cache for gene %s...", k)
+        logrus.Printf("Computing edit stop site cache for gene %s...", k)
         if _, ok := db.cacheEditStopTotals[k]; !ok {
             db.cacheEditStopTotals[k] = make(map[uint32]map[string]float64)
         }

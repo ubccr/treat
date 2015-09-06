@@ -277,6 +277,10 @@ func Load(dbpath string, options *LoadOptions) {
 
         err = db.Update(func(tx *bolt.Tx) error {
             b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
+            if b == nil {
+                return fmt.Errorf("database error. alignments bucket does not exist!")
+            }
+
             _, err := b.CreateBucket(key)
             if err != nil {
                 if !options.Force {
@@ -296,6 +300,10 @@ func Load(dbpath string, options *LoadOptions) {
             }
 
             b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
+            if b == nil {
+                return fmt.Errorf("database error. fragments bucket does not exist!")
+            }
+
             _, err = b.CreateBucket(key)
             if err != nil {
                 if !options.Force {

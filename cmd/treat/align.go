@@ -6,11 +6,11 @@ package main
 
 import (
     "os"
-    "log"
     "bufio"
     "fmt"
     "github.com/aebruno/gofasta"
     "github.com/ubccr/treat"
+    "github.com/Sirupsen/logrus"
 )
 
 type AlignOptions struct {
@@ -45,11 +45,11 @@ func PrintAlignment(a1, a2 string, tw int) {
 
 func Align(options *AlignOptions) {
     if len(options.EditBase) != 1 {
-        log.Fatalln("ERROR Please provide the edit base")
+        logrus.Fatal("Please provide the edit base")
     }
 
     if (len(options.S1) > 0 && len(options.S2) == 0) || (len(options.S1) == 0 && len(options.S2) > 0) {
-        log.Fatal("ERROR please provide 2 fragments to align")
+        logrus.Fatal("Please provide 2 fragments to align")
     }
     if len(options.S1) > 0 && len(options.S2) > 0 {
         frag1 := treat.NewFragment("", options.S1, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
@@ -59,7 +59,7 @@ func Align(options *AlignOptions) {
         PrintAlignment(a1, a2, 80)
         return
     } else if len(options.FragmentPath) == 0 {
-        log.Fatalln("ERROR Please provide either 2 sequences to align or a path to fragment FASTA file")
+        logrus.Fatal("Please provide either 2 sequences to align or a path to fragment FASTA file")
     }
 
     var tmpl *treat.Template
@@ -67,28 +67,28 @@ func Align(options *AlignOptions) {
     if len(options.TemplatePath) > 0 {
         t, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
         if err != nil {
-            log.Fatal(err)
+            logrus.Fatal(err)
         }
         tmpl = t
 
         if len(options.Primer3) > 0 {
             err = tmpl.SetPrimer3(options.Primer3)
             if err != nil {
-                log.Fatal(err)
+                logrus.Fatal(err)
             }
         }
 
         if len(options.Primer5) > 0 {
             err = tmpl.SetPrimer5(options.Primer5)
             if err != nil {
-                log.Fatal(err)
+                logrus.Fatal(err)
             }
         }
     }
 
     f, err := os.Open(options.FragmentPath)
     if err != nil {
-        log.Fatal(err)
+        logrus.Fatal(err)
     }
     defer f.Close()
 
@@ -103,7 +103,7 @@ func Align(options *AlignOptions) {
         }
 
         if len(frags) < 2 {
-            log.Fatal("ERROR need 2 fragments to align")
+            logrus.Fatal("Need 2 fragments to align")
         }
 
         aln := new(treat.Alignment)

@@ -6,9 +6,10 @@ package main
 
 import (
     "os"
-    "log"
     "path/filepath"
+
     "github.com/codegangsta/cli"
+    "github.com/Sirupsen/logrus"
 )
 
 func main() {
@@ -42,15 +43,12 @@ func main() {
                 dir := c.String("dir")
                 fragPaths := c.StringSlice("fragment")
                 if fragPaths != nil && len(fragPaths) > 0 && len(dir) > 0 {
-                    log.Fatalln("ERROR Use --fragment or --dir not both.")
+                    logrus.Fatal("Use --fragment or --dir not both.")
                 }
 
                 if len(dir) > 0 {
-                    fa, err := filepath.Glob(dir + "/*.fasta")
-                    fasta, err := filepath.Glob(dir + "/*.fa")
-                    if err != nil {
-                        log.Fatalf("ERROR Failed to find *.fa(sta) files in dir: %s", dir)
-                    }
+                    fa, _ := filepath.Glob(filepath.Join(dir, "*.fasta"))
+                    fasta, _ := filepath.Glob(filepath.Join(dir, "*.fa"))
                     fgmts := append(fa, fasta...)
 
                     for _, f := range fgmts {

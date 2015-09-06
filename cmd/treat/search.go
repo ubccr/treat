@@ -5,18 +5,18 @@
 package main
 
 import (
-    "log"
     "os"
     "fmt"
     "encoding/csv"
     "github.com/ubccr/treat"
+    "github.com/Sirupsen/logrus"
 )
 
 
 func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
     s, err := NewStorage(dbpath)
     if err != nil {
-        log.Fatalf("%s", err)
+        logrus.Fatal(err)
     }
 
     csvout := csv.NewWriter(os.Stdout)
@@ -61,6 +61,6 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
     })
 
     if err != nil {
-        log.Fatalf("%s", err)
+        logrus.Fatal(err)
     }
 }

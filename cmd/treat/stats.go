@@ -5,10 +5,10 @@
 package main
 
 import (
-    "log"
     "fmt"
     "strings"
     "github.com/ubccr/treat"
+    "github.com/Sirupsen/logrus"
 )
 
 func percent(x, y int) (float64) {
@@ -18,14 +18,14 @@ func percent(x, y int) (float64) {
 func Stats(dbpath, gene string) {
     s, err := NewStorage(dbpath)
     if err != nil {
-        log.Fatalf("%s", err)
+        logrus.Fatal(err)
     }
     fmt.Printf("db path: %s\n", dbpath)
     fmt.Printf("version: %.1f\n\n", s.version)
 
     geneTemplates, err := s.TemplateMap()
     if err != nil {
-        log.Fatal(err)
+        logrus.Fatal(err)
     }
 
     for g, tmpl := range(geneTemplates) {
@@ -48,7 +48,7 @@ func Stats(dbpath, gene string) {
         })
 
         if err != nil {
-            log.Fatalf("%s", err)
+            logrus.Fatal(err)
         }
 
         fmt.Println(strings.Repeat("=", 80))
