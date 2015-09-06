@@ -91,7 +91,7 @@ func (f *Fragment) String() string {
 	return buf.String()
 }
 
-func (f *Fragment) SequenceNoPrimer(primer5, primer3 int) (string, error) {
+func (f *Fragment) StripPrimer(primer5, primer3 int) (string, error) {
 	var buf bytes.Buffer
 
 	size := len(f.EditSite)

@@ -90,7 +90,7 @@ func collapse(tmpl *treat.Template, options *LoadOptions) {
 		for rec := range gofasta.SimpleParser(inFile) {
 			mergeCount := MergeCount(rec, options)
 			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, mergeCount, 0, rune(options.EditBase[0]))
-			seqNoPrimer, err := frag.SequenceNoPrimer(tmpl.Primer5, tmpl.Primer3)
+			seqNoPrimer, err := frag.StripPrimer(tmpl.Primer5, tmpl.Primer3)
 			if err != nil {
 				logrus.Fatal(err)
 			}
