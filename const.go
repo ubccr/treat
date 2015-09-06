@@ -4,9 +4,8 @@
 
 package treat
 
-type OrientationType  int8
-type BaseCountType    uint32
+type OrientationType int8
+type BaseCountType uint32
 
-const FORWARD OrientationType =   1
-const REVERSE OrientationType =  -1
-
+const FORWARD OrientationType = 1
+const REVERSE OrientationType = -1

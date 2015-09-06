@@ -5,25 +5,25 @@
 package treat
 
 import (
-    "testing"
-    "strings"
+	"strings"
+	"testing"
 )
 
 func TestFragment(t *testing.T) {
-    seqs := []string{"CTGGTTTCA", "CTAATACACTTTTGAttttt", "TtTCTGGCTATT", "ttCGAGTATTT"}
-    for _, s := range seqs {
-        // forward orientation
-        frag := NewFragment("id", s, FORWARD, 1, 1, 't')
+	seqs := []string{"CTGGTTTCA", "CTAATACACTTTTGAttttt", "TtTCTGGCTATT", "ttCGAGTATTT"}
+	for _, s := range seqs {
+		// forward orientation
+		frag := NewFragment("id", s, FORWARD, 1, 1, 't')
 
-        if strings.ToUpper(s) != frag.String() {
-            t.Errorf("%s != %s", s, frag.String())
-        }
+		if strings.ToUpper(s) != frag.String() {
+			t.Errorf("%s != %s", s, frag.String())
+		}
 
-        // reverse orientation
-        frag = NewFragment("id", s, REVERSE, 1, 1, 't')
+		// reverse orientation
+		frag = NewFragment("id", s, REVERSE, 1, 1, 't')
 
-        if strings.ToUpper(reverse(s)) != frag.String() {
-            t.Errorf("%s != %s", s, frag.String())
-        }
-    }
+		if strings.ToUpper(reverse(s)) != frag.String() {
+			t.Errorf("%s != %s", s, frag.String())
+		}
+	}
 }
