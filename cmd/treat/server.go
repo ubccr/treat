@@ -107,7 +107,7 @@ func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, err
         }
         tmpldir = filepath.Join(dir, "/templates")
     }
-    logrus.Printf("Using template dir: %s\n", tmpldir)
+    logrus.Printf("Using template dir: %s", tmpldir)
 
     tmpls, err := filepath.Glob(filepath.Join(tmpldir, "*.html"))
     if err != nil {
@@ -507,6 +507,10 @@ func Server(dbpath, tmpldir string, port int, enableCache bool) {
     middle, err := app.middlewareStruct()
     if err != nil {
         logrus.Fatal(err.Error())
+    }
+
+    if enableCache {
+        logrus.Info("URL caching enabled")
     }
 
     http.Handle("/", middle)
