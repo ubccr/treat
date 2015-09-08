@@ -1,9 +1,11 @@
 ===============================================================================
-TREAT - Trypanosome RNA Editing Alignment Tool
+Trypanosome RNA Editing Alignment Tool
 ===============================================================================
 
+.. image:: docs/treat-logo-lg.png
+
 ------------------------------------------------------------------------
-About
+What is TREAT?
 ------------------------------------------------------------------------
 
 TREAT is a multiple sequence alignment and visualization tool specifically
@@ -194,4 +196,5 @@ Start the TREAT server and view the sequences in a web browser::
 License
 ------------------------------------------------------------------------
 
-TREAT is released under a BSD style license. See the LICENSE file. 
+TREAT is released under a BSD style license. See the LICENSE file. TREAT logo
+designed by Nicole B. Laski. 
