@@ -2,7 +2,7 @@
 <div class="well">
 <form class="form-inline" role="form" method="GET">
   <div class="form-group">
-    <select name="gene" class="selectpicker show-tick" title="Gene..">
+    <select id="gene" name="gene" class="selectpicker show-tick" title="Gene..">
         {{ range $g := .Genes }}
             <option{{if eq $g $.Fields.Gene }} selected="selected"{{end}} value="{{ $g }}">{{ $g }}</option>
         {{ end }}
@@ -71,6 +71,9 @@ $(function () {
     });
     $("#search-spin").hide()
     $("#search-btn").click(function() { $("#search-spin").show(); });
+    $('#gene').change(function() {
+        window.location = "?gene=" + $(this).val();
+    });
 });
 </script>
 {{end}}
