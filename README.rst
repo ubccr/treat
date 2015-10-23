@@ -18,7 +18,7 @@ posttranscriptionally edited by the insertion/deletion of uridylate residues.
 TREAT aligns sequences using three bases and assembles editing sites to detect
 the extent of editing of the fourth base, called the edit base. The edit base
 is configurable in TREAT and by default uses 'T'. TREAT is written in Go and is
-released under a BSD style free software license. 
+released under the GPLv3 free software license. 
 
 ------------------------------------------------------------------------
 Installation
@@ -196,5 +196,5 @@ Start the TREAT server and view the sequences in a web browser::
 License
 ------------------------------------------------------------------------
 
-TREAT is released under a BSD style license. See the LICENSE file. TREAT logo
+TREAT is released under the GPLv3 license. See the LICENSE file. TREAT logo
 designed by Nicole B. Laski. 
