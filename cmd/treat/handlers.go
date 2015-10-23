@@ -219,7 +219,13 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 	}
 
 	series := make([]map[string]interface{}, 0)
-	for k, v := range samples {
+	var skeys []string
+	for k := range samples {
+		skeys = append(skeys, k)
+	}
+	sort.Strings(skeys)
+	for _, k := range skeys {
+		v := samples[k]
 		x := make([]float64, max+1)
 		for i := range x {
 			if _, ok := v[uint32(i)]; ok {
