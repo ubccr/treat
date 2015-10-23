@@ -706,7 +706,14 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 
 		fe := make([]map[string]interface{}, 0)
 		pe := make([]map[string]interface{}, 0)
-		for k, v := range samples {
+
+		var skeys []string
+		for k := range samples {
+			skeys = append(skeys, k)
+		}
+		sort.Strings(skeys)
+		for _, k := range skeys {
+			v := samples[k]
 			x := []float64{v[tmpl.EditStop]}
 			y := []float64{v[uint32(primer5)]}
 
