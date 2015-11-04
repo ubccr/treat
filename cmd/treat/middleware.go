@@ -39,7 +39,16 @@ func DbContext(app *Application) http.Handler {
 			logrus.WithFields(logrus.Fields{
 				"dbname": dbname,
 			}).Warn("Invalid database name. Using default")
-			dbname = app.defaultDb
+			db, _ = app.GetDb(app.defaultDb)
+
+            session.Values[TREAT_COOKIE_DB] = app.defaultDb
+            err = session.Save(r, w)
+            if err != nil {
+                logrus.WithFields(logrus.Fields{
+                    "defaultDb": app.defaultDb,
+                    "error": err.Error(),
+                }).Error("Failed to set cookie for default db")
+            }
 		}
 
 		context.Set(r, "db", db)
