@@ -1,17 +1,17 @@
 // Copyright 2015 TREAT Authors. All rights reserved.
 //
 // This file is part of TREAT.
-// 
+//
 // TREAT is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // TREAT is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with TREAT.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -129,6 +129,7 @@ func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, err
 	funcMap := template.FuncMap{
 		"increment":   incrementFunc,
 		"decrement":   decrementFunc,
+		"percent":     percent,
 		"round":       roundFunc,
 		"juncseq":     juncseqFunc,
 		"pctSearch":   pctSearchFunc,
@@ -291,6 +292,7 @@ func (a *Application) router() *mux.Router {
 	router.Path("/heat").Handler(HeatHandler(a)).Methods("GET")
 	router.Path("/search").Handler(SearchHandler(a)).Methods("GET")
 	router.Path("/show").Handler(ShowHandler(a)).Methods("GET")
+	router.Path("/stats").Handler(StatsHandler(a)).Methods("GET")
 	router.Path("/db").Handler(DbHandler(a)).Methods("GET")
 	router.Path("/tmpl-report").Handler(TemplateSummaryHandler(a)).Methods("GET")
 
@@ -471,7 +473,7 @@ func decrementFunc(x int) int {
 }
 
 func roundFunc(val float64) string {
-	return fmt.Sprintf("%.4f", val)
+	return fmt.Sprintf("%.2f", val)
 }
 
 func pctSearchFunc(a *treat.Alignment, totals map[string]float64) string {

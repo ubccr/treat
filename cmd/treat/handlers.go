@@ -1,17 +1,17 @@
 // Copyright 2015 TREAT Authors. All rights reserved.
 //
 // This file is part of TREAT.
-// 
+//
 // TREAT is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // TREAT is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with TREAT.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -768,5 +768,59 @@ func DbHandler(app *Application) http.Handler {
 		}
 
 		http.Redirect(w, r, "/", 302)
+	})
+}
+
+func StatsHandler(app *Application) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := context.Get(r, "db").(*Database)
+		if db == nil {
+			logrus.Error("stats handler: database not found in request context")
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		countByString := r.FormValue("countby")
+		countBy := COUNT_FRAG
+		if "Norm" == countByString {
+			countBy = COUNT_NORM
+		} else if "Unique" == countByString {
+			countBy = COUNT_UNIQUE
+		} else {
+			countByString = "Fragments"
+		}
+
+		fields, err := app.NewSearchFields(r.URL, db)
+		if err != nil {
+			logrus.Printf("Error parsing get request: %s", err)
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		tmpl, ok := db.geneTemplates[fields.Gene]
+		if !ok {
+			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		stats, err := geneStats(db.storage, fields.Gene, countBy)
+		if err != nil {
+			logrus.Printf("Failed to compute stats for gene %s: %s", fields.Gene, err)
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		vars := map[string]interface{}{
+			"dbs":      app.dbs,
+			"curdb":    db.name,
+			"stats":    stats,
+			"Fields":   fields,
+			"Template": tmpl,
+			"Counts":   []string{"Fragments", "Norm", "Unique"},
+			"Countby":  countByString,
+			"Genes":    db.genes}
+
+		renderTemplate(app, "stats.html", w, vars)
 	})
 }

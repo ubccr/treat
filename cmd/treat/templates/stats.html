@@ -1,0 +1,77 @@
+{{define "content"}}
+
+<div class="page-header">
+  <h3><i class="fa fa-line-chart fa-lg"></i> DB Stats: {{ .curdb }}</h3>
+</div>
+
+<div class="well">
+<form class="form-inline" role="form" method="GET">
+  <div class="form-group">
+    <label for="gene">Gene: </label>
+    <select id="gene" name="gene" class="selectpicker show-tick" title="Gene..">
+        {{ range $g := .Genes }}
+            <option{{if eq $g $.Fields.Gene }} selected="selected"{{end}} value="{{ $g }}">{{ $g }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="countby">Count By: </label>
+    <select id="countby" name="countby" class="selectpicker show-tick" title="Count by..">
+        {{ range $c := .Counts }}
+            <option{{if eq $c $.Countby }} selected="selected"{{end}} value="{{ $c }}">{{ $c }}</option>
+        {{ end }}
+    </select>
+  </div>
+  <button id="show-btn" type="submit" class="btn btn-primary"><i id="show-spin" class="fa fa-refresh fa-spin"></i> Show</button>
+</form>
+</div>
+
+<script type="text/javascript">
+$(function () {
+    $('.selectpicker').selectpicker({
+        width: '100px'
+    });
+    $("#show-spin").hide()
+    $("#show-btn").click(function() { $("#show-spin").show(); });
+});
+</script>
+
+<h2>{{ .stats.Name }}</h2>
+
+<table class="table table-bordered table-condensed">
+    <tr class="active">
+        <th>Sample</th>
+        <th class="text-right">Standard Alignments</th>
+        <th class="text-right">Non-Standard</th>
+        <th class="text-right">1-Mismatch</th>
+        <th class="text-right">2-Mismatch</th>
+        <th class="text-right">&gt;3-Mismatch</th>
+        <th class="text-right">Indels</th>
+        <th class="text-right">Total</th>
+    </tr>
+    {{ range $s, $r := .stats.SampleMap }}
+    <tr>
+        <td>{{ $s }}</td>
+        <td class="text-right">{{ $r.Std }} <small class="text-muted">({{ percent $r.Std $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.NonStd }} <small class="text-muted">({{ percent $r.NonStd $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.SingleMismatch }} <small class="text-muted">({{ percent $r.SingleMismatch $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.DoubleMismatch }} <small class="text-muted">({{ percent $r.DoubleMismatch $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.Snps }} <small class="text-muted">({{ percent $r.Snps $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.Indels }} <small class="text-muted">({{ percent $r.Indels $r.Total | round}}%)</small></td>
+        <td class="text-right">{{ $r.Total }}</td>
+    </tr>
+    {{ end }}
+    <tr class="info">
+        <th scope="row">Total</td>
+        <td class="text-right">{{ .stats.Std }}</td>
+        <td class="text-right">{{ .stats.NonStd }}</td>
+        <td class="text-right">{{ .stats.SingleMismatch }}</td>
+        <td class="text-right">{{ .stats.DoubleMismatch }}</td>
+        <td class="text-right">{{ .stats.Snps }}</td>
+        <td class="text-right">{{ .stats.Indels }}</td>
+        <td class="text-right">{{ .stats.Total }}</td>
+    </tr>
+</table>
+
+
+{{end}}

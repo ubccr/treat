@@ -1,17 +1,17 @@
 // Copyright 2015 TREAT Authors. All rights reserved.
 //
 // This file is part of TREAT.
-// 
+//
 // TREAT is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // TREAT is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with TREAT.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -28,7 +28,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "treat"
-    app.Copyright = `Copyright 2015 TREAT Authors.  
+	app.Copyright = `Copyright 2015 TREAT Authors.  
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,9 +43,9 @@ func main() {
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.`
 	app.Authors = []cli.Author{
-        {Name: "Andrew E. Bruno", Email: "aebruno2@buffalo.edu"},
-        {Name: "Rachel Simpson", Email: "rachel.simpson64@gmail.com"},
-        {Name: "Laurie Read", Email: "lread@buffalo.edu"}}
+		{Name: "Andrew E. Bruno", Email: "aebruno2@buffalo.edu"},
+		{Name: "Rachel Simpson", Email: "rachel.simpson64@gmail.com"},
+		{Name: "Laurie Read", Email: "lread@buffalo.edu"}}
 	app.Usage = "Trypanosome RNA Editing Alignment Tool"
 	app.Version = "0.0.1"
 	app.Flags = []cli.Flag{
@@ -163,9 +163,11 @@ func main() {
 			Usage: "Print database stats",
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "gene, g", Usage: "Filter by gene"},
+				&cli.BoolFlag{Name: "unique, u", Usage: "Use unique fragment counts only"},
+				&cli.BoolFlag{Name: "norm, n", Usage: "Use normalized fragment counts only"},
 			},
 			Action: func(c *cli.Context) {
-				Stats(c.GlobalString("db"), c.String("gene"))
+				ShowStats(c.GlobalString("db"), c.String("gene"), c.Bool("unique"), c.Bool("norm"))
 			},
 		},
 		{
