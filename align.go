@@ -1,17 +1,17 @@
 // Copyright 2015 TREAT Authors. All rights reserved.
 //
 // This file is part of TREAT.
-// 
+//
 // TREAT is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // TREAT is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with TREAT.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -44,6 +44,8 @@ type Alignment struct {
 	ReadCount   uint32        `json:"read_count"`
 	Norm        float64       `json:"norm_count"`
 	HasMutation uint8         `json:"has_mutation"`
+	Mismatches  uint8         `json:"mismatches"`
+	Indel       uint8         `json:"indel"`
 	AltEditing  uint8         `json:"alt_editing"`
 	JuncSeq     string        `json:"-"`
 }
@@ -84,6 +86,7 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 			fi++
 			// insertion
 			alignment.HasMutation = uint8(1)
+			alignment.Indel = uint8(1)
 			continue
 		}
 
@@ -91,13 +94,19 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 		if aln2[ai] != '-' {
 			count = frag.EditSite[fi]
 
-			if excludeSnps && frag.Bases[fi] != template.Bases[ti] {
+			if frag.Bases[fi] != template.Bases[ti] {
 				// SNP
-				alignment.HasMutation = uint8(1)
+				alignment.Mismatches++
+
+				//TODO: make the number of mismatches configurable
+				if excludeSnps || alignment.Mismatches > 2 {
+					alignment.HasMutation = uint8(1)
+				}
 			}
 		} else {
 			// deletion
 			alignment.HasMutation = uint8(1)
+			alignment.Indel = uint8(1)
 		}
 
 		for i := range template.EditSite {
@@ -220,18 +229,20 @@ func (a *Alignment) UnmarshalBinary(buf []byte) error {
 	a.ReadCount = binary.BigEndian.Uint32(buf[16:20])
 	a.HasMutation = buf[20]
 	a.AltEditing = buf[21]
-	normBits := binary.BigEndian.Uint64(buf[38:46])
-	seqLen := binary.BigEndian.Uint32(buf[46:50])
+	a.Mismatches = buf[22]
+	a.Indel = buf[23]
+	normBits := binary.BigEndian.Uint64(buf[24:32])
+	seqLen := binary.BigEndian.Uint32(buf[32:36])
 
 	a.Norm = math.Float64frombits(normBits)
 
-	a.JuncSeq = string(buf[50 : 50+int(seqLen)])
+	a.JuncSeq = string(buf[36 : 36+int(seqLen)])
 
 	return nil
 }
 
 func (a *Alignment) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 50)
+	buf := make([]byte, 36)
 
 	binary.BigEndian.PutUint32(buf[0:4], a.EditStop)
 	binary.BigEndian.PutUint32(buf[4:8], a.JuncStart)
@@ -240,10 +251,12 @@ func (a *Alignment) MarshalBinary() ([]byte, error) {
 	binary.BigEndian.PutUint32(buf[16:20], a.ReadCount)
 	buf[20] = a.HasMutation
 	buf[21] = a.AltEditing
-	binary.BigEndian.PutUint64(buf[38:46], math.Float64bits(a.Norm))
+	buf[22] = a.Mismatches
+	buf[23] = a.Indel
+	binary.BigEndian.PutUint64(buf[24:32], math.Float64bits(a.Norm))
 
 	seq := []byte(a.JuncSeq)
-	binary.BigEndian.PutUint32(buf[46:50], uint32(len(seq)))
+	binary.BigEndian.PutUint32(buf[32:36], uint32(len(seq)))
 	buf = append(buf, seq...)
 
 	return buf, nil
