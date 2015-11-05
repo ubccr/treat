@@ -129,8 +129,8 @@ func Align(options *AlignOptions) {
 			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
 			aln := treat.NewAlignment(frag, tmpl, false)
 			buf := bufio.NewWriter(os.Stdout)
-			defer buf.Flush()
 			aln.WriteTo(buf, frag, tmpl, 80)
+			buf.Flush()
 		}
 	}
 }
