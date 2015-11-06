@@ -49,7 +49,18 @@ type LoadOptions struct {
 	Collapse     bool
 }
 
-var fastxPattern = regexp.MustCompile(`^\d+\-(\d+)$`)
+// fastx_collapser will output fasta headers in the format [id]-[count]
+//  for example: 
+//      > 132-2082
+//
+// This regex will parse any fasta header (including those from
+// fastx_collapser) where the collapsed read count is found at the end of the
+// string separated by either a '-' or an '_'. For example, all these 
+// are acceptable and the collapsed count would = 2082:
+//     > SAMPLE1_GENE_123432_2082
+//     > 132-2082
+//     > GENE-88772-2082
+var fastxPattern = regexp.MustCompile(`.+[_\-](\d+)$`)
 
 func MergeCount(rec *gofasta.SeqRecord, options *LoadOptions) uint32 {
 	// First try and parse fastx-collapser header lines
