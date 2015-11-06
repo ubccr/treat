@@ -2,14 +2,17 @@
 
 <div class="page-header">
     <h3>
+        <ol class="breadcrumb">
+        <li>
         <i class="fa fa-align-justify fa-lg"></i> 
-        {{ .Key.Gene }}: {{ .Key.Sample }}
-        <small>
-        #{{ .Alignment.ReadCount }}
-        ({{ .Alignment.Norm | round}})
-        </small>
+        {{ .Key.Gene }}</li>
+        <li>{{ .Key.Sample }}</li>
+        <li class="active">{{ .Fragment.Name }}</li>
+        </ol>
     </h3>
     <div>
+    <span class="label label-default"><i class="fa fa-barcode fa-sm"></i> Fragment Count: {{ .Alignment.ReadCount }}</span>
+    <span class="label label-default"><i class="fa fa-balance-scale fa-sm"></i> Norm Count: {{ .Alignment.Norm | round }}</span>
     <span class="label label-info"><i class="fa fa-edit fa-sm"></i> Edit Stops: {{ .Alignment.EditStop }}</span>
     <span class="label label-junction"><i class="fa fa-link fa-sm"></i> Junction Length: {{ .Alignment.JuncLen }}</span>
     {{if gt .Alignment.AltEditing 0 }}
