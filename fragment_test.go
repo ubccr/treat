@@ -26,17 +26,25 @@ func TestFragment(t *testing.T) {
 	seqs := []string{"CTGGTTTCA", "CTAATACACTTTTGAttttt", "TtTCTGGCTATT", "ttCGAGTATTT"}
 	for _, s := range seqs {
 		// forward orientation
-		frag := NewFragment("id", s, FORWARD, 1, 1, 't')
+		frag := NewFragment("id", s, FORWARD, 't')
 
 		if strings.ToUpper(s) != frag.String() {
 			t.Errorf("%s != %s", s, frag.String())
 		}
 
+		if uint32(1) != frag.ReadCount {
+			t.Errorf("%d != %d", 1, frag.ReadCount)
+		}
+
 		// reverse orientation
-		frag = NewFragment("id", s, REVERSE, 1, 1, 't')
+		frag = NewFragment("1-143", s, REVERSE, 't')
 
 		if strings.ToUpper(reverse(s)) != frag.String() {
 			t.Errorf("%s != %s", s, frag.String())
+		}
+
+		if uint32(143) != frag.ReadCount {
+			t.Errorf("%d != %d", 143, frag.ReadCount)
 		}
 	}
 }

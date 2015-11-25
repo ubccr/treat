@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -32,6 +34,19 @@ var BASE_COMP = map[byte]byte{
 	[]byte("T")[0]: []byte("A")[0],
 	[]byte("N")[0]: []byte("N")[0],
 }
+
+// fastx_collapser will output fasta headers in the format [id]-[count]
+//  for example: 
+//      > 132-2082
+//
+// This regex will parse any fasta header (including those from
+// fastx_collapser) where the collapsed read count is found at the end of the
+// string separated by either a '-' or an '_'. For example, all these 
+// are acceptable and the collapsed count would = 2082:
+//     > SAMPLE1_GENE_123432_2082
+//     > 132-2082
+//     > GENE-88772-2082
+var fastxPattern = regexp.MustCompile(`.+[_\-](\d+)$`)
 
 type Fragment struct {
 	Name      string
@@ -51,7 +66,22 @@ func reverse(s string) string {
 	return string(runes)
 }
 
-func NewFragment(name, seq string, orientation OrientationType, reads uint32, norm float64, base rune) *Fragment {
+func parseMergeCount(recId string) uint32 {
+	// First try and parse fastx-collapser header lines
+	matches := fastxPattern.FindStringSubmatch(recId)
+	if len(matches) == 2 {
+		count, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return uint32(1)
+		}
+
+		return uint32(count)
+	}
+
+	return uint32(1)
+}
+
+func NewFragment(name, seq string, orientation OrientationType, base rune) *Fragment {
 	base = unicode.ToUpper(base)
 
 	// Ensure all sequences are in forward 5' -> 3' orientation
@@ -78,8 +108,9 @@ func NewFragment(name, seq string, orientation OrientationType, reads uint32, no
 	}
 	bases := strings.Map(procBases, seq)
 	editSite[index] = baseCount
+    reads := parseMergeCount(name)
 
-	return &Fragment{Name: name, ReadCount: reads, Norm: norm, Bases: bases, EditBase: base, EditSite: editSite}
+	return &Fragment{Name: name, ReadCount: reads, Bases: bases, EditBase: base, EditSite: editSite}
 }
 
 func (f *Fragment) ToFasta() string {
