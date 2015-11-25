@@ -20,7 +20,6 @@ package treat
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -120,6 +119,10 @@ func (f *Fragment) ToFasta() string {
 	buf.WriteString("\n")
 	buf.WriteString(f.String())
 	return buf.String()
+}
+
+func (f *Fragment) Len() int {
+	return len(f.EditSite)
 }
 
 func (f *Fragment) String() string {
