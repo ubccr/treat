@@ -60,7 +60,7 @@ func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (
 	alt := make([]*AltRegion, 0)
 
 	for rec := range gofasta.SimpleParser(f) {
-		frag := NewFragment(rec.Id, rec.Seq, orientation, 0, 0, base)
+		frag := NewFragment(rec.Id, rec.Seq, orientation, base)
 		t = append(t, frag)
 
 		if len(t) > 2 {
@@ -135,7 +135,9 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
 		bi[i] = index
 	}
 
-	return &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion, BaseIndex: bi}, nil
+	tmpl := &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion, BaseIndex: bi}
+
+	return tmpl, nil
 }
 
 func (tmpl *Template) Size() int {
@@ -146,8 +148,8 @@ func (tmpl *Template) Len() int {
 	return len(tmpl.EditSite[0])
 }
 
-func (tmpl *Template) SetPrimer5(primer string) error {
-	p5 := NewFragment("primer5", primer, FORWARD, 0, 0, tmpl.EditBase)
+func (tmpl *Template) setPrimer5(primer string) error {
+	p5 := NewFragment("primer5", primer, FORWARD, tmpl.EditBase)
 	if !strings.HasPrefix(tmpl.Bases, p5.Bases) {
 		return fmt.Errorf("Invalid primer sequence")
 	}
@@ -157,13 +159,13 @@ func (tmpl *Template) SetPrimer5(primer string) error {
 	return nil
 }
 
-func (tmpl *Template) SetPrimer3(primer string) error {
+func (tmpl *Template) setPrimer3(primer string) error {
 	bases := []byte(primer)
 	// complement
 	for i := 0; i < len(bases); i++ {
 		bases[i] = BASE_COMP[bases[i]]
 	}
-	p3 := NewFragment("primer3", string(bases), REVERSE, 0, 0, tmpl.EditBase)
+	p3 := NewFragment("primer3", string(bases), REVERSE, tmpl.EditBase)
 
 	if !strings.HasSuffix(tmpl.Bases, p3.Bases) {
 		return fmt.Errorf("Invalid primer sequence")
@@ -172,6 +174,32 @@ func (tmpl *Template) SetPrimer3(primer string) error {
 	tmpl.Primer3 = len(p3.Bases)
 
 	return nil
+}
+
+func (tmpl *Template) SetPrimers(primer5, primer3 string) error {
+    err := tmpl.setPrimer3(primer3)
+    if err != nil {
+        return err
+    }
+
+    err = tmpl.setPrimer5(primer5)
+    if err != nil {
+        return err
+    }
+
+	// Re-compute Edit Stop Site
+	tmpl.EditStop = uint32((tmpl.Len() - 1) - tmpl.Primer3)
+	for j := int(tmpl.EditStop); j >= int(tmpl.Primer5); j-- {
+		if tmpl.EditSite[0][j] != tmpl.EditSite[1][j] {
+			tmpl.EditStop = uint32((tmpl.Len() - 1) - j)
+			break
+		}
+	}
+	if tmpl.EditStop > 0 {
+		tmpl.EditStop--
+	}
+
+    return nil
 }
 
 func (tmpl *Template) String() string {

@@ -33,12 +33,12 @@ func TestTemplate(t *testing.T) {
 		t.Errorf("Wrong template size. %d != %d", tmpl.Size(), 5)
 	}
 
-	err = tmpl.SetPrimer5("XXX")
+	err = tmpl.setPrimer5("XXX")
 	if err == nil {
 		t.Errorf("Setting invald primer region should throw error")
 	}
 
-	err = tmpl.SetPrimer5("CTAATACACTTTTGATAACAAAC")
+	err = tmpl.setPrimer5("CTAATACACTTTTGATAACAAAC")
 	if err != nil {
 		t.Errorf("%s", err)
 	}
@@ -47,12 +47,12 @@ func TestTemplate(t *testing.T) {
 		t.Errorf("Primer5 region should be 16 edit sites got: %d", tmpl.Primer5)
 	}
 
-	err = tmpl.SetPrimer3("XXX")
+	err = tmpl.setPrimer3("XXX")
 	if err == nil {
 		t.Errorf("Setting invald primer region should throw error")
 	}
 
-	err = tmpl.SetPrimer3("AAAAACATATCTTATATCTAAA")
+	err = tmpl.setPrimer3("AAAAACATATCTTATATCTAAA")
 	if err != nil {
 		t.Errorf("%s", err)
 	}
@@ -61,16 +61,16 @@ func TestTemplate(t *testing.T) {
 		t.Errorf("Primer3 region should be 10 edit sites got: %d", tmpl.Primer3)
 	}
 
-	full := NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 0, 0, 't')
-	pre := NewFragment("pre", "ttCAATT", FORWARD, 0, 0, 't')
+	full := NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 't')
+	pre := NewFragment("pre", "ttCAATT", FORWARD, 't')
 
 	_, err = NewTemplate(full, pre, nil, nil)
 	if err == nil {
 		t.Errorf("Pre and Full templates do not much. Should throw and error")
 	}
 
-	full = NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 0, 0, 't')
-	pre = NewFragment("pre", "ttttCCAATTTTGCAATTTTT", FORWARD, 0, 0, 't')
+	full = NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 't')
+	pre = NewFragment("pre", "ttttCCAATTTTGCAATTTTT", FORWARD, 't')
 
 	tmpl, err = NewTemplate(full, pre, nil, nil)
 	if err != nil {
