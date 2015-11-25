@@ -40,6 +40,7 @@ type AltRegion struct {
 
 type Template struct {
 	Bases     string
+    EditStop  uint32
 	EditBase  rune
 	EditSite  [][]BaseCountType
 	BaseIndex []uint32
@@ -133,6 +134,19 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
 	}
 
 	tmpl := &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion, BaseIndex: bi}
+
+	// Compute Edit Stop Site based on full and pre-edit templates
+	tmpl.EditStop = uint32(tmpl.Len() - 1)
+	for j := int(tmpl.EditStop); j >= 0; j-- {
+		if tmpl.EditSite[0][j] != tmpl.EditSite[1][j] {
+			tmpl.EditStop = uint32((tmpl.Len() - 1) - j)
+			break
+		}
+	}
+
+	if tmpl.EditStop > 0 {
+		tmpl.EditStop--
+	}
 
 	return tmpl, nil
 }
