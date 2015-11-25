@@ -33,34 +33,6 @@ func TestTemplate(t *testing.T) {
 		t.Errorf("Wrong template size. %d != %d", tmpl.Size(), 5)
 	}
 
-	err = tmpl.setPrimer5("XXX")
-	if err == nil {
-		t.Errorf("Setting invald primer region should throw error")
-	}
-
-	err = tmpl.setPrimer5("CTAATACACTTTTGATAACAAAC")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-
-	if tmpl.Primer5 != 16 {
-		t.Errorf("Primer5 region should be 16 edit sites got: %d", tmpl.Primer5)
-	}
-
-	err = tmpl.setPrimer3("XXX")
-	if err == nil {
-		t.Errorf("Setting invald primer region should throw error")
-	}
-
-	err = tmpl.setPrimer3("AAAAACATATCTTATATCTAAA")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-
-	if tmpl.Primer3 != 10 {
-		t.Errorf("Primer3 region should be 10 edit sites got: %d", tmpl.Primer3)
-	}
-
 	full := NewFragment("full", "ttCCAATTGCAATTT", FORWARD, 't')
 	pre := NewFragment("pre", "ttCAATT", FORWARD, 't')
 

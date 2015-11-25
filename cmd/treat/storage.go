@@ -538,7 +538,6 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 	fname := filepath.Base(path)
 	sample := fname[:len(fname)-len(filepath.Ext(path))]
 	// clean up sample name
-	sample = strings.Replace(sample, "-primer-collapsed", "", 1)
 	sample = strings.Replace(sample, " ", "_", -1)
 
 	akey := &treat.AlignmentKey{options.Gene, sample}
@@ -552,6 +551,7 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 		return nil, err
 	}
 
+	s.DB.NoSync = true
 	var tx *bolt.Tx
 	var alnBucket *bolt.Bucket
 	var fragBucket *bolt.Bucket
@@ -569,6 +569,7 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 				if err := tx.Commit(); err != nil {
 					return nil, err
 				}
+				fmt.Printf("\rLoaded %d fragments...", count)
 			}
 			tx, err = s.DB.Begin(true)
 			if err != nil {
@@ -615,7 +616,11 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 		return nil, err
 	}
 
-	logrus.Printf("Loaded %d fragment sequences for sample %s", count, sample)
+	s.DB.NoSync = false
+	s.DB.Sync()
+
+	fmt.Println()
+	logrus.Printf("Done. Loaded %d fragment sequences for sample %s", count, sample)
 
 	return akey, nil
 }

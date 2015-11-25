@@ -59,14 +59,11 @@ func main() {
 				&cli.StringFlag{Name: "gene, g", Usage: "Gene Name"},
 				&cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
 				&cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
-				&cli.StringFlag{Name: "primer5", Usage: "5' primer sequence"},
-				&cli.StringFlag{Name: "primer3", Usage: "3' primer sequence"},
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
 				&cli.StringFlag{Name: "dir", Usage: "Directory of fragment FASTA files"},
 				&cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
 				&cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
 				&cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
-				&cli.BoolFlag{Name: "collapse", Usage: "Collapse fragments excluding primer regions  into a single sequence (while maintaining reads counts)"},
 			},
 			Action: func(c *cli.Context) {
 				dir := c.String("dir")
@@ -90,13 +87,10 @@ func main() {
 					Gene:         c.String("gene"),
 					TemplatePath: c.String("template"),
 					FragmentPath: fragPaths,
-					Primer5:      c.String("primer5"),
-					Primer3:      c.String("primer3"),
 					EditBase:     c.String("base"),
 					SkipFrags:    c.Bool("skip-fragments"),
 					ExcludeSnps:  c.Bool("exclude-snps"),
 					Force:        c.Bool("force"),
-					Collapse:     c.Bool("collapse"),
 				})
 			},
 		},
@@ -109,15 +103,11 @@ func main() {
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
 				&cli.StringFlag{Name: "s1, 1", Usage: "first sequence to align"},
 				&cli.StringFlag{Name: "s2, 2", Usage: "second sequence to align"},
-				&cli.StringFlag{Name: "primer5", Usage: "5' primer sequence"},
-				&cli.StringFlag{Name: "primer3", Usage: "3' primer sequence"},
 			},
 			Action: func(c *cli.Context) {
 				Align(&AlignOptions{
 					TemplatePath: c.String("template"),
 					FragmentPath: c.String("fragment"),
-					Primer5:      c.String("primer5"),
-					Primer3:      c.String("primer3"),
 					EditBase:     c.String("base"),
 					S1:           c.String("s1"),
 					S2:           c.String("s2"),
@@ -131,15 +121,11 @@ func main() {
 				&cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
 				&cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
-				&cli.StringFlag{Name: "primer5", Usage: "5' primer sequence"},
-				&cli.StringFlag{Name: "primer3", Usage: "3' primer sequence"},
 				&cli.IntFlag{Name: "n", Value: 5, Usage: "Max number of indels to ouptut"},
 			},
 			Action: func(c *cli.Context) {
 				Mutant(&AlignOptions{
 					TemplatePath: c.String("template"),
-					Primer5:      c.String("primer5"),
-					Primer3:      c.String("primer3"),
 					EditBase:     c.String("base"),
 				}, c.StringSlice("fragment"), c.Int("n"))
 			},

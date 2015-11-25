@@ -188,7 +188,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		return
 	}
 
-	tmpl, ok := db.geneTemplates[fields.Gene]
+	_, ok := db.geneTemplates[fields.Gene]
 	if !ok {
 		logrus.Printf("Invalid gene: %s", fields.Gene)
 		http.Error(w, "Invalid gene", http.StatusInternalServerError)
@@ -199,7 +199,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 
 	max := maxMap[fields.Gene]
 	err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
-		if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
+		if a.EditStop == 0 && a.JuncLen == 0 {
 			return
 		}
 
@@ -579,7 +579,7 @@ func HeatMapJson(app *Application) http.Handler {
 				series[k] = make([]interface{}, 3)
 				series[k][0] = i
 				series[k][1] = j
-				if i == int(tmpl.EditStop) && j == 0 {
+				if i == 0 && j == 0 {
 					series[k][2] = 0.0
 				} else {
 					series[k][2] = heat[i][j]
@@ -669,7 +669,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		tmpl, ok := db.geneTemplates[fields.Gene]
+		_, ok := db.geneTemplates[fields.Gene]
 		if !ok {
 			logrus.Printf("Invalid gene: %s", fields.Gene)
 			http.Error(w, "Invalid gene", http.StatusInternalServerError)
@@ -677,13 +677,10 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 		}
 
 		samples := make(map[string]map[uint32]float64)
-		primer5 := (tmpl.Len() - 2) - tmpl.Primer5
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
 			ok := false
-			if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
-				ok = true
-			} else if a.EditStop == uint32(primer5) && a.JuncLen == 0 {
+			if a.EditStop == 0 && a.JuncLen == 0 {
 				ok = true
 			}
 
@@ -714,8 +711,8 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 		sort.Strings(skeys)
 		for _, k := range skeys {
 			v := samples[k]
-			x := []float64{v[tmpl.EditStop]}
-			y := []float64{v[uint32(primer5)]}
+			x := []float64{v[uint32(0)]}
+			y := []float64{v[uint32(0)]}
 
 			m := make(map[string]interface{})
 			m["data"] = y

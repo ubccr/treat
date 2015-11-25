@@ -68,11 +68,6 @@ func Mutant(options *AlignOptions, fragments []string, n int) {
 		logrus.Fatal(err)
 	}
 
-	err = tmpl.SetPrimers(options.Primer5, options.Primer3)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
 	tm := make(map[string]int)
 	fm := make(map[string]int)
 	for _, path := range fragments {

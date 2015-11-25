@@ -30,8 +30,6 @@ import (
 type AlignOptions struct {
 	TemplatePath string
 	FragmentPath string
-	Primer5      string
-	Primer3      string
 	EditBase     string
 	S1           string
 	S2           string
@@ -84,11 +82,6 @@ func Align(options *AlignOptions) {
 			logrus.Fatal(err)
 		}
 		tmpl = t
-
-		err = tmpl.SetPrimers(options.Primer5, options.Primer3)
-		if err != nil {
-			logrus.Fatal(err)
-		}
 	}
 
 	f, err := os.Open(options.FragmentPath)
