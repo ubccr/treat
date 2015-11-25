@@ -43,7 +43,6 @@ type LoadOptions struct {
 	Collapse     bool
 }
 
-
 func collapse(tmpl *treat.Template, options *LoadOptions) {
 	logrus.Info("Collapsing fragment files excluding primer regions")
 	collapsedFiles := make([]string, 0)
@@ -118,7 +117,7 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatal("Please provide the edit base")
 	}
 
-    // Clean up gene names
+	// Clean up gene names
 	options.Gene = strings.Replace(options.Gene, " ", "_", -1)
 
 	tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
@@ -126,10 +125,10 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatalln(err)
 	}
 
-    err = tmpl.SetPrimers(options.Primer5, options.Primer3)
-    if err != nil {
-        logrus.Fatalln(err)
-    }
+	err = tmpl.SetPrimers(options.Primer5, options.Primer3)
+	if err != nil {
+		logrus.Fatalln(err)
+	}
 
 	if options.Collapse {
 		collapse(tmpl, options)
@@ -137,25 +136,25 @@ func Load(dbpath string, options *LoadOptions) {
 
 	logrus.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
 
-    storage, err := NewStorageWrite(dbpath)
+	storage, err := NewStorageWrite(dbpath)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-    err = storage.Initialize()
+	err = storage.Initialize()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-    err = storage.PutTemplate(options.Gene, tmpl)
+	err = storage.PutTemplate(options.Gene, tmpl)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	for _, path := range options.FragmentPath {
-        _, err := storage.ImportSample(path, options)
-        if err != nil {
-            logrus.Fatal(err)
-        }
+		_, err := storage.ImportSample(path, options)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 	}
 }

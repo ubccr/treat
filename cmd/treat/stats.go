@@ -94,46 +94,46 @@ func ShowStats(dbpath, gene string, unique bool, norm bool) {
 		fmt.Println(stats.Name)
 		fmt.Println(strings.Repeat("=", 80))
 		fmt.Printf("%20s%11d\n", "Total Alignments:", stats.Total)
-        if !norm {
-            fmt.Printf("%20s%11d\n", "Standard:", stats.Std)
-            fmt.Printf("%20s%11d\n", "Non-Standard:", stats.NonStd)
-            fmt.Printf("%20s%11d\n", "1-Mismatch:", stats.SingleMismatch)
-            fmt.Printf("%20s%11d\n", "2-Mismatch:", stats.DoubleMismatch)
-            fmt.Printf("%20s%11d\n", ">3-Mismatch:", stats.Snps)
-            fmt.Printf("%20s%11d\n", "Indels:", stats.Indels)
-        }
+		if !norm {
+			fmt.Printf("%20s%11d\n", "Standard:", stats.Std)
+			fmt.Printf("%20s%11d\n", "Non-Standard:", stats.NonStd)
+			fmt.Printf("%20s%11d\n", "1-Mismatch:", stats.SingleMismatch)
+			fmt.Printf("%20s%11d\n", "2-Mismatch:", stats.DoubleMismatch)
+			fmt.Printf("%20s%11d\n", ">3-Mismatch:", stats.Snps)
+			fmt.Printf("%20s%11d\n", "Indels:", stats.Indels)
+		}
 		fmt.Printf("%20s%11d\n", "Template Edit Stop:", tmpl.EditStop)
 		fmt.Printf("%20s%11s\n", "Edit Base:", string(tmpl.EditBase))
 		fmt.Printf("%20s%11d\n", "Alt Templates:", len(tmpl.AltRegion))
 		fmt.Println(strings.Repeat("-", 80))
-        if !norm {
-            fmt.Printf("%-15s%9s%9s%5s%9s%5s%9s%5s%9s%5s\n", "Sample", "Total", "Std", "%", "Non-Std", "%", "1MM", "%", "2MM", "%")
-        } else {
-            fmt.Printf("%-15s%9s\n", "Sample", "Total")
-        }
+		if !norm {
+			fmt.Printf("%-15s%9s%9s%5s%9s%5s%9s%5s%9s%5s\n", "Sample", "Total", "Std", "%", "Non-Std", "%", "1MM", "%", "2MM", "%")
+		} else {
+			fmt.Printf("%-15s%9s\n", "Sample", "Total")
+		}
 		fmt.Println(strings.Repeat("-", 80))
 		for sample, rec := range stats.SampleMap {
 			name := sample
 			if len(sample) > 12 {
 				name = name[0:12] + ".."
 			}
-            if !norm {
-                fmt.Printf("%-15s%9d%9d%5.1f%9d%5.1f%9d%5.1f%9d%5.1f\n",
-                    name,
-                    rec.Total,
-                    rec.Std,
-                    percent(rec.Std, rec.Total),
-                    rec.NonStd,
-                    percent(rec.NonStd, rec.Total),
-                    rec.SingleMismatch,
-                    percent(rec.SingleMismatch, rec.Total),
-                    rec.DoubleMismatch,
-                    percent(rec.DoubleMismatch, rec.Total))
-            } else {
-                fmt.Printf("%-15s%9d\n",
-                    name,
-                    rec.Total)
-            }
+			if !norm {
+				fmt.Printf("%-15s%9d%9d%5.1f%9d%5.1f%9d%5.1f%9d%5.1f\n",
+					name,
+					rec.Total,
+					rec.Std,
+					percent(rec.Std, rec.Total),
+					rec.NonStd,
+					percent(rec.NonStd, rec.Total),
+					rec.SingleMismatch,
+					percent(rec.SingleMismatch, rec.Total),
+					rec.DoubleMismatch,
+					percent(rec.DoubleMismatch, rec.Total))
+			} else {
+				fmt.Printf("%-15s%9d\n",
+					name,
+					rec.Total)
+			}
 		}
 
 		fmt.Println()

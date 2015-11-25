@@ -18,7 +18,6 @@
 package main
 
 import (
-
 	"github.com/Sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
@@ -39,36 +38,36 @@ func Normalize(dbpath, gene string, norm float64) {
 			continue
 		}
 
-        samples, err := s.Samples(g)
-        if err != nil {
-            logrus.Fatal(err)
-        }
+		samples, err := s.Samples(g)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 
-        gnorm := norm
+		gnorm := norm
 
-        // Default norm to average read count
-        if gnorm == 0 {
-            logrus.Info("Using default option of normalizing to average read count across all samples")
+		// Default norm to average read count
+		if gnorm == 0 {
+			logrus.Info("Using default option of normalizing to average read count across all samples")
 
-            total := 0
-            err := s.Search(&SearchFields{Gene: g, HasMutation: false, EditStop: -1, JuncLen: -1, JuncEnd: -1}, func(key *treat.AlignmentKey, a *treat.Alignment) {
-                total += int(a.ReadCount)
-            })
-            if err != nil {
-                logrus.Fatal(err)
-            }
+			total := 0
+			err := s.Search(&SearchFields{Gene: g, HasMutation: false, EditStop: -1, JuncLen: -1, JuncEnd: -1}, func(key *treat.AlignmentKey, a *treat.Alignment) {
+				total += int(a.ReadCount)
+			})
+			if err != nil {
+				logrus.Fatal(err)
+			}
 
-            gnorm = float64(total) / float64(len(samples))
-            logrus.Printf("Total standard reads across all samples: %d", total)
-        }
+			gnorm = float64(total) / float64(len(samples))
+			logrus.Printf("Total standard reads across all samples: %d", total)
+		}
 
-        logrus.Printf("Normalizing to read count: %.4f", gnorm)
-        for _, sample := range samples {
-            akey := &treat.AlignmentKey{g, sample}
-            err = s.NormalizeSample(akey, gnorm)
-            if err != nil {
-                logrus.Fatal(err)
-            }
-        }
-    }
+		logrus.Printf("Normalizing to read count: %.4f", gnorm)
+		for _, sample := range samples {
+			akey := &treat.AlignmentKey{g, sample}
+			err = s.NormalizeSample(akey, gnorm)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+		}
+	}
 }

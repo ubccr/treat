@@ -36,12 +36,12 @@ var BASE_COMP = map[byte]byte{
 }
 
 // fastx_collapser will output fasta headers in the format [id]-[count]
-//  for example: 
+//  for example:
 //      > 132-2082
 //
 // This regex will parse any fasta header (including those from
 // fastx_collapser) where the collapsed read count is found at the end of the
-// string separated by either a '-' or an '_'. For example, all these 
+// string separated by either a '-' or an '_'. For example, all these
 // are acceptable and the collapsed count would = 2082:
 //     > SAMPLE1_GENE_123432_2082
 //     > 132-2082
@@ -108,7 +108,7 @@ func NewFragment(name, seq string, orientation OrientationType, base rune) *Frag
 	}
 	bases := strings.Map(procBases, seq)
 	editSite[index] = baseCount
-    reads := parseMergeCount(name)
+	reads := parseMergeCount(name)
 
 	return &Fragment{Name: name, ReadCount: reads, Bases: bases, EditBase: base, EditSite: editSite}
 }

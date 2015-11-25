@@ -177,15 +177,15 @@ func (tmpl *Template) setPrimer3(primer string) error {
 }
 
 func (tmpl *Template) SetPrimers(primer5, primer3 string) error {
-    err := tmpl.setPrimer3(primer3)
-    if err != nil {
-        return err
-    }
+	err := tmpl.setPrimer3(primer3)
+	if err != nil {
+		return err
+	}
 
-    err = tmpl.setPrimer5(primer5)
-    if err != nil {
-        return err
-    }
+	err = tmpl.setPrimer5(primer5)
+	if err != nil {
+		return err
+	}
 
 	// Re-compute Edit Stop Site
 	tmpl.EditStop = uint32((tmpl.Len() - 1) - tmpl.Primer3)
@@ -199,7 +199,7 @@ func (tmpl *Template) SetPrimers(primer5, primer3 string) error {
 		tmpl.EditStop--
 	}
 
-    return nil
+	return nil
 }
 
 func (tmpl *Template) String() string {

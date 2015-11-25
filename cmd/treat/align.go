@@ -85,10 +85,10 @@ func Align(options *AlignOptions) {
 		}
 		tmpl = t
 
-        err = tmpl.SetPrimers(options.Primer5, options.Primer3)
-        if err != nil {
-            logrus.Fatal(err)
-        }
+		err = tmpl.SetPrimers(options.Primer5, options.Primer3)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 	f, err := os.Open(options.FragmentPath)

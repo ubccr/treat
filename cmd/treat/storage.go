@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"path/filepath"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -140,11 +140,11 @@ func RoundPlus(f float64, places int) float64 {
 }
 
 func NewStorage(dbpath string) (*Storage, error) {
-    return openBolt(dbpath, 0644, &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true})
+	return openBolt(dbpath, 0644, &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true})
 }
 
 func NewStorageWrite(dbpath string) (*Storage, error) {
-    return openBolt(dbpath, 0644, &bolt.Options{Timeout: 1 * time.Second})
+	return openBolt(dbpath, 0644, &bolt.Options{Timeout: 1 * time.Second})
 }
 
 func openBolt(dbpath string, mode os.FileMode, options *bolt.Options) (*Storage, error) {
@@ -155,22 +155,22 @@ func openBolt(dbpath string, mode os.FileMode, options *bolt.Options) (*Storage,
 
 	storage := &Storage{DB: db}
 
-    if options.ReadOnly {
-        err = db.View(func(tx *bolt.Tx) error {
-            b := tx.Bucket([]byte(BUCKET_META))
-            if b == nil {
-                return fmt.Errorf("Invalid db file. missing treat metadata")
-            }
+	if options.ReadOnly {
+		err = db.View(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(BUCKET_META))
+			if b == nil {
+				return fmt.Errorf("Invalid db file. missing treat metadata")
+			}
 
-            versionBytes := b.Get([]byte(STORAGE_VERSION_KEY))
-            if versionBytes == nil {
-                return fmt.Errorf("Invalid db file. missing treat version")
-            }
-            storage.version = math.Float64frombits(binary.BigEndian.Uint64(versionBytes))
+			versionBytes := b.Get([]byte(STORAGE_VERSION_KEY))
+			if versionBytes == nil {
+				return fmt.Errorf("Invalid db file. missing treat version")
+			}
+			storage.version = math.Float64frombits(binary.BigEndian.Uint64(versionBytes))
 
-            return nil
-        })
-    }
+			return nil
+		})
+	}
 
 	if err != nil {
 		return nil, err
@@ -232,9 +232,9 @@ func (s *Storage) Search(fields *SearchFields, f func(k *treat.AlignmentKey, a *
 func (s *Storage) PutTemplate(gene string, tmpl *treat.Template) error {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BUCKET_TEMPLATES))
-        if b == nil {
-            return fmt.Errorf("database error. templates bucket does not exist!")
-        }
+		if b == nil {
+			return fmt.Errorf("database error. templates bucket does not exist!")
+		}
 
 		data, err := tmpl.MarshalBytes()
 		if err != nil {
@@ -252,14 +252,14 @@ func (s *Storage) GetTemplate(gene string) (*treat.Template, error) {
 	var tmpl *treat.Template
 	err := s.DB.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BUCKET_TEMPLATES))
-        if b == nil {
-            return fmt.Errorf("database error. templates bucket does not exist!")
-        }
+		if b == nil {
+			return fmt.Errorf("database error. templates bucket does not exist!")
+		}
 
 		v := b.Get([]byte(gene))
-        if v == nil {
-            return fmt.Errorf("database error. template not found for gene: %s", gene)
-        }
+		if v == nil {
+			return fmt.Errorf("database error. template not found for gene: %s", gene)
+		}
 
 		t := new(treat.Template)
 		err := t.UnmarshalBytes(v)
@@ -415,7 +415,7 @@ func (s *Storage) GetFragment(k *treat.AlignmentKey, id uint64) (*treat.Fragment
 	return frag, nil
 }
 
-func (s *Storage) Initialize() (error) {
+func (s *Storage) Initialize() error {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(BUCKET_ALIGNMENTS))
 		if err != nil {
@@ -452,255 +452,254 @@ func (s *Storage) Initialize() (error) {
 			return err
 		}
 
-        return nil
+		return nil
 	})
 
-    return err
+	return err
 }
 
-func (s *Storage) InitSample(akey *treat.AlignmentKey, force bool) (error) {
-    key, err := akey.MarshalBinary()
-    if err != nil {
-        return err
-    }
+func (s *Storage) InitSample(akey *treat.AlignmentKey, force bool) error {
+	key, err := akey.MarshalBinary()
+	if err != nil {
+		return err
+	}
 
-    err = s.DB.Update(func(tx *bolt.Tx) error {
-        b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
-        if b == nil {
-            return fmt.Errorf("database error. alignments bucket does not exist!")
-        }
+	err = s.DB.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
+		if b == nil {
+			return fmt.Errorf("database error. alignments bucket does not exist!")
+		}
 
-        _, err := b.CreateBucket(key)
-        if err != nil {
-            if !force {
-                return fmt.Errorf("Data already exists for gene %s and sample %s. Use --force to force delete data and reload (error: %s)", akey.Gene, akey.Sample, err)
-            }
+		_, err := b.CreateBucket(key)
+		if err != nil {
+			if !force {
+				return fmt.Errorf("Data already exists for gene %s and sample %s. Use --force to force delete data and reload (error: %s)", akey.Gene, akey.Sample, err)
+			}
 
 			logrus.WithFields(logrus.Fields{
-				"gene": akey.Gene,
+				"gene":   akey.Gene,
 				"sample": akey.Sample,
 			}).Warn("Deleting existing alignment data")
-            err = b.DeleteBucket(key)
-            if err != nil {
-                return fmt.Errorf("database error. failed to delete nested alignment bucket: %s", err)
-            }
+			err = b.DeleteBucket(key)
+			if err != nil {
+				return fmt.Errorf("database error. failed to delete nested alignment bucket: %s", err)
+			}
 
-            _, err := b.CreateBucket(key)
-            if err != nil {
-                return fmt.Errorf("database error. failed to create nested alignment bucket: %s", err)
-            }
-        }
+			_, err := b.CreateBucket(key)
+			if err != nil {
+				return fmt.Errorf("database error. failed to create nested alignment bucket: %s", err)
+			}
+		}
 
-        b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
-        if b == nil {
-            return fmt.Errorf("database error. fragments bucket does not exist!")
-        }
+		b = tx.Bucket([]byte(BUCKET_FRAGMENTS))
+		if b == nil {
+			return fmt.Errorf("database error. fragments bucket does not exist!")
+		}
 
-        _, err = b.CreateBucket(key)
-        if err != nil {
-            if !force {
-                return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
-            }
+		_, err = b.CreateBucket(key)
+		if err != nil {
+			if !force {
+				return fmt.Errorf("Data already exists for gene %s and sample %s. Please delete database and reload (error: %s)", akey.Gene, akey.Sample, err)
+			}
 
 			logrus.WithFields(logrus.Fields{
-				"gene": akey.Gene,
+				"gene":   akey.Gene,
 				"sample": akey.Sample,
 			}).Warn("Deleting existing fragment data")
-            err = b.DeleteBucket(key)
-            if err != nil {
-                return fmt.Errorf("database error. failed to delete nested fragment bucket: %s", err)
-            }
+			err = b.DeleteBucket(key)
+			if err != nil {
+				return fmt.Errorf("database error. failed to delete nested fragment bucket: %s", err)
+			}
 
-            _, err := b.CreateBucket(key)
-            if err != nil {
-                return fmt.Errorf("database error. failed to create nested fragment bucket: %s", err)
-            }
-        }
+			_, err := b.CreateBucket(key)
+			if err != nil {
+				return fmt.Errorf("database error. failed to create nested fragment bucket: %s", err)
+			}
+		}
 
-        return nil
-    })
+		return nil
+	})
 
-    return err
+	return err
 }
 
 func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.AlignmentKey, error) {
-    f, err := os.Open(path)
-    if err != nil {
-        return nil, err
-    }
-    defer f.Close()
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
 
-    tmpl, err := s.GetTemplate(options.Gene)
-    if err != nil {
-        return nil, err
-    }
+	tmpl, err := s.GetTemplate(options.Gene)
+	if err != nil {
+		return nil, err
+	}
 
-    fname := filepath.Base(path)
-    sample := fname[:len(fname)-len(filepath.Ext(path))]
-    // clean up sample name
-    sample = strings.Replace(sample, "-primer-collapsed", "", 1)
-    sample = strings.Replace(sample, " ", "_", -1)
+	fname := filepath.Base(path)
+	sample := fname[:len(fname)-len(filepath.Ext(path))]
+	// clean up sample name
+	sample = strings.Replace(sample, "-primer-collapsed", "", 1)
+	sample = strings.Replace(sample, " ", "_", -1)
 
-    akey := &treat.AlignmentKey{options.Gene, sample}
-    key, err := akey.MarshalBinary()
-    if err != nil {
-        return nil, err
-    }
+	akey := &treat.AlignmentKey{options.Gene, sample}
+	key, err := akey.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 
-    err = s.InitSample(akey, options.Force)
-    if err != nil {
-        return nil, err
-    }
+	err = s.InitSample(akey, options.Force)
+	if err != nil {
+		return nil, err
+	}
 
-    var tx *bolt.Tx
-    var alnBucket *bolt.Bucket
-    var fragBucket *bolt.Bucket
-    count := 0
+	var tx *bolt.Tx
+	var alnBucket *bolt.Bucket
+	var fragBucket *bolt.Bucket
+	count := 0
 
-    logrus.Printf("Processing fragments for sample name: %s", sample)
-    if options.SkipFrags {
-        logrus.Info("not storing raw fragment reads")
-    }
+	logrus.Printf("Processing fragments for sample name: %s", sample)
+	if options.SkipFrags {
+		logrus.Info("not storing raw fragment reads")
+	}
 
-    for rec := range gofasta.SimpleParser(f) {
+	for rec := range gofasta.SimpleParser(f) {
 
-        if count%100 == 0 {
-            if count > 0 {
-                if err := tx.Commit(); err != nil {
-                    return nil, err
-                }
-            }
-            tx, err = s.DB.Begin(true)
-            if err != nil {
-                return nil, err
-            }
-            alnBucket = tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Bucket(key)
-            fragBucket = tx.Bucket([]byte(BUCKET_FRAGMENTS)).Bucket(key)
-        }
+		if count%100 == 0 {
+			if count > 0 {
+				if err := tx.Commit(); err != nil {
+					return nil, err
+				}
+			}
+			tx, err = s.DB.Begin(true)
+			if err != nil {
+				return nil, err
+			}
+			alnBucket = tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Bucket(key)
+			fragBucket = tx.Bucket([]byte(BUCKET_FRAGMENTS)).Bucket(key)
+		}
 
-        frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, rune(options.EditBase[0]))
-        aln := treat.NewAlignment(frag, tmpl, options.ExcludeSnps)
+		frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, rune(options.EditBase[0]))
+		aln := treat.NewAlignment(frag, tmpl, options.ExcludeSnps)
 
-        id, _ := alnBucket.NextSequence()
-        kbytes := make([]byte, 8)
-        binary.BigEndian.PutUint64(kbytes, id)
+		id, _ := alnBucket.NextSequence()
+		kbytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(kbytes, id)
 
-        data, err := aln.MarshalBinary()
-        if err != nil {
-            return nil, err
-        }
+		data, err := aln.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
 
-        err = alnBucket.Put(kbytes, data)
-        if err != nil {
-            return nil, err
-        }
+		err = alnBucket.Put(kbytes, data)
+		if err != nil {
+			return nil, err
+		}
 
-        if !options.SkipFrags {
-            data, err = frag.MarshalBytes()
-            if err != nil {
-                return nil, err
-            }
+		if !options.SkipFrags {
+			data, err = frag.MarshalBytes()
+			if err != nil {
+				return nil, err
+			}
 
-            err = fragBucket.Put(kbytes, data)
-            if err != nil {
-                return nil, err
-            }
-        }
+			err = fragBucket.Put(kbytes, data)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-        count++
-    }
+		count++
+	}
 
-    // final transaction commit
-    if err := tx.Commit(); err != nil {
-        return nil, err
-    }
+	// final transaction commit
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
-    logrus.Printf("Loaded %d fragment sequences for sample %s", count, sample)
+	logrus.Printf("Loaded %d fragment sequences for sample %s", count, sample)
 
-    return akey, nil
+	return akey, nil
 }
 
-func (s *Storage) NormalizeSample(akey *treat.AlignmentKey, norm float64) (error) {
-    key, err := akey.MarshalBinary()
-    if err != nil {
-        return err
-    }
+func (s *Storage) NormalizeSample(akey *treat.AlignmentKey, norm float64) error {
+	key, err := akey.MarshalBinary()
+	if err != nil {
+		return err
+	}
 
-    total := 0
+	total := 0
 	err = s.DB.View(func(tx *bolt.Tx) error {
 		ab := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
-        if ab == nil {
-            return fmt.Errorf("database error. alignments bucket does not exist!")
-        }
+		if ab == nil {
+			return fmt.Errorf("database error. alignments bucket does not exist!")
+		}
 
-        b := ab.Bucket(key)
-        if ab == nil {
-            return fmt.Errorf("database error. key not found in alignments bucket")
-        }
+		b := ab.Bucket(key)
+		if ab == nil {
+			return fmt.Errorf("database error. key not found in alignments bucket")
+		}
 
-        c := b.Cursor()
-        for ak, av := c.First(); ak != nil; ak, av = c.Next() {
-            a := new(treat.Alignment)
-            a.Id = binary.BigEndian.Uint64(ak)
-            err := a.UnmarshalBinary(av)
-            if err != nil {
-                return err
-            }
+		c := b.Cursor()
+		for ak, av := c.First(); ak != nil; ak, av = c.Next() {
+			a := new(treat.Alignment)
+			a.Id = binary.BigEndian.Uint64(ak)
+			err := a.UnmarshalBinary(av)
+			if err != nil {
+				return err
+			}
 
-            // Only count Standard Reads
-            if a.HasMutation == 0 {
-                total += int(a.ReadCount)
-            }
-        }
+			// Only count Standard Reads
+			if a.HasMutation == 0 {
+				total += int(a.ReadCount)
+			}
+		}
 
 		return nil
 	})
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    scale := 1.0
-    if total > 0 {
-        scale = norm / float64(total)
-    }
+	scale := 1.0
+	if total > 0 {
+		scale = norm / float64(total)
+	}
 
-
-    logrus.Printf("Processing sample %s using normalized scaling factor: %.4f", akey.Sample, scale)
+	logrus.Printf("Processing sample %s using normalized scaling factor: %.4f", akey.Sample, scale)
 	err = s.DB.Update(func(tx *bolt.Tx) error {
 		ab := tx.Bucket([]byte(BUCKET_ALIGNMENTS))
-        b := ab.Bucket(key)
+		b := ab.Bucket(key)
 
-        c := b.Cursor()
-        for ak, av := c.First(); ak != nil; ak, av = c.Next() {
-            a := new(treat.Alignment)
-            a.Id = binary.BigEndian.Uint64(ak)
-            err := a.UnmarshalBinary(av)
-            if err != nil {
-                return err
-            }
+		c := b.Cursor()
+		for ak, av := c.First(); ak != nil; ak, av = c.Next() {
+			a := new(treat.Alignment)
+			a.Id = binary.BigEndian.Uint64(ak)
+			err := a.UnmarshalBinary(av)
+			if err != nil {
+				return err
+			}
 
-            if a.HasMutation == uint8(0) {
-                a.Norm = scale * float64(a.ReadCount)
-            }
+			if a.HasMutation == uint8(0) {
+				a.Norm = scale * float64(a.ReadCount)
+			}
 
-            data, err := a.MarshalBinary()
-            if err != nil {
-                return err
-            }
+			data, err := a.MarshalBinary()
+			if err != nil {
+				return err
+			}
 
-            err = b.Put(ak, data)
-            if err != nil {
-                return err
-            }
-        }
+			err = b.Put(ak, data)
+			if err != nil {
+				return err
+			}
+		}
 
 		return nil
 	})
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
