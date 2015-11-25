@@ -58,6 +58,8 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatalln(err)
 	}
 
+    logrus.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
+
 	storage, err := NewStorageWrite(dbpath)
 	if err != nil {
 		logrus.Fatal(err)
