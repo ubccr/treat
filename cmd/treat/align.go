@@ -66,8 +66,8 @@ func Align(options *AlignOptions) {
 		logrus.Fatal("Please provide 2 fragments to align")
 	}
 	if len(options.S1) > 0 && len(options.S2) > 0 {
-		frag1 := treat.NewFragment("", options.S1, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
-		frag2 := treat.NewFragment("", options.S2, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+		frag1 := treat.NewFragment("1-1", options.S1, treat.FORWARD, rune(options.EditBase[0]))
+		frag2 := treat.NewFragment("2-1", options.S2, treat.FORWARD, rune(options.EditBase[0]))
 		aln := new(treat.Alignment)
 		a1, a2 := aln.SimpleAlign(frag1, frag2)
 		PrintAlignment(a1, a2, 80)
@@ -85,19 +85,10 @@ func Align(options *AlignOptions) {
 		}
 		tmpl = t
 
-		if len(options.Primer3) > 0 {
-			err = tmpl.SetPrimer3(options.Primer3)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-		}
-
-		if len(options.Primer5) > 0 {
-			err = tmpl.SetPrimer5(options.Primer5)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-		}
+        err = tmpl.SetPrimers(options.Primer5, options.Primer3)
+        if err != nil {
+            logrus.Fatal(err)
+        }
 	}
 
 	f, err := os.Open(options.FragmentPath)
@@ -109,7 +100,7 @@ func Align(options *AlignOptions) {
 	if tmpl == nil {
 		frags := make([]*treat.Fragment, 0)
 		for rec := range gofasta.SimpleParser(f) {
-			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, rune(options.EditBase[0]))
 			frags = append(frags, frag)
 			if len(frags) >= 2 {
 				break
@@ -126,7 +117,7 @@ func Align(options *AlignOptions) {
 
 	} else {
 		for rec := range gofasta.SimpleParser(f) {
-			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, rune(options.EditBase[0]))
 			aln := treat.NewAlignment(frag, tmpl, false)
 			buf := bufio.NewWriter(os.Stdout)
 			aln.WriteTo(buf, frag, tmpl, 80)

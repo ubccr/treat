@@ -68,19 +68,10 @@ func Mutant(options *AlignOptions, fragments []string, n int) {
 		logrus.Fatal(err)
 	}
 
-	if len(options.Primer3) > 0 {
-		err = tmpl.SetPrimer3(options.Primer3)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-	}
-
-	if len(options.Primer5) > 0 {
-		err = tmpl.SetPrimer5(options.Primer5)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-	}
+    err = tmpl.SetPrimers(options.Primer5, options.Primer3)
+    if err != nil {
+        logrus.Fatal(err)
+    }
 
 	tm := make(map[string]int)
 	fm := make(map[string]int)
@@ -92,7 +83,7 @@ func Mutant(options *AlignOptions, fragments []string, n int) {
 		defer f.Close()
 
 		for rec := range gofasta.SimpleParser(f) {
-			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, 0, 0, rune(options.EditBase[0]))
+			frag := treat.NewFragment(rec.Id, rec.Seq, treat.FORWARD, rune(options.EditBase[0]))
 			aln1, aln2, _ := nwalgo.Align(tmpl.Bases, frag.Bases, 1, -1, -1)
 			if strings.Index(aln1, "-") != -1 {
 				tm[aln1]++
