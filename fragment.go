@@ -135,30 +135,6 @@ func (f *Fragment) String() string {
 	return buf.String()
 }
 
-func (f *Fragment) StripPrimer(primer5, primer3 int) (string, error) {
-	var buf bytes.Buffer
-
-	size := len(f.EditSite)
-
-	if primer3 >= size || primer5 >= size || primer3 < 0 || primer5 < 0 {
-		return "", fmt.Errorf("Invalid primers")
-	}
-
-	start := primer5
-	end := size - primer3
-
-	for i, b := range f.EditSite {
-		if i >= start && i < end {
-			buf.WriteString(strings.Repeat(string(f.EditBase), int(b)))
-			if i < len(f.Bases) {
-				buf.WriteString(string(f.Bases[i]))
-			}
-		}
-	}
-
-	return buf.String(), nil
-}
-
 func (f *Fragment) UnmarshalBytes(data []byte) error {
 	buf := bytes.NewReader(data)
 	dec := gob.NewDecoder(buf)
