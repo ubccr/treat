@@ -63,7 +63,6 @@ func main() {
 				&cli.StringFlag{Name: "primer3", Usage: "3' primer sequence"},
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
 				&cli.StringFlag{Name: "dir", Usage: "Directory of fragment FASTA files"},
-				&cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
 				&cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
 				&cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
 				&cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
@@ -93,7 +92,6 @@ func main() {
 					FragmentPath: fragPaths,
 					Primer5:      c.String("primer5"),
 					Primer3:      c.String("primer3"),
-					Norm:         c.Float64("normalize"),
 					EditBase:     c.String("base"),
 					SkipFrags:    c.Bool("skip-fragments"),
 					ExcludeSnps:  c.Bool("exclude-snps"),
@@ -168,6 +166,17 @@ func main() {
 			},
 			Action: func(c *cli.Context) {
 				ShowStats(c.GlobalString("db"), c.String("gene"), c.Bool("unique"), c.Bool("norm"))
+			},
+		},
+		{
+			Name:  "norm",
+			Usage: "Normalize read counts",
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "gene, g", Usage: "Gene name (all by default)"},
+				&cli.Float64Flag{Name: "normalize, n", Value: float64(0), Usage: "Normalize to read count"},
+			},
+			Action: func(c *cli.Context) {
+				Normalize(c.GlobalString("db"), c.String("gene"), c.Float64("normalize"))
 			},
 		},
 		{
