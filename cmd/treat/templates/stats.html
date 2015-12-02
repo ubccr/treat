@@ -42,33 +42,39 @@ $(function () {
     <tr class="active">
         <th>Sample</th>
         <th class="text-right">Standard Alignments</th>
+        {{ if ne $.Countby "Norm" }}
         <th class="text-right">Non-Standard</th>
         <th class="text-right">1-Mismatch</th>
         <th class="text-right">2-Mismatch</th>
         <th class="text-right">&gt;3-Mismatch</th>
         <th class="text-right">Indels</th>
+        {{ end }}
         <th class="text-right">Total</th>
     </tr>
     {{ range $s, $r := .stats.SampleMap }}
     <tr>
         <td>{{ $s }}</td>
         <td class="text-right">{{ $r.Std }} <small class="text-muted">({{ percent $r.Std $r.Total | round}}%)</small></td>
+        {{ if ne $.Countby "Norm" }}
         <td class="text-right">{{ $r.NonStd }} <small class="text-muted">({{ percent $r.NonStd $r.Total | round}}%)</small></td>
         <td class="text-right">{{ $r.SingleMismatch }} <small class="text-muted">({{ percent $r.SingleMismatch $r.Total | round}}%)</small></td>
         <td class="text-right">{{ $r.DoubleMismatch }} <small class="text-muted">({{ percent $r.DoubleMismatch $r.Total | round}}%)</small></td>
         <td class="text-right">{{ $r.Snps }} <small class="text-muted">({{ percent $r.Snps $r.Total | round}}%)</small></td>
         <td class="text-right">{{ $r.Indels }} <small class="text-muted">({{ percent $r.Indels $r.Total | round}}%)</small></td>
+        {{ end }}
         <td class="text-right">{{ $r.Total }}</td>
     </tr>
     {{ end }}
     <tr class="info">
         <th scope="row">Total</td>
         <td class="text-right">{{ .stats.Std }}</td>
+        {{ if ne $.Countby "Norm" }}
         <td class="text-right">{{ .stats.NonStd }}</td>
         <td class="text-right">{{ .stats.SingleMismatch }}</td>
         <td class="text-right">{{ .stats.DoubleMismatch }}</td>
         <td class="text-right">{{ .stats.Snps }}</td>
         <td class="text-right">{{ .stats.Indels }}</td>
+        {{ end }}
         <td class="text-right">{{ .stats.Total }}</td>
     </tr>
 </table>

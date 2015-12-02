@@ -121,7 +121,7 @@ func JuncLenHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncLen, true, func(a *treat.Alignment) uint32 {
 			return a.JuncLen
 		})
 	})
@@ -136,7 +136,7 @@ func EditHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) uint32 {
 			return a.EditStop
 		})
 	})
@@ -151,13 +151,13 @@ func JuncEndHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncEnd, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) uint32 {
 			return a.JuncEnd
 		})
 	})
 }
 
-func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]uint32, f func(a *treat.Alignment) uint32) {
+func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]uint32, junclen bool, f func(a *treat.Alignment) uint32) {
 	db := context.Get(r, "db").(*Database)
 	if db == nil {
 		logrus.Error("highChartHist handler: database not found in request context")
@@ -224,12 +224,16 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		skeys = append(skeys, k)
 	}
 	sort.Strings(skeys)
+    offset := uint32(0)
+    if !junclen {
+        offset = uint32(tmpl.EditOffset)
+    }
 	for _, k := range skeys {
 		v := samples[k]
-		x := make([]float64, max+1)
+		x := make([]float64, max+1-offset)
 		for i := range x {
-			if _, ok := v[uint32(i)]; ok {
-				x[int(max)-i] = v[uint32(i)]
+			if _, ok := v[uint32(i)+offset]; ok {
+				x[int(max)-i-int(offset)] = v[uint32(i)+offset]
 			}
 		}
 
@@ -240,7 +244,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		series = append(series, m)
 	}
 
-	cats := make([]int, max+1)
+	cats := make([]int, max+1-offset)
 	for i := range cats {
 		cats[i] = int(max) - i
 	}
@@ -562,7 +566,7 @@ func HeatMapJson(app *Application) http.Handler {
 		}
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
-			heat[int(a.EditStop)][int(a.JuncLen)] += a.Norm
+			heat[int(a.EditStop)-int(tmpl.EditOffset)][int(a.JuncLen)] += a.Norm
 		})
 
 		if err != nil {
@@ -682,7 +686,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 			ok := false
 			if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
 				ok = true
-			} else if a.EditStop == uint32(0) && a.JuncLen == 0 {
+			} else if a.EditStop == tmpl.EditOffset && a.JuncLen == 0 {
 				ok = true
             }
 
@@ -714,7 +718,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 		for _, k := range skeys {
 			v := samples[k]
 			x := []float64{v[tmpl.EditStop]}
-			y := []float64{v[uint32(0)]}
+			y := []float64{v[tmpl.EditOffset]}
 
 			m := make(map[string]interface{})
 			m["data"] = y

@@ -40,6 +40,7 @@ type AltRegion struct {
 
 type Template struct {
 	Bases     string
+    EditOffset  uint32
     EditStop  uint32
 	EditBase  rune
 	EditSite  [][]BaseCountType
@@ -180,6 +181,10 @@ func (tmpl *Template) Max(i int) BaseCountType {
 		}
 	}
 	return max
+}
+
+func (tmpl *Template) IndexLabel(i int) (int) {
+    return i+int(tmpl.EditOffset)
 }
 
 func (tmpl *Template) UnmarshalBytes(data []byte) error {

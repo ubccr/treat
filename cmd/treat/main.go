@@ -64,6 +64,7 @@ func main() {
 				&cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
 				&cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
 				&cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
+				&cli.IntFlag{Name: "offset", Value: 0, Usage: "Edit site offset"},
 			},
 			Action: func(c *cli.Context) {
 				dir := c.String("dir")
@@ -88,6 +89,7 @@ func main() {
 					TemplatePath: c.String("template"),
 					FragmentPath: fragPaths,
 					EditBase:     c.String("base"),
+					EditOffset:    c.Int("offset"),
 					SkipFrags:    c.Bool("skip-fragments"),
 					ExcludeSnps:  c.Bool("exclude-snps"),
 					Force:        c.Bool("force"),

@@ -160,25 +160,35 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 	// If we're at start of alt editing
 	if hasAlt && (ti-shift) == template.AltRegion[alt].Start {
 		// Shift Edit Stop Site to first site that doesn't match alt template
+        fullMatch := true
 		for x := shift; x >= 0; x-- {
 			if m[alt+2].Bit(x) == 1 {
 				continue
 			}
 
+            fullMatch = false
 			shift = x
 			break
 		}
+
+        if fullMatch {
+            shift = 0
+        }
 
 		// If we're before the end of alt editing
 		if (ti - shift) > template.AltRegion[alt].End {
 			// flag which alt tempalte we matched
 			alignment.AltEditing = uint8(alt + 1)
 			// Shift Junc Start to first site that doesn't match FE template
-			for j := shift; j >= 0; j-- {
-				if j <= ti && m[0].Bit(j) == 0 {
-					alignment.JuncStart = uint32(ti - j)
-					break
-				}
+            if shift == 0 {
+                alignment.JuncStart = uint32(ti)
+            } else {
+                for j := shift; j >= 0; j-- {
+                    if j <= ti && m[0].Bit(j) == 0 {
+                        alignment.JuncStart = uint32(ti - j)
+                        break
+                    }
+                }
 			}
 		}
 	}
@@ -210,13 +220,16 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 
 	// If fragment matches the fully edited template entirely. Set junc len 0
 	if isFullyEdited {
-		alignment.JuncEnd = alignment.JuncStart
+		alignment.JuncEnd = alignment.EditStop
 		alignment.JuncLen = 0
 		alignment.JuncSeq = ""
 	}
 
 	alignment.ReadCount = frag.ReadCount
 	alignment.Norm = frag.Norm
+    alignment.EditStop += template.EditOffset
+    alignment.JuncStart += template.EditOffset
+    alignment.JuncEnd += template.EditOffset
 
 	return alignment
 }
@@ -385,7 +398,7 @@ func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw 
 	for i := range template.AltRegion {
 		labels = append(labels, fmt.Sprintf("A%d", i+1))
 	}
-	labels = append(labels, "CL")
+	labels = append(labels, "RD")
 
 	_, err := w.Write([]byte(strings.Repeat("=", tw) + "\n"))
 	if err != nil {
@@ -402,7 +415,7 @@ func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw 
 		return err
 	}
 
-	_, err = w.Write([]byte(fmt.Sprintf("EditStop: %d\nJuncEnd: %d\nJuncLen: %d\n", a.EditStop, a.JuncEnd, a.JuncLen)))
+	_, err = w.Write([]byte(fmt.Sprintf("JSS: %d\nESS: %d\nJES: %d\nJunc Len: %d\n", a.JuncStart, a.EditStop, a.JuncEnd, a.JuncLen)))
 	if err != nil {
 		return err
 	}

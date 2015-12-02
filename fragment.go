@@ -39,12 +39,13 @@ var BASE_COMP = map[byte]byte{
 //      > 132-2082
 //
 // This regex will parse any fasta header (including those from
-// fastx_collapser) where the collapsed read count is found at the end of the
-// string separated by either a '-' or an '_'. For example, all these
-// are acceptable and the collapsed count would = 2082:
+// fastx_collapser) where the collapsed read count is found at the beginning of
+// fasta record separated by either a '-' or an '_'. For example, all these are
+// acceptable and the collapsed count would = 2082:
 //     > SAMPLE1_GENE_123432_2082
 //     > 132-2082
 //     > GENE-88772-2082
+//     >791-2082
 var fastxPattern = regexp.MustCompile(`.+[_\-](\d+)$`)
 
 type Fragment struct {
@@ -67,7 +68,8 @@ func reverse(s string) string {
 
 func parseMergeCount(recId string) uint32 {
 	// First try and parse fastx-collapser header lines
-	matches := fastxPattern.FindStringSubmatch(recId)
+    parts := strings.SplitN(strings.TrimSpace(recId), " ", 2)
+	matches := fastxPattern.FindStringSubmatch(parts[0])
 	if len(matches) == 2 {
 		count, err := strconv.Atoi(matches[1])
 		if err != nil {

@@ -330,7 +330,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 	ti := 0
 	for ai := 0; ai < n; ai++ {
 		hilite := ""
-		if uint32(n-ti) == a.EditStop {
+		if uint32(n-ti)+tmpl.EditOffset == a.EditStop {
 			hilite = "hilite"
 		}
 
@@ -345,7 +345,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 			buf[fragCount-1][ai] += `<td class="text-center mutant base">` + string(frag.Bases[fi]) + `</td>`
 			fi++
 		} else if aln2[ai] == '-' {
-			buf[0][ai] = `<td class="text-center ` + hilite + `">` + fmt.Sprintf("%d", n-ti) + `</td><td class="text-center base-index">` + fmt.Sprintf("%d", tmpl.BaseIndex[ti]) + `</td>`
+			buf[0][ai] = `<td class="text-center ` + hilite + `">` + fmt.Sprintf("%d", tmpl.IndexLabel(n-ti)) + `</td><td class="text-center base-index">` + fmt.Sprintf("%d", tmpl.BaseIndex[ti]) + `</td>`
 			max := tmpl.Max(ti)
 
 			for i, t := range tmpl.EditSite {
@@ -356,14 +356,14 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 			buf[fragCount-1][ai] += `<td class="text-center mutant base">-</td>`
 			ti++
 		} else {
-			buf[0][ai] = `<td class="text-center ` + hilite + `">` + fmt.Sprintf("%d", n-ti) + `</td><td class="text-center base-index">` + fmt.Sprintf("%d", tmpl.BaseIndex[ti]) + `</td>`
+			buf[0][ai] = `<td class="text-center ` + hilite + `">` + fmt.Sprintf("%d", tmpl.IndexLabel(n-ti)) + `</td><td class="text-center base-index">` + fmt.Sprintf("%d", tmpl.BaseIndex[ti]) + `</td>`
 			max := tmpl.Max(ti)
 			if frag.EditSite[fi] > max {
 				max = frag.EditSite[fi]
 			}
 			cat := ""
 			boldi := -1
-			if uint32(n-ti) > a.EditStop {
+			if uint32(n-ti)+tmpl.EditOffset > a.EditStop {
 				if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
 					cat = "PE"
 					boldi = 1
@@ -390,7 +390,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 				}
 			}
 
-			if uint32(n-ti) > a.EditStop && uint32(n-ti) <= a.JuncEnd {
+			if uint32(n-ti)+tmpl.EditOffset > a.EditStop && uint32(n-ti)+tmpl.EditOffset <= a.JuncEnd {
 				cat += " junction"
 			}
 
@@ -410,7 +410,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 	}
 
 	// Last edit site has only EditBases
-	buf[0][n] = `<td class="text-center">` + fmt.Sprintf("%d", 0) + `</td>`
+	buf[0][n] = `<td class="text-center">` + fmt.Sprintf("%d", tmpl.IndexLabel(0)) + `</td>`
 	max := tmpl.Max(ti)
 	if frag.EditSite[fi] > max {
 		max = frag.EditSite[fi]
