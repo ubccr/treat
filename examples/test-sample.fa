@@ -1,0 +1,28 @@
+>1-10000 jss=3 ess=2 jes=2 alt=0 has_mutation=0 mismatches=0 indel=0 
+AACTGCCTTTGGTTAATA
+>2-100 jss=11 ess=10 jes=10 alt=0 has_mutation=0 mismatches=0 indel=0
+AATTCTTGCTTTCTTGTGAATA
+>3-10 jss=11 ess=10 jes=10 alt=1 has_mutation=0 mismatches=0 indel=0
+AATTCTTGTTTCTTCTGTTGAATA
+>4-250 jss=6 ess=5 jes=5 alt=0 has_mutation=0 mismatches=0 indel=0
+AACTGCCTTGTGAATA
+>5-100 jss=6 ess=5 jes=7 alt=0 has_mutation=0 mismatches=0 indel=0
+AACTGTTTCTCTTGTGAATA
+>6-15 jss=6 ess=5 jes=5 alt=0 has_mutation=0 mismatches=1 indel=0
+AACTGCCTTGTGGATA
+>7-3 jss=6 ess=5 jes=5 alt=0 has_mutation=0 mismatches=2 indel=0
+ACCTGCCTTGTGGATA
+>8-1 jss=6 ess=5 jes=5 alt=0 has_mutation=1 mismatches=5 indel=0
+ACCTCCCTTGTGGCTC
+>9-4 jss=1 ess=0 jes=5 alt=0 has_mutation=1 mismatches=0 indel=1
+AACTGCCTTGTGATA
+>10-3 jss=6 ess=5 jes=5 alt=0 has_mutation=1 mismatches=0 indel=1
+AACTGCCCTTGTGAATA
+>11-8 jss=8 ess=7 jes=7 alt=1 has_mutation=0 mismatches=0 indel=0
+AACTGTTTCTTCTGTTGAATA
+>12-20 jss=8 ess=7 jes=8 alt=1 has_mutation=0 mismatches=0 indel=0
+AACTTTTGTTTCTTCTGTTGAATA
+>13-50 jss=4 ess=3 jes=8 alt=0 has_mutation=0 mismatches=0 indel=0
+AACTTGTTTTCCTTTGGAATA
+>14-50 jss=0 ess=0 jes=8 alt=0 has_mutation=0 mismatches=0 indel=0
+AACTTGTTTTCCTTTGGAATATT
