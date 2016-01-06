@@ -789,9 +789,7 @@ func StatsHandler(app *Application) http.Handler {
 
 		countByString := r.FormValue("countby")
 		countBy := COUNT_FRAG
-		if "Norm" == countByString {
-			countBy = COUNT_NORM
-		} else if "Unique" == countByString {
+		if "Unique" == countByString {
 			countBy = COUNT_UNIQUE
 		} else {
 			countByString = "Fragments"
@@ -824,7 +822,7 @@ func StatsHandler(app *Application) http.Handler {
 			"stats":    stats,
 			"Fields":   fields,
 			"Template": tmpl,
-			"Counts":   []string{"Fragments", "Norm", "Unique"},
+			"Counts":   []string{"Fragments", "Unique"},
 			"Countby":  countByString,
 			"Genes":    db.genes}
 

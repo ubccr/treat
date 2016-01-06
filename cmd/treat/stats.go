@@ -28,7 +28,6 @@ import (
 const (
 	COUNT_UNIQUE = iota
 	COUNT_FRAG
-	COUNT_NORM
 )
 
 type Stats struct {
@@ -68,8 +67,6 @@ func ShowStats(dbpath, gene string, unique bool, norm bool) {
 	countby := COUNT_FRAG
 	if unique {
 		countby = COUNT_UNIQUE
-	} else if norm {
-		countby = COUNT_NORM
 	}
 
 	fmt.Printf("db path: %s\n", dbpath)
@@ -150,9 +147,7 @@ func geneStats(s *Storage, gene string, countby int) (*GeneStats, error) {
 		}
 
 		var readCount int
-		if countby == COUNT_NORM {
-			readCount = int(a.Norm)
-		} else if countby == COUNT_FRAG {
+		if countby == COUNT_FRAG {
 			readCount = int(a.ReadCount)
 		} else {
 			readCount = 1
