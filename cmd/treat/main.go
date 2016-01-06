@@ -47,7 +47,7 @@ func main() {
 		{Name: "Rachel Simpson", Email: "rachel.simpson64@gmail.com"},
 		{Name: "Laurie Read", Email: "lread@buffalo.edu"}}
 	app.Usage = "Trypanosome RNA Editing Alignment Tool"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{Name: "db", Value: "treat.db", Usage: "Path to database file"},
 	}
