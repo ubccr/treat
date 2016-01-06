@@ -39,13 +39,13 @@ type AltRegion struct {
 }
 
 type Template struct {
-	Bases     string
-    EditOffset  uint32
-    EditStop  uint32
-	EditBase  rune
-	EditSite  [][]BaseCountType
-	BaseIndex []uint32
-	AltRegion []*AltRegion
+	Bases      string
+	EditOffset uint32
+	EditStop   int
+	EditBase   rune
+	EditSite   [][]uint32
+	BaseIndex  []uint32
+	AltRegion  []*AltRegion
 }
 
 func NewTemplateFromFasta(path string, orientation OrientationType, base rune) (*Template, error) {
@@ -112,7 +112,7 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
 		return nil, fmt.Errorf("Invalid alt templates. Please specify the alt regions")
 	}
 
-	editSite := make([][]BaseCountType, len(alt)+2)
+	editSite := make([][]uint32, len(alt)+2)
 	editSite[0] = full.EditSite
 	editSite[1] = pre.EditSite
 	for i, a := range alt {
@@ -137,17 +137,15 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
 	tmpl := &Template{Bases: full.Bases, EditBase: full.EditBase, EditSite: editSite, AltRegion: altRegion, BaseIndex: bi}
 
 	// Compute Edit Stop Site based on full and pre-edit templates
-	tmpl.EditStop = uint32(tmpl.Len() - 1)
-	for j := int(tmpl.EditStop); j >= 0; j-- {
+	tmpl.EditStop = tmpl.Len() - 1
+	for j := tmpl.EditStop; j >= 0; j-- {
 		if tmpl.EditSite[0][j] != tmpl.EditSite[1][j] {
-			tmpl.EditStop = uint32((tmpl.Len() - 1) - j)
+			tmpl.EditStop = (tmpl.Len() - 1) - j
 			break
 		}
 	}
 
-	if tmpl.EditStop > 0 {
-		tmpl.EditStop--
-	}
+	tmpl.EditStop--
 
 	return tmpl, nil
 }
@@ -173,8 +171,8 @@ func (tmpl *Template) String() string {
 	return buf.String()
 }
 
-func (tmpl *Template) Max(i int) BaseCountType {
-	max := BaseCountType(0)
+func (tmpl *Template) Max(i int) uint32 {
+	max := uint32(0)
 	for j := range tmpl.EditSite {
 		if tmpl.EditSite[j][i] > max {
 			max = tmpl.EditSite[j][i]
@@ -183,8 +181,8 @@ func (tmpl *Template) Max(i int) BaseCountType {
 	return max
 }
 
-func (tmpl *Template) IndexLabel(i int) (int) {
-    return i+int(tmpl.EditOffset)
+func (tmpl *Template) IndexLabel(i int) int {
+	return i + int(tmpl.EditOffset)
 }
 
 func (tmpl *Template) UnmarshalBytes(data []byte) error {

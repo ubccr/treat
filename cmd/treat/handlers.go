@@ -121,7 +121,7 @@ func JuncLenHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncLen, true, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncLen, true, func(a *treat.Alignment) int {
 			return a.JuncLen
 		})
 	})
@@ -136,7 +136,7 @@ func EditHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) int {
 			return a.EditStop
 		})
 	})
@@ -151,13 +151,13 @@ func JuncEndHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) uint32 {
+		highChartHist(app, w, r, db.maxJuncEnd, false, func(a *treat.Alignment) int {
 			return a.JuncEnd
 		})
 	})
 }
 
-func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]uint32, junclen bool, f func(a *treat.Alignment) uint32) {
+func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]int, junclen bool, f func(a *treat.Alignment) int) {
 	db := context.Get(r, "db").(*Database)
 	if db == nil {
 		logrus.Error("highChartHist handler: database not found in request context")
@@ -195,16 +195,16 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		return
 	}
 
-	samples := make(map[string]map[uint32]float64)
+	samples := make(map[string]map[int]float64)
 
 	max := maxMap[fields.Gene]
 	err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
-		if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
+		if a.EditStop == int(tmpl.EditStop) && a.JuncLen == 0 {
 			return
 		}
 
 		if _, ok := samples[key.Sample]; !ok {
-			samples[key.Sample] = make(map[uint32]float64)
+			samples[key.Sample] = make(map[int]float64)
 		}
 
 		val := f(a)
@@ -224,19 +224,20 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		skeys = append(skeys, k)
 	}
 	sort.Strings(skeys)
-    offset := uint32(0)
-    if !junclen {
-        offset = uint32(tmpl.EditOffset)
-    }
+	offset := 0
+	if !junclen {
+		offset = int(tmpl.EditOffset)
+	}
 	for _, k := range skeys {
 		v := samples[k]
-		x := make([]float64, max+1-offset)
+		x := make([]float64, max+1-offset+1)
 		for i := range x {
-			if _, ok := v[uint32(i)+offset]; ok {
-				x[int(max)-i-int(offset)] = v[uint32(i)+offset]
+			if _, ok := v[i+offset]; ok {
+				x[max-i-offset] = v[i+offset]
 			}
 		}
 
+		x[max+1-offset] = v[-1+offset]
 		m := make(map[string]interface{})
 		m["data"] = x
 		m["name"] = k
@@ -244,7 +245,8 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		series = append(series, m)
 	}
 
-	cats := make([]int, max+1-offset)
+	cats := make([]int, max+1-offset+1)
+	cats[0] = -1 + offset
 	for i := range cats {
 		cats[i] = int(max) - i
 	}
@@ -566,7 +568,9 @@ func HeatMapJson(app *Application) http.Handler {
 		}
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
-			heat[int(a.EditStop)-int(tmpl.EditOffset)][int(a.JuncLen)] += a.Norm
+			if a.EditStop >= int(tmpl.EditOffset) {
+				heat[a.EditStop-int(tmpl.EditOffset)][a.JuncLen] += a.Norm
+			}
 		})
 
 		if err != nil {
@@ -581,9 +585,9 @@ func HeatMapJson(app *Application) http.Handler {
 		for i := 0; i < n; i++ {
 			for j := 0; j < n; j++ {
 				series[k] = make([]interface{}, 3)
-				series[k][0] = i
+				series[k][0] = i + int(tmpl.EditOffset)
 				series[k][1] = j
-				if i == int(tmpl.EditStop) && j == 0 {
+				if i+int(tmpl.EditOffset) == int(tmpl.EditStop) && j == 0 {
 					series[k][2] = 0.0
 				} else {
 					series[k][2] = heat[i][j]
@@ -680,22 +684,22 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		samples := make(map[string]map[uint32]float64)
+		samples := make(map[string]map[int]float64)
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
 			ok := false
-			if a.EditStop == tmpl.EditStop && a.JuncLen == 0 {
+			if a.EditStop == int(tmpl.EditStop) && a.JuncLen == 0 {
 				ok = true
-			} else if a.EditStop == tmpl.EditOffset && a.JuncLen == 0 {
+			} else if a.EditStop == tmpl.Len()-1+int(tmpl.EditOffset) && a.JuncLen == 0 {
 				ok = true
-            }
+			}
 
 			if !ok {
 				return
 			}
 
 			if _, ok = samples[key.Sample]; !ok {
-				samples[key.Sample] = make(map[uint32]float64)
+				samples[key.Sample] = make(map[int]float64)
 			}
 
 			samples[key.Sample][a.EditStop] += a.Norm
@@ -717,8 +721,8 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 		sort.Strings(skeys)
 		for _, k := range skeys {
 			v := samples[k]
-			x := []float64{v[tmpl.EditStop]}
-			y := []float64{v[tmpl.EditOffset]}
+			x := []float64{v[int(tmpl.EditStop)]}
+			y := []float64{v[tmpl.Len()-1+int(tmpl.EditOffset)]}
 
 			m := make(map[string]interface{})
 			m["data"] = y

@@ -51,20 +51,20 @@ func TestFragment(t *testing.T) {
 
 func TestParseReadCounts(t *testing.T) {
 	seqs := map[string]int{
-        " 132-2082": 2082,
-        "SAMPLE1_GENE_123432_2082": 2082,
-        "132-2082": 2082,
-        "GENE_88772-2082": 2082,
-        "791-2082": 2082,
-        "791-2082            ": 2082,
-        "791-2082 attr1=x attr2=y attr3=z": 2082,
-        "7912082 attr1=x attr2=y attr3=z": 1,
-        "badtest2082": 1,
-        "2082": 1,
-        "-2082": 1,
-        "_2082": 1,
-        "2082_": 1,
-    }
+		" 132-2082":                        2082,
+		"SAMPLE1_GENE_123432_2082":         2082,
+		"132-2082":                         2082,
+		"GENE_88772-2082":                  2082,
+		"791-2082":                         2082,
+		"791-2082            ":             2082,
+		"791-2082 attr1=x attr2=y attr3=z": 2082,
+		"7912082 attr1=x attr2=y attr3=z":  1,
+		"badtest2082":                      1,
+		"2082":                             1,
+		"-2082":                            1,
+		"_2082":                            1,
+		"2082_":                            1,
+	}
 
 	for id, count := range seqs {
 		frag := NewFragment(id, "CTGCTG", FORWARD, 't')

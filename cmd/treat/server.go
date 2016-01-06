@@ -56,13 +56,13 @@ type Database struct {
 	storage             *Storage
 	geneTemplates       map[string]*treat.Template
 	geneSamples         map[string][]string
-	maxEditStop         map[string]uint32
-	maxJuncLen          map[string]uint32
-	maxJuncEnd          map[string]uint32
+	maxEditStop         map[string]int
+	maxJuncLen          map[string]int
+	maxJuncEnd          map[string]int
 	genes               []string
 	defaultGene         string
 	cache               map[string][]byte
-	cacheEditStopTotals map[string]map[uint32]map[string]float64
+	cacheEditStopTotals map[string]map[int]map[string]float64
 }
 
 func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, error) {
@@ -173,10 +173,10 @@ func (a *Application) loadDb(base, dbpath string) error {
 		return fmt.Errorf("No genes/templates found. Please load some data first")
 	}
 
-	db.cacheEditStopTotals = make(map[string]map[uint32]map[string]float64)
-	db.maxEditStop = make(map[string]uint32)
-	db.maxJuncLen = make(map[string]uint32)
-	db.maxJuncEnd = make(map[string]uint32)
+	db.cacheEditStopTotals = make(map[string]map[int]map[string]float64)
+	db.maxEditStop = make(map[string]int)
+	db.maxJuncLen = make(map[string]int)
+	db.maxJuncEnd = make(map[string]int)
 	db.geneSamples = make(map[string][]string)
 	db.genes = make([]string, 0)
 	for k := range db.geneTemplates {
@@ -195,7 +195,7 @@ func (a *Application) loadDb(base, dbpath string) error {
 
 		logrus.Printf("Computing edit stop site cache for gene %s...", k)
 		if _, ok := db.cacheEditStopTotals[k]; !ok {
-			db.cacheEditStopTotals[k] = make(map[uint32]map[string]float64)
+			db.cacheEditStopTotals[k] = make(map[int]map[string]float64)
 		}
 
 		fields := &SearchFields{Gene: k, EditStop: -1, JuncEnd: -1, JuncLen: -1}
@@ -254,13 +254,13 @@ func (a *Application) NewSearchFields(url *url.URL, db *Database) (*SearchFields
 	}
 
 	if vals.Get("edit_stop") == "" {
-		fields.EditStop = -1
+		fields.EditStop = -2
 	}
 	if vals.Get("junc_len") == "" {
-		fields.JuncLen = -1
+		fields.JuncLen = -2
 	}
 	if vals.Get("junc_end") == "" {
-		fields.JuncEnd = -1
+		fields.JuncEnd = -2
 	}
 
 	return fields, nil
@@ -299,7 +299,7 @@ func (a *Application) router() *mux.Router {
 	return router
 }
 
-func writeBase(buf []string, ai int, base rune, count, max treat.BaseCountType, cat string) {
+func writeBase(buf []string, ai int, base rune, count, max uint32, cat string) {
 	buf[ai] += `<td class="tcell ` + cat + `">`
 	buf[ai] += strings.Repeat("-", int(max-count))
 	if count > 0 {
@@ -330,7 +330,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 	ti := 0
 	for ai := 0; ai < n; ai++ {
 		hilite := ""
-		if uint32(n-ti)+tmpl.EditOffset == a.EditStop {
+		if n-ti+int(tmpl.EditOffset) == a.EditStop {
 			hilite = "hilite"
 		}
 
@@ -363,7 +363,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 			}
 			cat := ""
 			boldi := -1
-			if uint32(n-ti)+tmpl.EditOffset > a.EditStop {
+			if n-ti+int(tmpl.EditOffset) > a.EditStop {
 				if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
 					cat = "PE"
 					boldi = 1
@@ -390,7 +390,7 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 				}
 			}
 
-			if uint32(n-ti)+tmpl.EditOffset > a.EditStop && uint32(n-ti)+tmpl.EditOffset <= a.JuncEnd {
+			if n-ti+int(tmpl.EditOffset) > a.EditStop && n-ti+int(tmpl.EditOffset) <= a.JuncEnd {
 				cat += " junction"
 			}
 
@@ -486,7 +486,7 @@ func pctSearchFunc(a *treat.Alignment, totals map[string]float64) string {
 	return fmt.Sprintf("%.4f", d)
 }
 
-func pctEditStopFunc(a *treat.Alignment, totals map[uint32]map[string]float64) string {
+func pctEditStopFunc(a *treat.Alignment, totals map[int]map[string]float64) string {
 	y := totals[a.EditStop][a.Key.Sample]
 	if y == 0 {
 		return "0.0"

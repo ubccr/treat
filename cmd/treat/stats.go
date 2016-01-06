@@ -102,7 +102,7 @@ func ShowStats(dbpath, gene string, unique bool, norm bool) {
 			fmt.Printf("%20s%11d\n", ">3-Mismatch:", stats.Snps)
 			fmt.Printf("%20s%11d\n", "Indels:", stats.Indels)
 		}
-        fmt.Printf("%20s%11d\n", "Template Edit Stop:", tmpl.EditStop)
+		fmt.Printf("%20s%11d\n", "Template Edit Stop:", tmpl.EditStop)
 		fmt.Printf("%20s%11s\n", "Edit Base:", string(tmpl.EditBase))
 		fmt.Printf("%20s%11d\n", "Alt Templates:", len(tmpl.AltRegion))
 		fmt.Println(strings.Repeat("-", 80))

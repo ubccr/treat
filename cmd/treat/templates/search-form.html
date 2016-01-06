@@ -28,19 +28,19 @@
   <div class="form-group">
     <div class="input-group">
       <div class="input-group-addon"><i title="Filter by Edit Stop Site" class="fa fa-edit"></i></div>
-      <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -1 }}{{ .Fields.EditStop }}{{end}}" placeholder="Stop">
+      <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -2 }}{{ .Fields.EditStop }}{{end}}" placeholder="Stop">
     </div>
   </div>
   <div class="form-group">
     <div class="input-group">
       <div class="input-group-addon"><i title="Filter by Junction End Site" class="fa fa-link"></i></div>
-      <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -1 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="End">
+      <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -2 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="End">
     </div>
   </div>
   <div class="form-group">
     <div class="input-group">
       <div class="input-group-addon"><i title="Filter by Junction Length" class="fa fa-link"></i></div>
-      <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -1 }}{{ .Fields.JuncLen }}{{end}}" placeholder="Len">
+      <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -2 }}{{ .Fields.JuncLen }}{{end}}" placeholder="Len">
     </div>
   </div>
   <div class="checkbox">

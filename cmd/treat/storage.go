@@ -110,13 +110,13 @@ func (fields *SearchFields) HasMatch(a *treat.Alignment) bool {
 		}
 	}
 
-	if fields.EditStop >= 0 && uint32(fields.EditStop) != a.EditStop {
+	if fields.EditStop >= 0 && fields.EditStop != a.EditStop {
 		return false
 	}
-	if fields.JuncLen >= 0 && uint32(fields.JuncLen) != a.JuncLen {
+	if fields.JuncLen >= 0 && fields.JuncLen != a.JuncLen {
 		return false
 	}
-	if fields.JuncEnd >= 0 && uint32(fields.JuncEnd) != a.JuncEnd {
+	if fields.JuncEnd >= 0 && fields.JuncEnd != a.JuncEnd {
 		return false
 	}
 	if fields.HasAlt && a.AltEditing == 0 {

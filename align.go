@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/big"
 	"strings"
 
 	"github.com/aebruno/nwalgo"
+	"github.com/willf/bitset"
 )
 
 type AlignmentKey struct {
@@ -37,10 +37,10 @@ type AlignmentKey struct {
 type Alignment struct {
 	Key         *AlignmentKey `json:"-"`
 	Id          uint64        `json:"-"`
-	EditStop    uint32        `json:"edit_stop"`
-	JuncStart   uint32        `json:"junc_start"`
-	JuncEnd     uint32        `json:"junc_end"`
-	JuncLen     uint32        `json:"junc_len"`
+	EditStop    int           `json:"edit_stop"`
+	JuncStart   int           `json:"junc_start"`
+	JuncEnd     int           `json:"junc_end"`
+	JuncLen     int           `json:"junc_len"`
 	ReadCount   uint32        `json:"read_count"`
 	Norm        float64       `json:"norm_count"`
 	HasMutation uint8         `json:"has_mutation"`
@@ -62,22 +62,48 @@ func (k *AlignmentKey) MarshalBinary() ([]byte, error) {
 	return []byte(strings.Join([]string{k.Gene, k.Sample}, ";")), nil
 }
 
-func writeBase(buf *bytes.Buffer, base rune, count, max BaseCountType) {
+func writeBase(buf *bytes.Buffer, base rune, count, max uint32) {
 	buf.WriteString(strings.Repeat("-", int(max-count)))
 	if count > 0 {
 		buf.WriteString(strings.Repeat(string(base), int(count)))
 	}
 }
 
-func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignment {
-	alignment := new(Alignment)
+func (a *Alignment) findJES(b *bitset.BitSet) int {
+	if b.All() {
+		return -1
+	} else if b.None() {
+		return int(b.Len() - 1)
+	} else {
+		xor := b.SymmetricDifference(bitset.New(b.Len()).Complement())
+		max := uint(0)
+		for i, e := xor.NextSet(0); e; i, e = xor.NextSet(i + 1) {
+			max = i
+		}
+		return int(max)
+	}
+}
 
-	m := make([]*big.Int, template.Size())
-	for i := range m {
-		m[i] = new(big.Int)
+func (a *Alignment) findJSS(b *bitset.BitSet) int {
+	if b.All() {
+		return int(b.Len() - 1)
+	} else if b.None() {
+		return -1
+	} else {
+		xor := b.SymmetricDifference(bitset.New(b.Len()).Complement())
+		min, _ := xor.NextSet(0)
+		return int(min)
+	}
+}
+
+func (a *Alignment) computeT(frag *Fragment, tmpl *Template, excludeSnps bool) []*bitset.BitSet {
+	size := uint(tmpl.Len())
+	T := make([]*bitset.BitSet, tmpl.Size())
+	for i := range T {
+		T[i] = bitset.New(size)
 	}
 
-	aln1, aln2, _ := nwalgo.Align(template.Bases, frag.Bases, 1, -1, -1)
+	aln1, aln2, _ := nwalgo.Align(tmpl.Bases, frag.Bases, 1, -1, -1)
 
 	fi := 0
 	ti := 0
@@ -85,33 +111,33 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 		if aln1[ai] == '-' {
 			fi++
 			// insertion
-			alignment.HasMutation = uint8(1)
-			alignment.Indel = uint8(1)
+			a.HasMutation = uint8(1)
+			a.Indel = uint8(1)
 			continue
 		}
 
-		count := BaseCountType(0)
+		count := uint32(0)
 		if aln2[ai] != '-' {
 			count = frag.EditSite[fi]
 
-			if frag.Bases[fi] != template.Bases[ti] {
+			if frag.Bases[fi] != tmpl.Bases[ti] {
 				// SNP
-				alignment.Mismatches++
+				a.Mismatches++
 
 				//TODO: make the number of mismatches configurable
-				if excludeSnps || alignment.Mismatches > 2 {
-					alignment.HasMutation = uint8(1)
+				if excludeSnps || a.Mismatches > 2 {
+					a.HasMutation = uint8(1)
 				}
 			}
 		} else {
 			// deletion
-			alignment.HasMutation = uint8(1)
-			alignment.Indel = uint8(1)
+			a.HasMutation = uint8(1)
+			a.Indel = uint8(1)
 		}
 
-		for i := range template.EditSite {
-			if template.EditSite[i][ti] == count {
-				m[i].SetBit(m[i], ti, 1)
+		for i := range tmpl.EditSite {
+			if tmpl.EditSite[i][ti] == count {
+				T[i] = T[i].Set((size - 1) - uint(ti))
 			}
 		}
 
@@ -122,123 +148,133 @@ func NewAlignment(frag *Fragment, template *Template, excludeSnps bool) *Alignme
 	}
 
 	// Last edit site
-	for i := range template.EditSite {
-		if template.EditSite[i][ti] == frag.EditSite[fi] {
-			m[i].SetBit(m[i], ti, 1)
+	for i := range tmpl.EditSite {
+		if tmpl.EditSite[i][ti] == frag.EditSite[fi] {
+			T[i] = T[i].Set((size - 1) - uint(ti))
 		}
 	}
 
-	// Compute junction start site
-	isFullyEdited := true
-	for j := ti; j >= 0; j-- {
-		if m[0].Bit(j) == 0 {
-			// Sites are numbered 3' -> 5', so we reverse the index (ti-j)
-			alignment.JuncStart = uint32(ti - j)
-			isFullyEdited = false
-			break
-		}
-	}
+	return T
+}
 
-	// If fragment matches the fully edited template entirely.
-	if isFullyEdited {
-		alignment.JuncStart = uint32(ti)
-	}
-
+func (a *Alignment) computeAltEditing(tmpl *Template, T []*bitset.BitSet) {
 	// Compute alt editing
 	// See if junc start matches an alt template
-	shift := ti - int(alignment.JuncStart)
+	shift := a.JuncStart
 	alt := 0
 	hasAlt := false
-	for i, v := range m[2:] {
-		if v.Bit(shift) == 1 {
+	for i, v := range T[2:] {
+		if v.Test(uint(shift)) {
 			alt = i
 			hasAlt = true
 			break
 		}
 	}
 
-	// If we're at start of alt editing
-	if hasAlt && (ti-shift) == template.AltRegion[alt].Start {
-		// Shift Edit Stop Site to first site that doesn't match alt template
-        fullMatch := true
-		for x := shift; x >= 0; x-- {
-			if m[alt+2].Bit(x) == 1 {
-				continue
-			}
-
-            fullMatch = false
-			shift = x
-			break
-		}
-
-        if fullMatch {
-            shift = 0
-        }
-
-		// If we're before the end of alt editing
-		if (ti - shift) > template.AltRegion[alt].End {
-			// flag which alt tempalte we matched
-			alignment.AltEditing = uint8(alt + 1)
-			// Shift Junc Start to first site that doesn't match FE template
-            if shift == 0 {
-                alignment.JuncStart = uint32(ti)
-            } else {
-                for j := shift; j >= 0; j-- {
-                    if j <= ti && m[0].Bit(j) == 0 {
-                        alignment.JuncStart = uint32(ti - j)
-                        break
-                    }
-                }
-			}
-		}
+	if !hasAlt {
+		return
 	}
 
-	for j := 0; j <= ti; j++ {
-		if m[1].Bit(j) == 0 {
-			alignment.JuncEnd = uint32(ti - j)
-			break
+	// If we're not at the start of alt editing return
+	if shift != tmpl.AltRegion[alt].Start {
+		return
+
+	}
+
+	// Shift Edit Stop Site to first site that doesn't match alt template
+	fullMatch := true
+	for x := shift; x < tmpl.Len(); x++ {
+		if T[alt+2].Test(uint(x)) {
+			continue
 		}
+
+		fullMatch = false
+		shift = x
+		break
 	}
 
-	if alignment.JuncStart > 0 {
-		alignment.EditStop = alignment.JuncStart - uint32(1)
-	}
-
-	if alignment.JuncEnd > alignment.EditStop {
-		alignment.JuncLen = alignment.JuncEnd - alignment.EditStop
-		if alignment.HasMutation == 0 {
-			for i := ti - int(alignment.JuncEnd); i < ti-int(alignment.EditStop); i++ {
-				alignment.JuncSeq += strings.Repeat(string(frag.EditBase), int(frag.EditSite[i]))
-				if i < len(frag.Bases) {
-					alignment.JuncSeq += string(frag.Bases[i])
+	if fullMatch || shift >= tmpl.AltRegion[alt].End {
+		// If we're after the end of alt editing
+		// flag which alt tempalte we matched
+		a.AltEditing = uint8(alt + 1)
+		// Shift Junc Start to first site that doesn't match FE template
+		if fullMatch {
+			a.JuncStart = tmpl.Len() - 1
+		} else {
+			for j := shift; j < tmpl.Len(); j++ {
+				if !T[0].Test(uint(j)) {
+					a.JuncStart = j
+					break
 				}
 			}
 		}
-	} else if alignment.JuncEnd < alignment.EditStop {
-		alignment.JuncEnd = alignment.EditStop
+	}
+}
+
+func NewAlignment(frag *Fragment, tmpl *Template, excludeSnps bool) *Alignment {
+	a := new(Alignment)
+
+	T := a.computeT(frag, tmpl, excludeSnps)
+
+	a.JuncStart = a.findJSS(T[0])
+	a.computeAltEditing(tmpl, T)
+	a.JuncEnd = a.findJES(T[1])
+	a.EditStop = a.JuncStart - 1
+
+	if a.JuncEnd > a.EditStop {
+		a.JuncLen = a.JuncEnd - a.EditStop
+		if a.HasMutation == 0 {
+			from := (tmpl.Len() - 1) - a.JuncEnd
+			to := (tmpl.Len() - 1) - a.EditStop
+			for i := from; i < to; i++ {
+				a.JuncSeq += strings.Repeat(string(frag.EditBase), int(frag.EditSite[i]))
+				if i < len(frag.Bases) {
+					a.JuncSeq += string(frag.Bases[i])
+				}
+			}
+		}
+	} else if a.JuncEnd < a.EditStop {
+		a.JuncEnd = a.EditStop
+		a.JuncLen = 0
 	}
 
 	// If fragment matches the fully edited template entirely. Set junc len 0
-	if isFullyEdited {
-		alignment.JuncEnd = alignment.EditStop
-		alignment.JuncLen = 0
-		alignment.JuncSeq = ""
+	if T[0].All() {
+		a.JuncEnd = a.JuncStart
+		a.EditStop = a.JuncStart
+		a.JuncLen = 0
+		a.JuncSeq = ""
 	}
 
-	alignment.ReadCount = frag.ReadCount
-	alignment.Norm = frag.Norm
-    alignment.EditStop += template.EditOffset
-    alignment.JuncStart += template.EditOffset
-    alignment.JuncEnd += template.EditOffset
+	a.ReadCount = frag.ReadCount
+	a.Norm = frag.Norm
+	a.EditStop += int(tmpl.EditOffset)
+	a.JuncStart += int(tmpl.EditOffset)
+	a.JuncEnd += int(tmpl.EditOffset)
 
-	return alignment
+	return a
+}
+
+func readInt64(b []byte) int {
+	n := (uint32(b[0]) << 24) |
+		(uint32(b[1]) << 16) |
+		(uint32(b[2]) << 8) |
+		uint32(b[3])
+	return int(int32(n))
+}
+
+func writeInt64(b []byte, n int) {
+	b[0] = byte(uint64(n) >> 24)
+	b[1] = byte(uint64(n) >> 16)
+	b[2] = byte(uint64(n) >> 8)
+	b[3] = byte(uint64(n))
 }
 
 func (a *Alignment) UnmarshalBinary(buf []byte) error {
-	a.EditStop = binary.BigEndian.Uint32(buf[0:4])
-	a.JuncStart = binary.BigEndian.Uint32(buf[4:8])
-	a.JuncEnd = binary.BigEndian.Uint32(buf[8:12])
-	a.JuncLen = binary.BigEndian.Uint32(buf[12:16])
+	a.EditStop = readInt64(buf[0:4])
+	a.JuncStart = readInt64(buf[4:8])
+	a.JuncEnd = readInt64(buf[8:12])
+	a.JuncLen = readInt64(buf[12:16])
 	a.ReadCount = binary.BigEndian.Uint32(buf[16:20])
 	a.HasMutation = buf[20]
 	a.AltEditing = buf[21]
@@ -257,10 +293,10 @@ func (a *Alignment) UnmarshalBinary(buf []byte) error {
 func (a *Alignment) MarshalBinary() ([]byte, error) {
 	buf := make([]byte, 36)
 
-	binary.BigEndian.PutUint32(buf[0:4], a.EditStop)
-	binary.BigEndian.PutUint32(buf[4:8], a.JuncStart)
-	binary.BigEndian.PutUint32(buf[8:12], a.JuncEnd)
-	binary.BigEndian.PutUint32(buf[12:16], a.JuncLen)
+	writeInt64(buf[0:4], a.EditStop)
+	writeInt64(buf[4:8], a.JuncStart)
+	writeInt64(buf[8:12], a.JuncEnd)
+	writeInt64(buf[12:16], a.JuncLen)
 	binary.BigEndian.PutUint32(buf[16:20], a.ReadCount)
 	buf[20] = a.HasMutation
 	buf[21] = a.AltEditing

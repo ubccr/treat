@@ -19,11 +19,17 @@ package treat
 
 import (
 	"bytes"
-	"encoding/gob"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"gopkg.in/vmihailenco/msgpack.v2"
+)
+
+var (
+	_ msgpack.CustomEncoder = &Fragment{}
+	_ msgpack.CustomDecoder = &Fragment{}
 )
 
 var BASE_COMP = map[byte]byte{
@@ -54,7 +60,7 @@ type Fragment struct {
 	Norm      float64
 	Bases     string
 	EditBase  rune
-	EditSite  []BaseCountType
+	EditSite  []uint32
 }
 
 // From: http://stackoverflow.com/a/10030772
@@ -68,7 +74,7 @@ func reverse(s string) string {
 
 func parseMergeCount(recId string) uint32 {
 	// First try and parse fastx-collapser header lines
-    parts := strings.SplitN(strings.TrimSpace(recId), " ", 2)
+	parts := strings.SplitN(strings.TrimSpace(recId), " ", 2)
 	matches := fastxPattern.FindStringSubmatch(parts[0])
 	if len(matches) == 2 {
 		count, err := strconv.Atoi(matches[1])
@@ -93,9 +99,9 @@ func NewFragment(name, seq string, orientation OrientationType, base rune) *Frag
 	seq = strings.ToUpper(seq)
 	base3 := strings.Replace(seq, string(base), "", -1)
 	n := len(base3) + 1
-	editSite := make([]BaseCountType, n)
+	editSite := make([]uint32, n)
 
-	baseCount := BaseCountType(0)
+	baseCount := uint32(0)
 	index := 0
 	procBases := func(r rune) rune {
 		if r != base {
@@ -141,23 +147,27 @@ func (f *Fragment) String() string {
 }
 
 func (f *Fragment) UnmarshalBytes(data []byte) error {
-	buf := bytes.NewReader(data)
-	dec := gob.NewDecoder(buf)
-	err := dec.Decode(f)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return msgpack.Unmarshal(data, &f)
 }
 
 func (f *Fragment) MarshalBytes() ([]byte, error) {
-	data := new(bytes.Buffer)
-	enc := gob.NewEncoder(data)
-	err := enc.Encode(f)
-	if err != nil {
-		return nil, err
-	}
+	return msgpack.Marshal(f)
+}
 
-	return data.Bytes(), nil
+func (f *Fragment) EncodeMsgpack(enc *msgpack.Encoder) error {
+	return enc.Encode(f.Name,
+		f.ReadCount,
+		f.Norm,
+		f.Bases,
+		f.EditBase,
+		f.EditSite)
+}
+
+func (f *Fragment) DecodeMsgpack(dec *msgpack.Decoder) error {
+	return dec.Decode(&f.Name,
+		&f.ReadCount,
+		&f.Norm,
+		&f.Bases,
+		&f.EditBase,
+		&f.EditSite)
 }

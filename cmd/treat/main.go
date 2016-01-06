@@ -89,7 +89,7 @@ func main() {
 					TemplatePath: c.String("template"),
 					FragmentPath: fragPaths,
 					EditBase:     c.String("base"),
-					EditOffset:    c.Int("offset"),
+					EditOffset:   c.Int("offset"),
 					SkipFrags:    c.Bool("skip-fragments"),
 					ExcludeSnps:  c.Bool("exclude-snps"),
 					Force:        c.Bool("force"),

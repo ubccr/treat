@@ -59,11 +59,11 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatalln(err)
 	}
 
-    tmpl.EditOffset = uint32(options.EditOffset)
-    tmpl.EditStop += tmpl.EditOffset
+	tmpl.EditOffset = uint32(options.EditOffset)
+	tmpl.EditStop += int(tmpl.EditOffset)
 
-    logrus.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
-    logrus.Printf("Using Edit Site numbering offset: %d", tmpl.EditOffset)
+	logrus.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
+	logrus.Printf("Using Edit Site numbering offset: %d", tmpl.EditOffset)
 
 	storage, err := NewStorageWrite(dbpath)
 	if err != nil {
