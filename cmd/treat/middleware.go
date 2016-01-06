@@ -28,27 +28,37 @@ import (
 func DbContext(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := app.cookieStore.Get(r, TREAT_COOKIE_SESSION)
-		dbname := session.Values[TREAT_COOKIE_DB]
 
-		if dbname == nil {
+		// Allow url to override cookie (useful for sending links)
+		dbname := r.URL.Query().Get("db")
+		if len(dbname) == 0 {
+			n := session.Values[TREAT_COOKIE_DB]
+			if n != nil {
+				dbname = n.(string)
+			}
+		}
+
+		// If neither cookie or url is set the use default
+		if len(dbname) == 0 {
 			dbname = app.defaultDb
 		}
 
-		db, err := app.GetDb(dbname.(string))
+		db, err := app.GetDb(dbname)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"dbname": dbname,
 			}).Warn("Invalid database name. Using default")
+			dbname = app.defaultDb
 			db, _ = app.GetDb(app.defaultDb)
+		}
 
-			session.Values[TREAT_COOKIE_DB] = app.defaultDb
-			err = session.Save(r, w)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"defaultDb": app.defaultDb,
-					"error":     err.Error(),
-				}).Error("Failed to set cookie for default db")
-			}
+		session.Values[TREAT_COOKIE_DB] = dbname
+		err = session.Save(r, w)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"dbname": dbname,
+				"error":  err.Error(),
+			}).Error("Failed to set save session")
 		}
 
 		context.Set(r, "db", db)
