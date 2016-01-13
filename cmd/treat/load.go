@@ -53,6 +53,8 @@ func Load(dbpath string, options *LoadOptions) {
 
 	// Clean up gene names
 	options.Gene = strings.Replace(options.Gene, " ", "_", -1)
+	// Gene names can't contain a ';'
+	options.Gene = strings.Replace(options.Gene, ";", "_", -1)
 
 	tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
 	if err != nil {

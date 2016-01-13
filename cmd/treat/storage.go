@@ -539,6 +539,8 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 	sample := fname[:len(fname)-len(filepath.Ext(path))]
 	// clean up sample name
 	sample = strings.Replace(sample, " ", "_", -1)
+	// sample name can't contain a ';'
+	sample = strings.Replace(sample, ";", "_", -1)
 
 	akey := &treat.AlignmentKey{options.Gene, sample}
 	key, err := akey.MarshalBinary()
