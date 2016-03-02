@@ -33,6 +33,7 @@ type AlignOptions struct {
 	EditBase     string
 	S1           string
 	S2           string
+	EditOffset   int
 }
 
 func PrintAlignment(a1, a2 string, tw int) {
@@ -82,6 +83,8 @@ func Align(options *AlignOptions) {
 			logrus.Fatal(err)
 		}
 		tmpl = t
+        tmpl.EditOffset = uint32(options.EditOffset)
+        tmpl.EditStop += int(tmpl.EditOffset)
 	}
 
 	f, err := os.Open(options.FragmentPath)

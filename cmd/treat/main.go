@@ -105,6 +105,7 @@ func main() {
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
 				&cli.StringFlag{Name: "s1, 1", Usage: "first sequence to align"},
 				&cli.StringFlag{Name: "s2, 2", Usage: "second sequence to align"},
+				&cli.IntFlag{Name: "offset", Value: 0, Usage: "Edit site offset"},
 			},
 			Action: func(c *cli.Context) {
 				Align(&AlignOptions{
@@ -113,6 +114,7 @@ func main() {
 					EditBase:     c.String("base"),
 					S1:           c.String("s1"),
 					S2:           c.String("s2"),
+					EditOffset:   c.Int("offset"),
 				})
 			},
 		},
