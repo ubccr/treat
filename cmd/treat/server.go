@@ -363,7 +363,11 @@ func alignFunc(a *treat.Alignment, frag *treat.Fragment, tmpl *treat.Template) t
 			}
 			cat := ""
 			boldi := -1
-			if n-ti+int(tmpl.EditOffset) > a.EditStop {
+
+			if a.AltEditing > 0 && n-ti > tmpl.AltRegion[a.AltEditing-1].Start && n-ti < tmpl.AltRegion[a.AltEditing-1].End {
+				boldi = int(a.AltEditing) + 1
+				cat = fmt.Sprintf("A%d", a.AltEditing)
+			} else if n-ti+int(tmpl.EditOffset) > a.EditStop {
 				if frag.EditSite[fi] == tmpl.EditSite[1][ti] {
 					cat = "PE"
 					boldi = 1
