@@ -151,13 +151,13 @@ func NewTemplate(full, pre *Fragment, alt []*Fragment, altRegion []*AltRegion) (
 }
 
 func (tmpl *Template) SetOffset(offset int) {
-    tmpl.EditOffset = uint32(offset)
+	tmpl.EditOffset = uint32(offset)
 	tmpl.EditStop += offset
 
-    for _,region := range tmpl.AltRegion {
-        region.Start -= offset
-        region.End -= offset
-    }
+	for _, region := range tmpl.AltRegion {
+		region.Start -= offset
+		region.End -= offset
+	}
 }
 
 func (tmpl *Template) Size() int {

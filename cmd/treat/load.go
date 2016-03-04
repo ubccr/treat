@@ -61,7 +61,7 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatalln(err)
 	}
 
-    tmpl.SetOffset(options.EditOffset)
+	tmpl.SetOffset(options.EditOffset)
 
 	logrus.Printf("Using template Edit Stop Site: %d", tmpl.EditStop)
 	logrus.Printf("Using Edit Site numbering offset: %d", tmpl.EditOffset)

@@ -83,7 +83,7 @@ func Align(options *AlignOptions) {
 			logrus.Fatal(err)
 		}
 		tmpl = t
-        tmpl.SetOffset(options.EditOffset)
+		tmpl.SetOffset(options.EditOffset)
 	}
 
 	f, err := os.Open(options.FragmentPath)

@@ -456,12 +456,12 @@ func (a *Alignment) WriteTo(w io.Writer, frag *Fragment, template *Template, tw 
 		return err
 	}
 
-    if a.AltEditing > 0 {
-        _, err = w.Write([]byte(fmt.Sprintf("Alt: %d\n", a.AltEditing)))
-        if err != nil {
-            return err
-        }
-    }
+	if a.AltEditing > 0 {
+		_, err = w.Write([]byte(fmt.Sprintf("Alt: %d\n", a.AltEditing)))
+		if err != nil {
+			return err
+		}
+	}
 	_, err = w.Write([]byte(strings.Repeat("=", tw) + "\n\n"))
 	if err != nil {
 		return err
