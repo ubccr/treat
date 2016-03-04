@@ -193,6 +193,15 @@ Start the TREAT server and view the sequences in a web browser::
 .. image:: docs/treat-screen-shot.png
 
 ------------------------------------------------------------------------
+References
+------------------------------------------------------------------------
+
+- Rachel M. Simpson, Andrew E. Bruno, Jonathan E. Bard, Michael J. Buck and
+  Laurie K. Read. High-throughput sequencing of partially edited trypanosome
+  mRNAs reveals barriers to editing progression and evidence for alternative
+  editing. RNA, 2016. http://dx.doi.org/10.1261/rna.055160.115
+
+------------------------------------------------------------------------
 License
 ------------------------------------------------------------------------
 
