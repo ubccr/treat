@@ -2,14 +2,14 @@
 
 source $GOROOT/src/golang-crosscompile/crosscompile.bash
 TREAT_DIR='./.treat-release'
-VERSION=`grep Version cmd/treat/main.go | egrep -o '[0-9]\.[0-9]\.[0-9]'`
+VERSION=`git describe --long --tags --dirty --always | sed -e 's/^v//'`
 
 for arch in linux-amd64 darwin-amd64 windows-amd64 windows-386
 do
     NAME=treat-${VERSION}-${arch}
     REL_DIR=${TREAT_DIR}/${NAME}
     GO_BIN="go-${arch}"
-    cd ./cmd/treat && ${GO_BIN} build . 
+    cd ./cmd/treat && ${GO_BIN} build -ldflags "-X main.TreatVersion=$VERSION" . 
     cd ../../
     rm -Rf ${TREAT_DIR}
     mkdir -p ${REL_DIR}

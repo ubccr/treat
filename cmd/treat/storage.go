@@ -33,12 +33,14 @@ import (
 	"github.com/ubccr/treat"
 )
 
-const BUCKET_ALIGNMENTS = "alignments"
-const BUCKET_TEMPLATES = "templates"
-const BUCKET_FRAGMENTS = "fragments"
-const BUCKET_META = "meta"
-const STORAGE_VERSION_KEY = "version"
-const STORAGE_VERSION = 0.2
+const (
+	BUCKET_ALIGNMENTS   = "alignments"
+	BUCKET_TEMPLATES    = "templates"
+	BUCKET_FRAGMENTS    = "fragments"
+	BUCKET_META         = "meta"
+	STORAGE_VERSION_KEY = "version"
+	STORAGE_VERSION     = 0.2
+)
 
 type Storage struct {
 	DB      *bolt.DB
