@@ -619,6 +619,141 @@ func HeatMapJson(app *Application) http.Handler {
 	})
 }
 
+func BubbleHandler(app *Application) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := context.Get(r, "db").(*Database)
+		if db == nil {
+			logrus.Error("bubble handler: database not found in request context")
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		fields, err := app.NewSearchFields(r.URL, db)
+
+		if err != nil {
+			logrus.Printf("Error parsing get request: %s", err)
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		tmpl, ok := db.geneTemplates[fields.Gene]
+
+		if !ok {
+			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
+			errorHandler(app, w, http.StatusInternalServerError)
+			return
+		}
+
+		vars := map[string]interface{}{
+			"dbs":      app.dbs,
+			"curdb":    db.name,
+			"Template": tmpl,
+			"Fields":   fields,
+			"Samples":  db.geneSamples[fields.Gene],
+			"Pages":    []int{10, 50, 100, 1000},
+			"Genes":    db.genes}
+
+		renderTemplate(app, "bubble.html", w, vars)
+	})
+}
+
+func BubbleJson(app *Application) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := context.Get(r, "db").(*Database)
+		if db == nil {
+			logrus.Error("bubble json handler: database not found in request context")
+			http.Error(w, "Fatal error", http.StatusInternalServerError)
+			return
+		}
+
+		fields, err := app.NewSearchFields(r.URL, db)
+		fields.Limit = 0
+		fields.Offset = 0
+
+		if err != nil {
+			logrus.Printf("Error parsing get request: %s", err)
+			http.Error(w, "Invalid get parameter in request", http.StatusInternalServerError)
+			return
+		}
+
+		if len(fields.Gene) == 0 {
+			logrus.Printf("Missing required field gene")
+			http.Error(w, "Missing required field gene", http.StatusInternalServerError)
+			return
+		}
+
+		tmpl, ok := db.geneTemplates[fields.Gene]
+
+		if !ok {
+			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
+			http.Error(w, "Gene not found", http.StatusInternalServerError)
+			return
+		}
+
+		bubbleMap := make(map[int]map[uint32]int)
+
+		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
+			if a.EditStop >= int(tmpl.EditOffset) {
+				frag, err := db.storage.GetFragment(key, a.Id)
+				if err != nil || frag == nil {
+					logrus.Printf("fragment not found: %s", err)
+					return
+				}
+
+				for i, t := range frag.EditSite {
+					eb, ok := bubbleMap[i]
+					if !ok {
+						eb = make(map[uint32]int)
+					}
+					eb[t]++
+					bubbleMap[i] = eb
+				}
+			}
+		})
+
+		if err != nil {
+			logrus.Printf("Fatal error: %s", err)
+			http.Error(w, "Fatal database error.", http.StatusInternalServerError)
+			return
+		}
+
+		type editSiteBubble struct {
+			Name  int     `json:"name"`
+			Total int     `json:"total"`
+			T     [][]int `json:"t"`
+			Pre   int     `json:"pre"`
+			Full  int     `json:"full"`
+		}
+
+		n := tmpl.Len()
+		bubbles := make([]*editSiteBubble, n)
+
+		for key, val := range bubbleMap {
+			b := &editSiteBubble{
+				Name: (n - 1) - int(key) + int(tmpl.EditOffset),
+				T:    make([][]int, 0),
+				Full: int(tmpl.EditSite[0][key]),
+				Pre:  int(tmpl.EditSite[1][key]),
+			}
+
+			for t, cnt := range val {
+				b.T = append(b.T, []int{int(t), cnt})
+				b.Total += cnt
+			}
+			bubbles[int(key)] = b
+		}
+
+		out, err := json.Marshal(bubbles)
+		if err != nil {
+			logrus.Printf("Error encoding bubble data as json: %s", err)
+			http.Error(w, "Fatal system error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(out)
+	})
+}
+
 func TemplateSummaryHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		db := context.Get(r, "db").(*Database)

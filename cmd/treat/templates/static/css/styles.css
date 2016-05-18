@@ -72,3 +72,16 @@ body {
     color: #777;
     border-top: 1px solid #e5e5e5;
 }
+
+#treat-bubble { 
+    font-family: Arial, sans-serif;font-size:10px;
+}
+
+#treat-bubble .axis path, #treat-bubble .axis line {
+    fill: none;stroke:#b6b6b6;shape-rendering: crispEdges;
+}
+#treat-bubble .tick text{fill:#999;}
+#treat-bubble g.editsite.active{cursor:pointer;}
+#treat-bubble text.label{font-family: monospace;font-size:12px;font-weight:bold;cursor:pointer;}
+#treat-bubble text.value{font-size:12px;font-weight:bold;}
+

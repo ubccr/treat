@@ -1,0 +1,169 @@
+{{define "content"}}
+
+<div class="page-header">
+  <h3><i class="fa fa-circle-o fa-lg"></i> T Bubble: {{ .curdb }} </h3>
+</div>
+
+{{template "search-form" .}}
+
+<div id="treat-bubble"></div>
+
+<script src="//d3js.org/d3.v3.min.js"></script>
+
+<script type="text/javascript">
+
+$(function () {
+
+// From https://jburrows.wordpress.com/2014/11/18/abbreviating-numbers/
+var symbols =  {
+  '-8': 'y',
+  '-7': 'z',
+  '-6': 'a',
+  '-5': 'f',
+  '-4': 'p',
+  '-3': 'n',
+  '-2': 'µ',
+  '-1': 'm',
+   '0':  '',
+   '1': 'k',
+   '2': 'M',
+   '3': 'G',
+   '4': 'T',
+   '5': 'P',
+   '6': 'E',
+   '7': 'Z',
+   '8': 'Y',
+   '9': 'H'  // Though not official, 'hella' is hella big → 10^(9*3) or 10^27
+};
+
+function formatNumber(val, decimalPlaces) {
+  var exponent = Math.log(val) / Math.log(10);
+  var magnitudeExp = Math.floor(exponent);
+  var hasIntegerComponent = magnitudeExp >= 0;
+  var sign = (hasIntegerComponent) ? -1 : 1;
+  var adjustment = sign * (magnitudeExp % 3);
+  var significand = val / Math.pow(10, magnitudeExp + adjustment);
+  var index = (hasIntegerComponent) ? Math.floor(magnitudeExp / 3) : Math.ceil(magnitudeExp / 3);
+  return significand.toFixed(decimalPlaces) + symbols[''+index];
+}
+
+
+// From http://stackoverflow.com/questions/10073699/pad-a-number-with-leading-zeros-in-javascript
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+
+// Bubble chart from:
+// http://neuralengr.com/asifr/journals/journals_dbs.html
+var margin = {top: 20, right: 200, bottom: 0, left: 20},
+    width = 800,
+    height = 4096;
+
+var start_site = 20,
+    end_site = 0;
+
+var c = d3.scale.category20c();
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("top");
+
+var formatYears = d3.format("0000");
+xAxis.tickFormat(formatYears);
+
+var svg = d3.select("#treat-bubble").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("margin-left", margin.left + "px")
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+$("#search-spin").show();
+
+d3.json('/data/bubble?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc_end={{.Fields.JuncEnd}}&amp;edit_stop={{.Fields.EditStop}}&amp;junc_len={{.Fields.JuncLen}}{{range $s := $.Fields.Sample}}&amp;sample={{$s|urlquery}}{{end}}&amp;has_mutation={{.Fields.HasMutation}}&amp;has_alt={{.Fields.HasAlt}}&amp;alt={{.Fields.AltRegion}}', function(data) {
+
+    x.domain([start_site, end_site]);
+    var xScale = d3.scale.linear()
+        .domain([start_site, end_site])
+        .range([0, width]);
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + 0 + ")")
+        .call(xAxis);
+
+    for (var j = 0; j < data.length; j++) {
+        if(data[j] == null) {
+            continue;
+        }
+
+        var g = svg.append("g").attr("class","editsite");
+
+        var circles = g.selectAll("circle")
+            .data(data[j]['t'])
+            .enter()
+            .append("circle");
+
+        var text = g.selectAll("text")
+            .data(data[j]['t'])
+            .enter()
+            .append("text");
+
+        var rScale = d3.scale.linear()
+            .domain([0, d3.max(data[j]['t'], function(d) { return d[1]; })])
+            .range([2, 9]);
+
+        circles
+            .attr("cx", function(d, i) { return xScale(d[0]); })
+            .attr("cy", j*20+20)
+            .attr("r", function(d) { return rScale(d[1]); })
+            .style("fill", function(d) { return c(j); });
+
+        text
+            .attr("y", j*20+25)
+            .attr("x",function(d, i) { return xScale(d[0])-5; })
+            .attr("class","value")
+            .text(function(d){ return formatNumber(d[1], 0); })
+            .style("fill", function(d) { return c(j); })
+            .style("display","none");
+
+        g.append("text")
+            .attr("y", j*20+25)
+            .attr("x",width+20)
+            .attr("class","label")
+            .style("fill", function(d) { return c(j); })
+            .on("mouseover", mouseover)
+            .on("mouseout", mouseout).append("tspan").attr("xml:space", "preserve")
+            .text(pad(data[j]['name'],6,' ')+" ["+pad(data[j]['full'],2,' ')+", "+pad(data[j]['pre'],2,' ')+"]");
+    };
+
+    function mouseover(p) {
+        var g = d3.select(this).node().parentNode;
+        d3.select(g).selectAll("circle").style("display","none");
+        d3.select(g).selectAll("text.value").style("display","block");
+        /* d3.select(g).selectAll("text.label").style("opacity","0"); */
+    }
+
+    function mouseout(p) {
+        var g = d3.select(this).node().parentNode;
+        d3.select(g).selectAll("circle").style("display","block");
+        d3.select(g).selectAll("text.value").style("display","none");
+        /* d3.select(g).selectAll("text.label").style("opacity","100"); */
+    }
+
+
+    $("#search-spin").hide();
+
+});
+
+});
+</script>
+
+{{end}}
