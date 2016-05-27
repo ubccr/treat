@@ -37,6 +37,7 @@ var symbols =  {
 };
 
 function formatNumber(val, decimalPlaces) {
+  if(val < 1) return val.toFixed(2)
   var exponent = Math.log(val) / Math.log(10);
   var magnitudeExp = Math.floor(exponent);
   var hasIntegerComponent = magnitudeExp >= 0;
@@ -130,7 +131,7 @@ d3.json('/data/bubble?gene={{.Fields.Gene}}&amp;limit={{.Fields.Limit}}&amp;junc
             .attr("y", j*20+25)
             .attr("x",function(d, i) { return xScale(d[0])-5; })
             .attr("class","value")
-            .text(function(d){ return formatNumber(d[1], 0); })
+            .text(function(d){ return formatNumber(d[1]); })
             .style("fill", function(d) { return c(j); })
             .style("display","none");
 
