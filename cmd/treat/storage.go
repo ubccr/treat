@@ -210,6 +210,11 @@ func (s *Storage) Search(fields *SearchFields, f func(k *treat.AlignmentKey, a *
 					continue
 				}
 
+				// By default, don't include alt editing
+				if !fields.HasAlt && a.AltEditing > 0 {
+					continue
+				}
+
 				if fields.Offset > 0 && offset < fields.Offset {
 					offset++
 					continue

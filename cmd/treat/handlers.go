@@ -203,11 +203,6 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 			return
 		}
 
-		// By default, don't include alt editing
-		if !fields.HasAlt && a.AltEditing > 0 {
-			return
-		}
-
 		if _, ok := samples[key.Sample]; !ok {
 			samples[key.Sample] = make(map[int]float64)
 		}
@@ -718,11 +713,11 @@ func BubbleJson(app *Application) http.Handler {
 		}
 
 		type editSiteBubble struct {
-			Name  int     `json:"name"`
-			Total float64     `json:"total"`
+			Name  int             `json:"name"`
+			Total float64         `json:"total"`
 			T     [][]interface{} `json:"t"`
-			Pre   int     `json:"pre"`
-			Full  int     `json:"full"`
+			Pre   int             `json:"pre"`
+			Full  int             `json:"full"`
 		}
 
 		n := tmpl.Len()
