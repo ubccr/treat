@@ -690,7 +690,7 @@ func BubbleJson(app *Application) http.Handler {
 			return
 		}
 
-		bubbleMap := make(map[int]map[uint32]int)
+		bubbleMap := make(map[int]map[uint32]float64)
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
 			if a.EditStop >= int(tmpl.EditOffset) {
@@ -703,9 +703,9 @@ func BubbleJson(app *Application) http.Handler {
 				for i, t := range frag.EditSite {
 					eb, ok := bubbleMap[i]
 					if !ok {
-						eb = make(map[uint32]int)
+						eb = make(map[uint32]float64)
 					}
-					eb[t]++
+					eb[t] += a.Norm
 					bubbleMap[i] = eb
 				}
 			}
@@ -719,8 +719,8 @@ func BubbleJson(app *Application) http.Handler {
 
 		type editSiteBubble struct {
 			Name  int     `json:"name"`
-			Total int     `json:"total"`
-			T     [][]int `json:"t"`
+			Total float64     `json:"total"`
+			T     [][]interface{} `json:"t"`
 			Pre   int     `json:"pre"`
 			Full  int     `json:"full"`
 		}
@@ -731,13 +731,13 @@ func BubbleJson(app *Application) http.Handler {
 		for key, val := range bubbleMap {
 			b := &editSiteBubble{
 				Name: (n - 1) - int(key) + int(tmpl.EditOffset),
-				T:    make([][]int, 0),
+				T:    make([][]interface{}, 0),
 				Full: int(tmpl.EditSite[0][key]),
 				Pre:  int(tmpl.EditSite[1][key]),
 			}
 
 			for t, cnt := range val {
-				b.T = append(b.T, []int{int(t), cnt})
+				b.T = append(b.T, []interface{}{int(t), cnt})
 				b.Total += cnt
 			}
 			bubbles[int(key)] = b
