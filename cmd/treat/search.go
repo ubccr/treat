@@ -21,12 +21,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
 
-func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
+func Search(dbpath string, fields *SearchFields, csvOutput, noHeader, fastaOutput bool) {
 	s, err := NewStorage(dbpath)
 	if err != nil {
 		logrus.Fatal(err)
@@ -38,7 +39,7 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
 		csvout.Comma = '\t'
 	}
 
-	if !noHeader {
+	if !noHeader && !fastaOutput {
 		csvout.Write([]string{
 			"gene",
 			"sample",
@@ -58,17 +59,27 @@ func Search(dbpath string, fields *SearchFields, csvOutput, noHeader bool) {
 			alt = fmt.Sprintf("A%d", a.AltEditing)
 		}
 
-		csvout.Write([]string{
-			key.Gene,
-			key.Sample,
-			fmt.Sprintf("%.4f", RoundPlus(a.Norm, 4)),
-			fmt.Sprintf("%d", a.ReadCount),
-			alt,
-			fmt.Sprintf("%d", a.HasMutation),
-			fmt.Sprintf("%d", a.EditStop),
-			fmt.Sprintf("%d", a.JuncEnd),
-			fmt.Sprintf("%d", a.JuncLen),
-			a.JuncSeq})
+		if fastaOutput {
+			frag, err := s.GetFragment(key, a.Id)
+			if err != nil || frag == nil {
+				logrus.Printf("fragment not found: %s", err)
+				return
+			}
+			csvout.Write([]string{">" + key.Gene + "|" + key.Sample + "|" + strconv.FormatUint(a.Id, 10) + "|" + frag.Name})
+			csvout.Write([]string{frag.String()})
+		} else {
+			csvout.Write([]string{
+				key.Gene,
+				key.Sample,
+				fmt.Sprintf("%.4f", RoundPlus(a.Norm, 4)),
+				fmt.Sprintf("%d", a.ReadCount),
+				alt,
+				fmt.Sprintf("%d", a.HasMutation),
+				fmt.Sprintf("%d", a.EditStop),
+				fmt.Sprintf("%d", a.JuncEnd),
+				fmt.Sprintf("%d", a.JuncLen),
+				a.JuncSeq})
+		}
 
 		csvout.Flush()
 	})

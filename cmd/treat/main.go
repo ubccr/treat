@@ -189,6 +189,7 @@ func main() {
 				&cli.BoolFlag{Name: "all,a", Usage: "Include all sequences"},
 				&cli.BoolFlag{Name: "has-alt", Usage: "Has Alternative Editing"},
 				&cli.BoolFlag{Name: "csv", Usage: "Output in csv format"},
+				&cli.BoolFlag{Name: "fasta", Usage: "Output in fasta format"},
 				&cli.BoolFlag{Name: "no-header, x", Usage: "Exclude header from output"},
 			},
 			Action: func(c *cli.Context) {
@@ -204,7 +205,7 @@ func main() {
 					HasMutation: c.Bool("has-mutation"),
 					HasAlt:      c.Bool("has-alt"),
 					All:         c.Bool("all"),
-				}, c.Bool("csv"), c.Bool("no-header"))
+				}, c.Bool("csv"), c.Bool("no-header"), c.Bool("fasta"))
 			},
 		}}
 
