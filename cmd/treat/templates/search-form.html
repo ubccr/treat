@@ -1,68 +1,102 @@
 {{define "search-form"}}
-<div class="well">
-<form class="form-inline" role="form" method="GET">
+<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingOne">
+      <h4 class="panel-title">
+        <a id="search-option-btn" role="button" data-toggle="collapse" data-parent="#accordion" href="#search-options" aria-expanded="true" aria-controls="search-options">
+        <i class="fa fa-plus-square-o"></i> Search Options
+        </a>
+      </h4>
+    </div>
+    <div id="search-options" class="panel-collapse collapse {{if $.Fields.FormOpen }}in{{else}}out{{end}}" role="tabpanel" aria-labelledby="headingOne">
+      <div class="panel-body">
+<form class="form-horizontal" role="form" method="GET">
   <div class="form-group">
+    <label  class="col-sm-4 control-label">Gene</label>
+    <div class="col-xs-4">
     <select id="gene" name="gene" class="selectpicker show-tick" title="Gene..">
         {{ range $g := .Genes }}
             <option{{if eq $g $.Fields.Gene }} selected="selected"{{end}} value="{{ $g }}">{{ $g }}</option>
         {{ end }}
     </select>
+    </div>
   </div>
   <div class="form-group">
+    <label  class="col-sm-4 control-label">Sample</label>
+    <div class="col-xs-4">
     <select name="sample" class="selectpicker show-tick" multiple title="Sample..">
         {{ range $s := .Samples }}
         {{ $check := $.Fields.HasSample $s }}
             <option{{if $check }} selected="selected"{{end}} value="{{ $s }}">{{ $s }}</option>
         {{ end }}
     </select>
+    </div>
   </div>
   <div class="form-group">
-    <select name="alt" class="selectpicker show-tick" title="Alts..">
+    <label  class="col-sm-4 control-label">Alternatively Edited Region</label>
+    <div class="col-xs-3">
+    <select name="alt" class="selectpicker show-tick" title="Alt">
         <option></option>
         {{ range $i, $a := .Template.AltRegion }}
             {{ $x := increment $i }}
             <option{{if eq $x $.Fields.AltRegion }} selected="selected"{{end}} value="{{ $x }}">A{{ $x }}</option>
         {{ end }}
     </select>
+    </div>
   </div>
   <div class="form-group">
-    <div class="input-group">
-      <div class="input-group-addon"><i title="Filter by Edit Stop Site" class="fa fa-edit"></i></div>
+    <label  class="col-sm-4 control-label">Edit Stop Site</label>
+    <div class="col-xs-2">
       <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -2 }}{{ .Fields.EditStop }}{{end}}" placeholder="Stop">
     </div>
   </div>
   <div class="form-group">
-    <div class="input-group">
-      <div class="input-group-addon"><i title="Filter by Junction End Site" class="fa fa-link"></i></div>
+    <label  class="col-sm-4 control-label">Junction End</label>
+    <div class="col-xs-2">
       <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -2 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="End">
     </div>
   </div>
   <div class="form-group">
-    <div class="input-group">
-      <div class="input-group-addon"><i title="Filter by Junction Length" class="fa fa-link"></i></div>
+    <label  class="col-sm-4 control-label">Junction Length</label>
+    <div class="col-xs-2">
       <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -2 }}{{ .Fields.JuncLen }}{{end}}" placeholder="Len">
     </div>
   </div>
-  <div class="checkbox">
-    <label>
-      <input name="has_mutation" value="1" type="checkbox"{{if $.Fields.HasMutation }} checked="checked"{{end}}> <i class="fa fa-warning" title="Show mutations only"></i>
-    </label>
-  </div>
-  <div class="checkbox">
-    <label>
-      <input name="has_alt" value="1" type="checkbox"{{if $.Fields.HasAlt }} checked="checked"{{end}}> <i class="fa fa-magic" title="Show Alternate Editing only"></i>
-    </label>
+  <div class="form-group">
+    <label class="col-sm-4 control-label">Filters</label>
+     <div class="col-sm-4">
+          <label class="checkbox-inline">
+              <input name="has_mutation" value="1" type="checkbox"{{if $.Fields.HasMutation }} checked="checked"{{end}}> Mutations only
+          </label>
+          <label class="checkbox-inline">
+              <input name="has_alt" value="1" type="checkbox"{{if $.Fields.HasAlt }} checked="checked"{{end}}> Alternate Editing only
+          </label>
+      </div>
   </div>
   <div class="form-group">
-    <select name="limit" class="selectpicker show-tick" title="Show..">
+    <label class="col-sm-4 control-label">Results per page</label>
+    <div class="col-xs-3">
+    <select name="limit" class="selectpicker show-tick" title="Limit..">
         {{ range $n := .Pages }}
         <option{{if eq $n $.Fields.Limit }} selected="selected"{{end}}>{{ $n }}</option>
         {{ end }}
     </select>
+    </div>
   </div>
-  <button id="search-btn" type="submit" class="btn btn-primary"><i id="search-spin" class="fa fa-refresh fa-spin"></i> Search</button>
+  <div class="form-group">
+    <div class="col-sm-offset-4 col-xs-3">
+      <input id="form-open" name="form_open" type="hidden" value="{{if $.Fields.FormOpen }}1{{else}}0{{end}}">
+      <button id="search-btn" type="submit" class="btn btn-primary"><i id="search-spin" class="fa fa-refresh fa-spin"></i> Search</button>
+    </div>
+  </div>
 </form>
+
+      </div>
+    </div>
+  </div>
 </div>
+
+
 
 <script type="text/javascript">
 $(function () {
@@ -73,6 +107,14 @@ $(function () {
     $("#search-btn").click(function() { $("#search-spin").show(); });
     $('#gene').change(function() {
         window.location = "?gene=" + $(this).val();
+    });
+    $("#search-option-btn").click(function() { 
+        var val =  $("#form-open").val();
+        if(val == "1") {
+            $("#form-open").val("0");
+        } else {
+            $("#form-open").val("1");
+        }
     });
 });
 </script>

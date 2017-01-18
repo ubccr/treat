@@ -66,7 +66,7 @@ func IndexHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
@@ -172,7 +172,7 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 		}
 	}
 
-	fields, err := app.NewSearchFields(r.URL, db)
+	fields, err := app.NewSearchFields(w, r, db)
 	fields.Limit = 0
 	fields.Offset = 0
 
@@ -373,7 +373,7 @@ func SearchHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
@@ -498,7 +498,7 @@ func HeatHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
@@ -536,7 +536,7 @@ func HeatMapJson(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 		fields.Limit = 0
 		fields.Offset = 0
 
@@ -623,7 +623,7 @@ func BubbleHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
@@ -661,7 +661,7 @@ func BubbleJson(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 		fields.Limit = 0
 		fields.Offset = 0
 
@@ -758,7 +758,7 @@ func TemplateSummaryHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
@@ -796,7 +796,7 @@ func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 			return
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 		fields.Limit = 0
 		fields.Offset = 0
 
@@ -930,7 +930,7 @@ func StatsHandler(app *Application) http.Handler {
 			countByString = "Fragments"
 		}
 
-		fields, err := app.NewSearchFields(r.URL, db)
+		fields, err := app.NewSearchFields(w, r, db)
 		if err != nil {
 			logrus.Printf("Error parsing get request: %s", err)
 			errorHandler(app, w, http.StatusInternalServerError)

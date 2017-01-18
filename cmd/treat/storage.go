@@ -59,6 +59,7 @@ type SearchFields struct {
 	HasAlt      bool     `schema:"has_alt"`
 	All         bool     `schema:"all"`
 	AltRegion   int      `schema:"alt"`
+	FormOpen    bool     `schema:"form_open"`
 }
 
 type AlignmentResults []*treat.Alignment

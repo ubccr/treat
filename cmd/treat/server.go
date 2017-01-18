@@ -18,10 +18,10 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,6 +39,7 @@ import (
 const (
 	TREAT_COOKIE_SESSION = "treat-session"
 	TREAT_COOKIE_DB      = "dbname"
+	TREAT_COOKIE_SEARCH  = "search"
 )
 
 type Application struct {
@@ -63,6 +64,10 @@ type Database struct {
 	defaultGene         string
 	cache               map[string][]byte
 	cacheEditStopTotals map[string]map[int]map[string]float64
+}
+
+func init() {
+	gob.Register(&SearchFields{})
 }
 
 func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, error) {
@@ -240,27 +245,69 @@ func (a *Application) GetDb(name string) (*Database, error) {
 	return db, nil
 }
 
-func (a *Application) NewSearchFields(url *url.URL, db *Database) (*SearchFields, error) {
-	vals := url.Query()
+func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db *Database) (*SearchFields, error) {
+	vals := r.URL.Query()
 	fields := new(SearchFields)
+
+	session, _ := a.cookieStore.Get(r, TREAT_COOKIE_SESSION)
+	search := session.Values[TREAT_COOKIE_SEARCH]
+	if search != nil {
+		fields = search.(*SearchFields)
+	} else {
+		// set defaults
+		fields.EditStop = -2
+		fields.JuncLen = -2
+		fields.JuncEnd = -2
+		fields.Gene = db.defaultGene
+		fields.Limit = 10
+	}
+
+	// Always default to close
+	fields.FormOpen = false
+
+	// URL overrides any cookie values
 	err := a.decoder.Decode(fields, vals)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(fields.Gene) == 0 {
-		fields.Gene = db.defaultGene
+	if fields.FormOpen {
+		if vals.Get("gene") == "" {
+			fields.Gene = db.defaultGene
+		}
+		if vals.Get("sample") == "" {
+			fields.Sample = []string{}
+		}
+		if vals.Get("limit") == "" {
+			fields.Limit = 10
+		}
+		if vals.Get("has_mutation") != "1" {
+			fields.HasMutation = false
+		}
+		if vals.Get("has_alt") != "1" {
+			fields.HasAlt = false
+		}
+		if vals.Get("alt") == "" {
+			fields.AltRegion = 0
+		}
+		if vals.Get("edit_stop") == "" {
+			fields.EditStop = -2
+		}
+		if vals.Get("junc_len") == "" {
+			fields.JuncLen = -2
+		}
+		if vals.Get("junc_end") == "" {
+			fields.JuncEnd = -2
+		}
 	}
 
-	if vals.Get("edit_stop") == "" {
-		fields.EditStop = -2
-	}
-	if vals.Get("junc_len") == "" {
-		fields.JuncLen = -2
-	}
-	if vals.Get("junc_end") == "" {
-		fields.JuncEnd = -2
+	session.Values[TREAT_COOKIE_SEARCH] = fields
+	err = session.Save(r, w)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("Failed to update search in session")
 	}
 
 	return fields, nil
