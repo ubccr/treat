@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -48,18 +46,21 @@ type Storage struct {
 }
 
 type SearchFields struct {
-	Gene        string   `schema:"gene"`
-	Sample      []string `schema:"sample"`
-	EditStop    int      `schema:"edit_stop"`
-	JuncEnd     int      `schema:"junc_end"`
-	JuncLen     int      `schema:"junc_len"`
-	Offset      int      `schema:"offset"`
-	Limit       int      `schema:"limit"`
-	HasMutation bool     `schema:"has_mutation"`
-	HasAlt      bool     `schema:"has_alt"`
-	All         bool     `schema:"all"`
-	AltRegion   int      `schema:"alt"`
-	FormOpen    bool     `schema:"form_open"`
+	Gene         string   `schema:"gene"`
+	Sample       []string `schema:"sample"`
+	KnockDown    []string `schema:"kd"`
+	EditStop     int      `schema:"edit_stop"`
+	JuncEnd      int      `schema:"junc_end"`
+	JuncLen      int      `schema:"junc_len"`
+	Offset       int      `schema:"offset"`
+	Limit        int      `schema:"limit"`
+	Replicate    []int    `schema:"rep"`
+	HasMutation  bool     `schema:"has_mutation"`
+	HasAlt       bool     `schema:"has_alt"`
+	Tetracycline string   `schema:"tet"`
+	All          bool     `schema:"all"`
+	AltRegion    int      `schema:"alt"`
+	FormOpen     bool     `schema:"form_open"`
 }
 
 type AlignmentResults []*treat.Alignment
@@ -83,6 +84,26 @@ func (fields *SearchFields) HasSample(val string) bool {
 	return false
 }
 
+func (fields *SearchFields) HasKnockDown(val string) bool {
+	for _, s := range fields.KnockDown {
+		if s == val {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (fields *SearchFields) HasReplicate(val int) bool {
+	for _, s := range fields.Replicate {
+		if s == val {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (fields *SearchFields) HasKeyMatch(k *treat.AlignmentKey) bool {
 	if len(fields.Gene) > 0 && fields.Gene != k.Gene {
 		return false
@@ -97,6 +118,40 @@ func (fields *SearchFields) HasKeyMatch(k *treat.AlignmentKey) bool {
 			}
 		}
 		if !match {
+			return false
+		}
+	}
+
+	if len(fields.KnockDown) > 0 {
+		match := false
+		for _, kd := range fields.KnockDown {
+			if kd == k.KnockDown {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
+	if len(fields.Replicate) > 0 {
+		match := false
+		for _, r := range fields.Replicate {
+			if r == k.Replicate {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
+	if len(fields.Tetracycline) > 0 {
+		if fields.Tetracycline == "1" && !k.Tetracycline {
+			return false
+		} else if fields.Tetracycline == "0" && k.Tetracycline {
 			return false
 		}
 	}
@@ -357,6 +412,64 @@ func (s *Storage) Samples(gene string) ([]string, error) {
 	return samples, nil
 }
 
+func (s *Storage) KnockDowns(gene string) ([]string, error) {
+	kds := make(map[string]bool)
+	gbytes := []byte(gene)
+
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
+		for k, _ := c.Seek(gbytes); bytes.HasPrefix(k, gbytes); k, _ = c.Next() {
+			key := new(treat.AlignmentKey)
+			key.UnmarshalBinary(k)
+			kds[key.KnockDown] = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]string, len(kds))
+	i := 0
+	for v := range kds {
+		list[i] = v
+		i++
+	}
+
+	return list, nil
+}
+
+func (s *Storage) Replicates(gene string) ([]int, error) {
+	reps := make(map[int]bool)
+	gbytes := []byte(gene)
+
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
+		for k, _ := c.Seek(gbytes); bytes.HasPrefix(k, gbytes); k, _ = c.Next() {
+			key := new(treat.AlignmentKey)
+			key.UnmarshalBinary(k)
+			reps[key.Replicate] = true
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	list := make([]int, len(reps))
+	i := 0
+	for v := range reps {
+		list[i] = v
+		i++
+	}
+
+	return list, nil
+}
+
 func (s *Storage) GetAlignment(k *treat.AlignmentKey, id uint64) (*treat.Alignment, error) {
 	key, err := k.MarshalBinary()
 	if err != nil {
@@ -543,14 +656,14 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 		return nil, err
 	}
 
-	fname := filepath.Base(path)
-	sample := fname[:len(fname)-len(filepath.Ext(path))]
-	// clean up sample name
-	sample = strings.Replace(sample, " ", "_", -1)
-	// sample name can't contain a ';'
-	sample = strings.Replace(sample, ";", "_", -1)
+	akey := &treat.AlignmentKey{
+		Gene:         options.Gene,
+		Sample:       options.Sample,
+		KnockDown:    options.KnockDown,
+		Tetracycline: options.Tetracycline,
+		Replicate:    options.Replicate,
+	}
 
-	akey := &treat.AlignmentKey{options.Gene, sample}
 	key, err := akey.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -567,7 +680,7 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 	var fragBucket *bolt.Bucket
 	count := 0
 
-	logrus.Printf("Processing fragments for sample name: %s", sample)
+	logrus.Printf("Processing fragments for sample name: %s", options.Sample)
 	if options.SkipFrags {
 		logrus.Info("not storing raw fragment reads")
 	}
@@ -630,7 +743,7 @@ func (s *Storage) ImportSample(path string, options *LoadOptions) (*treat.Alignm
 	s.DB.Sync()
 
 	fmt.Println()
-	logrus.Printf("Done. Loaded %d fragment sequences for sample %s", count, sample)
+	logrus.Printf("Done. Loaded %d fragment sequences for sample %s", count, options.Sample)
 
 	return akey, nil
 }

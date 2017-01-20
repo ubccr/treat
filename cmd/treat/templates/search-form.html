@@ -14,7 +14,7 @@
   <div class="form-group">
     <label  class="col-sm-4 control-label">Gene</label>
     <div class="col-xs-4">
-    <select id="gene" name="gene" class="selectpicker show-tick" title="Gene..">
+    <select id="gene" name="gene" class="selectpicker show-tick" title="">
         {{ range $g := .Genes }}
             <option{{if eq $g $.Fields.Gene }} selected="selected"{{end}} value="{{ $g }}">{{ $g }}</option>
         {{ end }}
@@ -24,7 +24,7 @@
   <div class="form-group">
     <label  class="col-sm-4 control-label">Sample</label>
     <div class="col-xs-4">
-    <select name="sample" class="selectpicker show-tick" multiple title="Sample..">
+    <select name="sample" class="selectpicker show-tick" multiple title="">
         {{ range $s := .Samples }}
         {{ $check := $.Fields.HasSample $s }}
             <option{{if $check }} selected="selected"{{end}} value="{{ $s }}">{{ $s }}</option>
@@ -33,9 +33,31 @@
     </div>
   </div>
   <div class="form-group">
-    <label  class="col-sm-4 control-label">Alternatively Edited Region</label>
+    <label  class="col-sm-4 control-label">Knock Down</label>
+    <div class="col-xs-4">
+    <select name="kd" class="selectpicker show-tick" multiple title="">
+        {{ range $s := .KnockDowns }}
+        {{ $check := $.Fields.HasKnockDown $s }}
+            <option{{if $check }} selected="selected"{{end}} value="{{ $s }}">{{ $s }}</option>
+        {{ end }}
+    </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label  class="col-sm-4 control-label">Replicate</label>
+    <div class="col-xs-4">
+    <select name="rep" class="selectpicker show-tick" multiple title="">
+        {{ range $s := .Replicates }}
+        {{ $check := $.Fields.HasReplicate $s }}
+            <option{{if $check }} selected="selected"{{end}} value="{{ $s }}">{{ $s }}</option>
+        {{ end }}
+    </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label  class="col-sm-4 control-label">ORF Type</label>
     <div class="col-xs-3">
-    <select name="alt" class="selectpicker show-tick" title="Alt">
+    <select name="alt" class="selectpicker show-tick" title="">
         <option></option>
         {{ range $i, $a := .Template.AltRegion }}
             {{ $x := increment $i }}
@@ -47,19 +69,19 @@
   <div class="form-group">
     <label  class="col-sm-4 control-label">Edit Stop Site</label>
     <div class="col-xs-2">
-      <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -2 }}{{ .Fields.EditStop }}{{end}}" placeholder="Stop">
+      <input name="edit_stop" class="form-control" size="4" type="text" value="{{if ne $.Fields.EditStop -2 }}{{ .Fields.EditStop }}{{end}}" placeholder="">
     </div>
   </div>
   <div class="form-group">
     <label  class="col-sm-4 control-label">Junction End</label>
     <div class="col-xs-2">
-      <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -2 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="End">
+      <input name="junc_end" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncEnd -2 }}{{ .Fields.JuncEnd }}{{end}}" placeholder="">
     </div>
   </div>
   <div class="form-group">
     <label  class="col-sm-4 control-label">Junction Length</label>
     <div class="col-xs-2">
-      <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -2 }}{{ .Fields.JuncLen }}{{end}}" placeholder="Len">
+      <input name="junc_len" class="form-control" size="4" type="text" value="{{if ne $.Fields.JuncLen -2 }}{{ .Fields.JuncLen }}{{end}}" placeholder="">
     </div>
   </div>
   <div class="form-group">
@@ -70,6 +92,17 @@
           </label>
           <label class="checkbox-inline">
               <input name="has_alt" value="1" type="checkbox"{{if $.Fields.HasAlt }} checked="checked"{{end}}> Alternate Editing only
+          </label>
+      </div>
+  </div>
+  <div class="form-group">
+    <label class="col-sm-4 control-label">Tetracycline</label>
+     <div class="col-sm-4">
+          <label class="checkbox-inline">
+              <input name="tet" value="1" type="checkbox"{{if eq $.Fields.Tetracycline "1" }} checked="checked"{{end}}> Tet+
+          </label>
+          <label class="checkbox-inline">
+              <input name="tet" value="0" type="checkbox"{{if eq $.Fields.Tetracycline "0" }} checked="checked"{{end}}> Tet-
           </label>
       </div>
   </div>

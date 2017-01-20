@@ -63,7 +63,7 @@ func Normalize(dbpath, gene string, norm float64) {
 
 		logrus.Printf("Normalizing to read count: %.4f", gnorm)
 		for _, sample := range samples {
-			akey := &treat.AlignmentKey{g, sample}
+			akey := &treat.AlignmentKey{Gene: g, Sample: sample}
 			err = s.NormalizeSample(akey, gnorm)
 			if err != nil {
 				logrus.Fatal(err)

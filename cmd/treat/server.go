@@ -57,6 +57,8 @@ type Database struct {
 	storage             *Storage
 	geneTemplates       map[string]*treat.Template
 	geneSamples         map[string][]string
+	geneKnockDowns      map[string][]string
+	geneReplicates      map[string][]int
 	maxEditStop         map[string]int
 	maxJuncLen          map[string]int
 	maxJuncEnd          map[string]int
@@ -183,6 +185,8 @@ func (a *Application) loadDb(base, dbpath string) error {
 	db.maxJuncLen = make(map[string]int)
 	db.maxJuncEnd = make(map[string]int)
 	db.geneSamples = make(map[string][]string)
+	db.geneKnockDowns = make(map[string][]string)
+	db.geneReplicates = make(map[string][]int)
 	db.genes = make([]string, 0)
 	for k := range db.geneTemplates {
 		db.genes = append(db.genes, k)
@@ -197,6 +201,16 @@ func (a *Application) loadDb(base, dbpath string) error {
 		}
 
 		db.geneSamples[k] = s
+
+		db.geneKnockDowns[k], err = db.storage.KnockDowns(k)
+		if err != nil {
+			return err
+		}
+
+		db.geneReplicates[k], err = db.storage.Replicates(k)
+		if err != nil {
+			return err
+		}
 
 		logrus.Printf("Computing edit stop site cache for gene %s...", k)
 		if _, ok := db.cacheEditStopTotals[k]; !ok {
@@ -248,18 +262,27 @@ func (a *Application) GetDb(name string) (*Database, error) {
 func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db *Database) (*SearchFields, error) {
 	vals := r.URL.Query()
 	fields := new(SearchFields)
+	// set defaults
+	fields.EditStop = -2
+	fields.JuncLen = -2
+	fields.JuncEnd = -2
+	fields.Gene = db.defaultGene
+	fields.Limit = 10
 
 	session, _ := a.cookieStore.Get(r, TREAT_COOKIE_SESSION)
 	search := session.Values[TREAT_COOKIE_SEARCH]
 	if search != nil {
-		fields = search.(*SearchFields)
-	} else {
-		// set defaults
-		fields.EditStop = -2
-		fields.JuncLen = -2
-		fields.JuncEnd = -2
-		fields.Gene = db.defaultGene
-		fields.Limit = 10
+		var ok bool
+		fields, ok = search.(*SearchFields)
+		if !ok {
+			fields := new(SearchFields)
+			// set defaults
+			fields.EditStop = -2
+			fields.JuncLen = -2
+			fields.JuncEnd = -2
+			fields.Gene = db.defaultGene
+			fields.Limit = 10
+		}
 	}
 
 	// Always default to close
@@ -278,6 +301,12 @@ func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db
 		}
 		if vals.Get("sample") == "" {
 			fields.Sample = []string{}
+		}
+		if vals.Get("kd") == "" {
+			fields.KnockDown = []string{}
+		}
+		if vals.Get("rep") == "" {
+			fields.Replicate = []int{}
 		}
 		if vals.Get("limit") == "" {
 			fields.Limit = 10
@@ -299,6 +328,9 @@ func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db
 		}
 		if vals.Get("junc_end") == "" {
 			fields.JuncEnd = -2
+		}
+		if vals.Get("tet") == "" {
+			fields.Tetracycline = ""
 		}
 	}
 

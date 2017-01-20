@@ -19,9 +19,7 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 )
 
@@ -61,42 +59,32 @@ func main() {
 			Usage: "Load samples into database",
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "gene, g", Usage: "Gene Name"},
+				&cli.StringFlag{Name: "sample, s", Usage: "Sample Name"},
+				&cli.StringFlag{Name: "knock-down, k", Usage: "Knock Down Gene"},
 				&cli.StringFlag{Name: "template, t", Usage: "Path to templates file in FASTA format"},
-				&cli.StringSliceFlag{Name: "fragment, f", Value: &cli.StringSlice{}, Usage: "One or more fragment FASTA files"},
+				&cli.StringFlag{Name: "fasta, f", Usage: "Path to fragment FASTA files"},
 				&cli.StringFlag{Name: "base, b", Value: "T", Usage: "Edit base"},
-				&cli.StringFlag{Name: "dir", Usage: "Directory of fragment FASTA files"},
 				&cli.BoolFlag{Name: "skip-fragments", Usage: "Do not store raw fragments. Only alignment summary data."},
 				&cli.BoolFlag{Name: "exclude-snps", Usage: "Exclude fragments containing SNPs."},
 				&cli.BoolFlag{Name: "force", Usage: "Force delete gene data if already exists"},
+				&cli.BoolFlag{Name: "tet", Usage: "Tetracycline positive"},
 				&cli.IntFlag{Name: "offset", Value: 0, Usage: "Edit site offset"},
+				&cli.IntFlag{Name: "replicate", Value: 0, Usage: "Replicate number"},
 			},
 			Action: func(c *cli.Context) {
-				dir := c.String("dir")
-				fragPaths := c.StringSlice("fragment")
-				if fragPaths != nil && len(fragPaths) > 0 && len(dir) > 0 {
-					logrus.Fatal("Use --fragment or --dir not both.")
-				}
-
-				if len(dir) > 0 {
-					fa, _ := filepath.Glob(filepath.Join(dir, "*.fasta"))
-					fasta, _ := filepath.Glob(filepath.Join(dir, "*.fa"))
-					fgmts := append(fa, fasta...)
-
-					for _, f := range fgmts {
-						abs, _ := filepath.Abs(f)
-						fragPaths = append(fragPaths, abs)
-					}
-				}
-
 				Load(c.GlobalString("db"), &LoadOptions{
 					Gene:         c.String("gene"),
+					Sample:       c.String("sample"),
+					KnockDown:    c.String("knock-down"),
 					TemplatePath: c.String("template"),
-					FragmentPath: fragPaths,
+					FastaPath:    c.String("fasta"),
 					EditBase:     c.String("base"),
 					EditOffset:   c.Int("offset"),
 					SkipFrags:    c.Bool("skip-fragments"),
 					ExcludeSnps:  c.Bool("exclude-snps"),
 					Force:        c.Bool("force"),
+					Tetracycline: c.Bool("tet"),
+					Replicate:    c.Int("replicate"),
 				})
 			},
 		},

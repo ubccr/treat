@@ -18,6 +18,7 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -26,15 +27,27 @@ import (
 
 type LoadOptions struct {
 	Gene         string
+	Sample       string
+	KnockDown    string
 	EditBase     string
 	TemplatePath string
-	FragmentPath []string
+	FastaPath    string
 	Replicate    int
 	EditOffset   int
 	SkipFrags    bool
 	ExcludeSnps  bool
 	Force        bool
+	Tetracycline bool
 	Collapse     bool
+}
+
+func cleanName(name string) string {
+	// No spaces
+	name = strings.Replace(name, " ", "_", -1)
+	// No ';'
+	name = strings.Replace(name, ";", "_", -1)
+
+	return name
 }
 
 func Load(dbpath string, options *LoadOptions) {
@@ -44,17 +57,21 @@ func Load(dbpath string, options *LoadOptions) {
 	if len(options.TemplatePath) == 0 {
 		logrus.Fatal("Please provide path to templates file")
 	}
-	if options.FragmentPath == nil || len(options.FragmentPath) == 0 {
-		logrus.Fatal("Please provide 1 or more fragment files to load")
+	if len(options.FastaPath) == 0 {
+		logrus.Fatal("Please provide a fasta file to load")
 	}
 	if len(options.EditBase) != 1 {
 		logrus.Fatal("Please provide the edit base")
 	}
 
-	// Clean up gene names
-	options.Gene = strings.Replace(options.Gene, " ", "_", -1)
-	// Gene names can't contain a ';'
-	options.Gene = strings.Replace(options.Gene, ";", "_", -1)
+	if len(options.Sample) == 0 {
+		fname := filepath.Base(options.FastaPath)
+		options.Sample = fname[:len(fname)-len(filepath.Ext(options.FastaPath))]
+	}
+
+	options.Gene = cleanName(options.Gene)
+	options.Sample = cleanName(options.Sample)
+	options.KnockDown = cleanName(options.KnockDown)
 
 	tmpl, err := treat.NewTemplateFromFasta(options.TemplatePath, treat.FORWARD, rune(options.EditBase[0]))
 	if err != nil {
@@ -81,10 +98,8 @@ func Load(dbpath string, options *LoadOptions) {
 		logrus.Fatal(err)
 	}
 
-	for _, path := range options.FragmentPath {
-		_, err := storage.ImportSample(path, options)
-		if err != nil {
-			logrus.Fatal(err)
-		}
+	_, err = storage.ImportSample(options.FastaPath, options)
+	if err != nil {
+		logrus.Fatal(err)
 	}
 }

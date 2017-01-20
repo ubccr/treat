@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/aebruno/nwalgo"
@@ -30,8 +31,11 @@ import (
 )
 
 type AlignmentKey struct {
-	Gene   string
-	Sample string
+	Gene         string
+	Sample       string
+	KnockDown    string
+	Tetracycline bool
+	Replicate    int
 }
 
 type Alignment struct {
@@ -54,12 +58,31 @@ func (k *AlignmentKey) UnmarshalBinary(data []byte) error {
 	parts := strings.Split(string(data), ";")
 	k.Gene = parts[0]
 	k.Sample = parts[1]
+	k.KnockDown = parts[2]
+	if parts[3] == "1" {
+		k.Tetracycline = true
+	} else {
+		k.Tetracycline = false
+	}
+	k.Replicate, _ = strconv.Atoi(parts[4])
 
 	return nil
 }
 
 func (k *AlignmentKey) MarshalBinary() ([]byte, error) {
-	return []byte(strings.Join([]string{k.Gene, k.Sample}, ";")), nil
+	tet := "0"
+	if k.Tetracycline {
+		tet = "1"
+	}
+
+	return []byte(strings.Join(
+		[]string{
+			k.Gene,
+			k.Sample,
+			k.KnockDown,
+			tet,
+			strconv.Itoa(k.Replicate),
+		}, ";")), nil
 }
 
 func writeBase(buf *bytes.Buffer, base rune, count, max uint32) {

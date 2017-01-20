@@ -99,14 +99,16 @@ func IndexHandler(app *Application) http.Handler {
 		}
 
 		vars := map[string]interface{}{
-			"dbs":      app.dbs,
-			"curdb":    db.name,
-			"Template": tmpl,
-			"Count":    count,
-			"Fields":   fields,
-			"Samples":  db.geneSamples[fields.Gene],
-			"Pages":    []int{10, 50, 100, 1000},
-			"Genes":    db.genes}
+			"dbs":        app.dbs,
+			"curdb":      db.name,
+			"Template":   tmpl,
+			"Count":      count,
+			"Fields":     fields,
+			"Samples":    db.geneSamples[fields.Gene],
+			"KnockDowns": db.geneKnockDowns[fields.Gene],
+			"Replicates": db.geneReplicates[fields.Gene],
+			"Pages":      []int{10, 50, 100, 1000},
+			"Genes":      db.genes}
 
 		renderTemplate(app, "index.html", w, vars)
 	})
@@ -413,7 +415,7 @@ func SearchHandler(app *Application) http.Handler {
 		if r.URL.Query().Get("export") == "1" {
 			csvout := csv.NewWriter(w)
 			defer csvout.Flush()
-			csvout.Write([]string{"id", "gene", "sample", "read_count", "norm_count", "pct_search", "pct_edit_stop", "edit_stop", "junc_end", "junc_len", "junc_seq"})
+			csvout.Write([]string{"id", "gene", "sample", "knock_down", "replicate", "tetracycline", "read_count", "norm_count", "pct_search", "pct_edit_stop", "edit_stop", "junc_end", "junc_len", "junc_seq"})
 
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.Header().Set("Content-Disposition", "attachment; filename=treat-export.csv")
@@ -423,6 +425,9 @@ func SearchHandler(app *Application) http.Handler {
 					strconv.Itoa(int(a.Id)),
 					a.Key.Gene,
 					a.Key.Sample,
+					a.Key.KnockDown,
+					strconv.Itoa(a.Key.Replicate),
+					strconv.FormatBool(a.Key.Tetracycline),
 					strconv.Itoa(int(a.ReadCount)),
 					fmt.Sprintf("%.4f", a.Norm),
 					pctSearchFunc(a, totalMap),
@@ -482,6 +487,8 @@ func SearchHandler(app *Application) http.Handler {
 			"Fields":         fields,
 			"Alignments":     alignments[fields.Offset:end],
 			"Samples":        db.geneSamples[fields.Gene],
+			"KnockDowns":     db.geneKnockDowns[fields.Gene],
+			"Replicates":     db.geneReplicates[fields.Gene],
 			"Pages":          []int{10, 50, 100, 1000},
 			"Genes":          db.genes}
 
@@ -515,13 +522,15 @@ func HeatHandler(app *Application) http.Handler {
 		}
 
 		vars := map[string]interface{}{
-			"dbs":      app.dbs,
-			"curdb":    db.name,
-			"Template": tmpl,
-			"Fields":   fields,
-			"Samples":  db.geneSamples[fields.Gene],
-			"Pages":    []int{10, 50, 100, 1000},
-			"Genes":    db.genes}
+			"dbs":        app.dbs,
+			"curdb":      db.name,
+			"Template":   tmpl,
+			"Fields":     fields,
+			"Samples":    db.geneSamples[fields.Gene],
+			"KnockDowns": db.geneKnockDowns[fields.Gene],
+			"Replicates": db.geneReplicates[fields.Gene],
+			"Pages":      []int{10, 50, 100, 1000},
+			"Genes":      db.genes}
 
 		renderTemplate(app, "heat.html", w, vars)
 	})
@@ -640,13 +649,15 @@ func BubbleHandler(app *Application) http.Handler {
 		}
 
 		vars := map[string]interface{}{
-			"dbs":      app.dbs,
-			"curdb":    db.name,
-			"Template": tmpl,
-			"Fields":   fields,
-			"Samples":  db.geneSamples[fields.Gene],
-			"Pages":    []int{10, 50, 100, 1000},
-			"Genes":    db.genes}
+			"dbs":        app.dbs,
+			"curdb":      db.name,
+			"Template":   tmpl,
+			"Fields":     fields,
+			"Samples":    db.geneSamples[fields.Gene],
+			"KnockDowns": db.geneKnockDowns[fields.Gene],
+			"Replicates": db.geneReplicates[fields.Gene],
+			"Pages":      []int{10, 50, 100, 1000},
+			"Genes":      db.genes}
 
 		renderTemplate(app, "bubble.html", w, vars)
 	})
@@ -775,13 +786,15 @@ func TemplateSummaryHandler(app *Application) http.Handler {
 		}
 
 		vars := map[string]interface{}{
-			"dbs":      app.dbs,
-			"curdb":    db.name,
-			"Template": tmpl,
-			"Fields":   fields,
-			"Samples":  db.geneSamples[fields.Gene],
-			"Pages":    []int{10, 50, 100, 1000},
-			"Genes":    db.genes}
+			"dbs":        app.dbs,
+			"curdb":      db.name,
+			"Template":   tmpl,
+			"Fields":     fields,
+			"Samples":    db.geneSamples[fields.Gene],
+			"KnockDowns": db.geneKnockDowns[fields.Gene],
+			"Replicates": db.geneReplicates[fields.Gene],
+			"Pages":      []int{10, 50, 100, 1000},
+			"Genes":      db.genes}
 
 		renderTemplate(app, "tmpl-report.html", w, vars)
 	})
