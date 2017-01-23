@@ -412,6 +412,56 @@ func (s *Storage) Samples(gene string) ([]string, error) {
 	return samples, nil
 }
 
+func (s *Storage) SampleKeys(gene string) ([]*treat.AlignmentKey, error) {
+	samples := make([]*treat.AlignmentKey, 0)
+	gbytes := []byte(gene)
+
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
+		for k, _ := c.Seek(gbytes); bytes.HasPrefix(k, gbytes); k, _ = c.Next() {
+			key := new(treat.AlignmentKey)
+			key.UnmarshalBinary(k)
+			samples = append(samples, key)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return samples, nil
+}
+
+func (s *Storage) GetKey(gene, sample string) (*treat.AlignmentKey, error) {
+	gbytes := []byte(gene)
+	var skey *treat.AlignmentKey
+
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(BUCKET_ALIGNMENTS)).Cursor()
+		for k, _ := c.Seek(gbytes); bytes.HasPrefix(k, gbytes); k, _ = c.Next() {
+			key := new(treat.AlignmentKey)
+			key.UnmarshalBinary(k)
+			if key.Sample == sample {
+				skey = key
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if skey == nil {
+		return nil, fmt.Errorf("Key not found for gene: %s sample: %s", gene, sample)
+	}
+
+	return skey, nil
+}
+
 func (s *Storage) KnockDowns(gene string) ([]string, error) {
 	kds := make(map[string]bool)
 	gbytes := []byte(gene)

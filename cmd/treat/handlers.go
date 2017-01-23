@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
@@ -77,8 +78,8 @@ func IndexHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -311,8 +312,8 @@ func ShowHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -336,7 +337,13 @@ func ShowHandler(app *Application) http.Handler {
 			return
 		}
 
-		key := &treat.AlignmentKey{Gene: gene, Sample: sample}
+		key, err := db.storage.GetKey(gene, sample)
+		if err != nil {
+			logrus.Printf("sample key not found: %s", err)
+			w.WriteHeader(http.StatusNotFound)
+			renderTemplate(app, "404.html", w, nil)
+			return
+		}
 
 		frag, err := db.storage.GetFragment(key, uint64(id))
 		if err != nil || frag == nil {
@@ -386,8 +393,8 @@ func SearchHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -516,8 +523,8 @@ func HeatHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -564,8 +571,8 @@ func HeatMapJson(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			http.Error(w, "Gene not found", http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -643,8 +650,8 @@ func BubbleHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -691,8 +698,8 @@ func BubbleJson(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			http.Error(w, "Gene not found", http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -780,8 +787,8 @@ func TemplateSummaryHandler(app *Application) http.Handler {
 		tmpl, ok := db.geneTemplates[fields.Gene]
 
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 
@@ -952,8 +959,8 @@ func StatsHandler(app *Application) http.Handler {
 
 		tmpl, ok := db.geneTemplates[fields.Gene]
 		if !ok {
-			logrus.Printf("Error fetching template for gene: %s", fields.Gene)
-			errorHandler(app, w, http.StatusInternalServerError)
+			logrus.Warnf("Error fetching template for gene: %s", fields.Gene)
+			http.Redirect(w, r, fmt.Sprintf("/?gene=%s", url.QueryEscape(db.defaultGene)), 302)
 			return
 		}
 

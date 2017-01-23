@@ -165,6 +165,7 @@ func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, err
 }
 
 func (a *Application) loadDb(base, dbpath string) error {
+	logrus.Infof("Processing database: %s", base)
 	db := &Database{name: base}
 	stg, err := NewStorage(dbpath)
 	if err != nil {
@@ -212,7 +213,7 @@ func (a *Application) loadDb(base, dbpath string) error {
 			return err
 		}
 
-		logrus.Printf("Computing edit stop site cache for gene %s...", k)
+		logrus.Printf("Computing cache for gene %s...", k)
 		if _, ok := db.cacheEditStopTotals[k]; !ok {
 			db.cacheEditStopTotals[k] = make(map[int]map[string]float64)
 		}
@@ -234,6 +235,17 @@ func (a *Application) loadDb(base, dbpath string) error {
 				db.maxJuncEnd[k] = aln.JuncEnd
 			}
 		})
+
+		logrus.Infof("Max ESS: %d Max JL: %d Max JE: %d", db.maxEditStop[k], db.maxJuncLen[k], db.maxJuncEnd[k])
+		if db.maxEditStop[k] <= 0 {
+			logrus.Errorf("Max edit stop is 0 for gene %s. Expect histogram charts to be broken", k)
+		}
+		if db.maxJuncLen[k] <= 0 {
+			logrus.Errorf("Max junc len is 0 for gene %s. Expect histogram charts to be broken", k)
+		}
+		if db.maxJuncEnd[k] <= 0 {
+			logrus.Errorf("Max junc end is 0 for gene %s. Expect histogram charts to be broken", k)
+		}
 
 		if err != nil {
 			return fmt.Errorf("Failed computing edit stop totals for gene: %s", k)

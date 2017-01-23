@@ -38,7 +38,7 @@ func Normalize(dbpath, gene string, norm float64) {
 			continue
 		}
 
-		samples, err := s.Samples(g)
+		samples, err := s.SampleKeys(g)
 		if err != nil {
 			logrus.Fatal(err)
 		}
@@ -62,9 +62,8 @@ func Normalize(dbpath, gene string, norm float64) {
 		}
 
 		logrus.Printf("Normalizing to read count: %.4f", gnorm)
-		for _, sample := range samples {
-			akey := &treat.AlignmentKey{Gene: g, Sample: sample}
-			err = s.NormalizeSample(akey, gnorm)
+		for _, skey := range samples {
+			err = s.NormalizeSample(skey, gnorm)
 			if err != nil {
 				logrus.Fatal(err)
 			}
