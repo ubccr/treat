@@ -37,6 +37,7 @@ func Normalize(dbpath, gene string, norm float64) {
 		if len(gene) > 0 && g != gene {
 			continue
 		}
+		logrus.Printf("Processing gene %s...", g)
 
 		samples, err := s.SampleKeys(g)
 		if err != nil {
