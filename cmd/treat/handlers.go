@@ -919,6 +919,7 @@ func DbHandler(app *Application) http.Handler {
 		}
 
 		session.Values[TREAT_COOKIE_DB] = name
+		session.Values[TREAT_COOKIE_SEARCH] = nil
 		err = session.Save(r, w)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{

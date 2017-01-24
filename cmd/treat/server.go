@@ -29,8 +29,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/nwalgo"
-	"github.com/gorilla/context"
 	"github.com/carbocation/interpose"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
@@ -273,21 +273,21 @@ func (a *Application) GetDb(name string) (*Database, error) {
 }
 
 func (a *Application) GetDbFromContext(r *http.Request) (*Database, error) {
-    dbp, ok := context.GetOk(r, "db")
-    if !ok {
-        return nil, fmt.Errorf("Db not found in context")
-    }
+	dbp, ok := context.GetOk(r, "db")
+	if !ok {
+		return nil, fmt.Errorf("Db not found in context")
+	}
 
-    db, ok := dbp.(*Database)
-    if !ok {
-        return nil, fmt.Errorf("Invalid Db pointer in context")
-    }
+	db, ok := dbp.(*Database)
+	if !ok {
+		return nil, fmt.Errorf("Invalid Db pointer in context")
+	}
 
-    if db == nil {
-        return nil, fmt.Errorf("Db was nil")
-    }
+	if db == nil {
+		return nil, fmt.Errorf("Db was nil")
+	}
 
-    return db, nil
+	return db, nil
 }
 
 func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db *Database) (*SearchFields, error) {
