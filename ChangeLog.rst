@@ -8,11 +8,12 @@ ChangeLog
 * Add support for db in url (used for linking to sequences)
 * Add offset to align command
 * Fix bug with alternative editing template start/end ranges
-* Add bubble chart for edit site vs number of T's.
+* Add bubble chart for edit site vs number of T's
 * Add FASTA output to search command
 * Add persistent search fields across requests
 * Updated search form 
 * Add support for knock down, tetracycline, and replicate metadata
+* Add files for downstream analysis of TREAT datasets in R and matlab
 
 `v0.0.2`_ (2016-01-06)
 ---------------------------
