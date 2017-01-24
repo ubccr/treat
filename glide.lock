@@ -16,7 +16,7 @@ imports:
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
-  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+  version: 9cb89f07ca03c6a28d1e237ba033bc6a29422fd6
 - name: github.com/gorilla/schema
   version: dfd60678a6033f19803293695dcd30f40ed3cd19
 - name: github.com/gorilla/securecookie

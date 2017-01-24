@@ -29,7 +29,6 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 	"github.com/ubccr/treat"
 )
 
@@ -60,8 +59,8 @@ func errorHandler(app *Application, w http.ResponseWriter, status int) {
 
 func IndexHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("index handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -117,8 +116,8 @@ func IndexHandler(app *Application) http.Handler {
 
 func JuncLenHistogramHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("juncLenHist handler: database not found in request context")
 			http.Error(w, "Fatal system error", http.StatusInternalServerError)
 			return
@@ -132,8 +131,8 @@ func JuncLenHistogramHandler(app *Application) http.Handler {
 
 func EditHistogramHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("editHist handler: database not found in request context")
 			http.Error(w, "Fatal system error", http.StatusInternalServerError)
 			return
@@ -147,8 +146,8 @@ func EditHistogramHandler(app *Application) http.Handler {
 
 func JuncEndHistogramHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("JunEndHist handler: database not found in request context")
 			http.Error(w, "Fatal system error", http.StatusInternalServerError)
 			return
@@ -161,8 +160,8 @@ func JuncEndHistogramHandler(app *Application) http.Handler {
 }
 
 func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, maxMap map[string]int, junclen bool, f func(a *treat.Alignment) int) {
-	db := context.Get(r, "db").(*Database)
-	if db == nil {
+	db, err := app.GetDbFromContext(r)
+	if err != nil {
 		logrus.Error("highChartHist handler: database not found in request context")
 		http.Error(w, "Fatal system error", http.StatusInternalServerError)
 		return
@@ -301,8 +300,8 @@ func highChartHist(app *Application, w http.ResponseWriter, r *http.Request, max
 
 func ShowHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("show handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -375,8 +374,8 @@ func ShowHandler(app *Application) http.Handler {
 
 func SearchHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("search handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -505,8 +504,8 @@ func SearchHandler(app *Application) http.Handler {
 
 func HeatHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("heat handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -545,8 +544,8 @@ func HeatHandler(app *Application) http.Handler {
 
 func HeatMapJson(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("heatmap json handler: database not found in request context")
 			http.Error(w, "Fatal error", http.StatusInternalServerError)
 			return
@@ -632,8 +631,8 @@ func HeatMapJson(app *Application) http.Handler {
 
 func BubbleHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("bubble handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -672,8 +671,8 @@ func BubbleHandler(app *Application) http.Handler {
 
 func BubbleJson(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("bubble json handler: database not found in request context")
 			http.Error(w, "Fatal error", http.StatusInternalServerError)
 			return
@@ -769,8 +768,8 @@ func BubbleJson(app *Application) http.Handler {
 
 func TemplateSummaryHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("tmpl summary handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
@@ -809,8 +808,8 @@ func TemplateSummaryHandler(app *Application) http.Handler {
 
 func TemplateSummaryHistogramHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("tmpl summary json handler: database not found in request context")
 			http.Error(w, "Fatal error", http.StatusInternalServerError)
 			return
@@ -935,8 +934,8 @@ func DbHandler(app *Application) http.Handler {
 
 func StatsHandler(app *Application) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db").(*Database)
-		if db == nil {
+		db, err := app.GetDbFromContext(r)
+		if err != nil {
 			logrus.Error("stats handler: database not found in request context")
 			errorHandler(app, w, http.StatusInternalServerError)
 			return
