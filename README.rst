@@ -213,7 +213,7 @@ Start the TREAT server and view the sequences in a web browser::
   INFO[0000] Running on http://127.0.0.1:8080
 
 To view the TREAT web interface, point your web browser at
-https://localhost:8080. By default, treat will listen on port 8080.
+http://localhost:8080. By default, treat will listen on port 8080.
 
 .. image:: docs/treat-screen-shot.png
 
