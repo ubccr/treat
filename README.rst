@@ -27,8 +27,8 @@ Installation
 Download the latest binary release for your system `here <https://github.com/ubccr/treat/releases>`_.
 Extract the zip file::
 
-  $ unzip treat-0.0.1.zip
-  $ cd treat-0.0.1
+  $ unzip treat-0.0.x.zip
+  $ cd treat-0.0.x
   $ ./treat --help
 
 ------------------------------------------------------------------------
@@ -64,20 +64,23 @@ format. For example::
   >example-1
   CTTAATTACACTTTGATTAACAAACTTTAAA
 
-Save the above sequence files and run the alignment using TREAT::
+Save the above sequence files and run the alignment using TREAT. The example
+sequences can also be found in the ./examples directory::
 
   $ ./treat align -t simple-templates.fa -f simple-sequences.fa
   ================================================================================
   example-1
   ================================================================================
-  EditStop: 11
-  JuncEnd: 18
-  JuncLen: 7
+  JSS: 12
+  ESS: 11
+  JES: 18
+  Junc Len: 7
   ================================================================================
 
   FE: CTTAA-TACACTTTTGATTAACAAACTTTAAA
   PE: C-TAATTACAC-TTTGA-TAACAAAC--TAAA
-  CL: CTTAATTACAC-TTTGATTAACAAACTTTAAA
+  RD: CTTAATTACAC-TTTGATTAACAAACTTTAAA
+
 
 TREAT computes the extent of canonical editing and reports various
 editing site characteristics as shown below:
@@ -118,7 +121,7 @@ Edited template sequences is shown below::
   tAGAGGGTGGtGGttttGttGAtttACCtCGttGGttTAtAtAGtAttAtACACGTAttG
   tAAGttAGATTTAGAtATAAGATATGTTTTT
 
-FASTA file with our DNA fragment reads (sample-A.fasta)::
+FASTA file with our DNA fragment reads (sample-1.fasta)::
 
   >1-10
   CTAATACACTTTTGATAACAAACTAAAGATATAATATTTTTGTTTTTTTTGCGTATGTGA
@@ -142,17 +145,33 @@ FASTA file with our DNA fragment reads (sample-A.fasta)::
 
 Load the sample data using TREAT::
 
-  $ ./treat --db treat.db load -g RPS12 -f sample-1.fa -t templates.fa
-  Total reads across all samples: 139
-  Normalizing to average read count:: 139.0000
-  Computing total read count for file: sample-1.fa
-  Total reads for file: 139
-  Normalized scaling factor: 1.0000
-  Processing fragments for sample name : sample-1
-  Loaded 3 fragment sequences for sample sample-1
+  $ ./treat --db treat.db load --gene RPS12 \
+      --fasta sample-1.fa \
+      --template templates.fa \
+      --offset 10 \
+      --sample SampleName01 \
+      --knock-down GAP1 \
+      --tet \
+      --replicate 1
 
-A new database file has been created called "treat.db". Searching the
-data using the TREAT command line tool::
+
+  INFO[0000] Using template Edit Stop Site: 9
+  INFO[0000] Using Edit Site numbering offset: 10
+  INFO[0000] Processing fragments for sample name: SampleName01
+  INFO[0000] Done. Loaded 15 fragment sequences for sample SampleName01
+
+A new database file has been created called "treat.db".
+
+Normalize the read counts to 100000 (or an appropriate n) using the following
+command. Note: If you don't provide an n treat will normalize to the average
+read count across all samples within the gene::
+
+  $ ./treat --db testerino.db norm -n 100000
+  INFO[0000] Processing gene RPS12...
+  INFO[0000] Normalizing to read count: 100000.0000
+  INFO[0000] Processing sample SampleName01 using normalized scaling factor: 9.3844
+
+Search the data using the TREAT command line tool::
 
   $ ./treat --db treat.db search -g RPS12 -l 10 --csv
   gene,sample,norm,read_count,alt_editing,has_mutation,edit_stop,junc_end,junc_len,junc_seq
@@ -163,34 +182,59 @@ Search options are described below::
 
   $ ./treat help search
   NAME:
-     search - Search database
+     treat search - Search database
 
   USAGE:
-     command search [command options] [arguments...]
+     treat search [command options] [arguments...]
 
   OPTIONS:
-     --gene, -g                       Gene Name
-     --sample, -s                     One or more samples
-     --edit-stop "-1"                 Edit stop
-     --junc-end "-1"                  Junction end
-     --junc-len "-1"                  Junction len
-     --alt "0"                        Alt editing region
-     --offset, -o "0"                 offset
-     --limit, -l "0"                  limit
-     --has-mutation                   Has mutation
-     --all, -a                        Include all sequences
-     --has-alt                        Has Alternative Editing
-     --csv                            Output in csv format
-     --no-header, -x                  Exclude header from output
+     --gene, -g                                           Gene Name
+     --sample, -s [--sample option --sample option]       One or more samples
+     --edit-stop "-1"                                     Edit stop
+     --junc-end "-1"                                      Junction end
+     --junc-len "-1"                                      Junction len
+     --alt "0"                                            Alt editing region
+     --offset, -o "0"                                     offset
+     --limit, -l "0"                                      limit
+     --has-mutation                                       Has mutation
+     --all, -a                                            Include all sequences
+     --has-alt                                            Has Alternative Editing
+     --csv                                                Output in csv format
+     --fasta                                              Output in fasta format
+     --no-header, -x                                      Exclude header from output
 
 Start the TREAT server and view the sequences in a web browser::
 
   $ ./treat --db treat.db server -p 8080
-  Computing edit stop site cache for gene RPS12...
-  Using template dir: /path/to/treat
-  Running on http://127.0.0.1:8080
+  INFO[0000] Processing database: testerino.db
+  INFO[0000] Computing cache for gene RPS12...
+  INFO[0000] Max ESS: 21 Max JL: 12 Max JE: 21
+  INFO[0000] Using template dir: ./templates
+  INFO[0000] Running on http://127.0.0.1:8080
+
+To view the TREAT web interface, point your web browser at
+https://localhost:8080. By default, treat will listen on port 8080.
 
 .. image:: docs/treat-screen-shot.png
+
+------------------------------------------------------------------------
+Building from source
+------------------------------------------------------------------------
+
+TREAT is written in go and uses `glide <https://glide.sh/>`_ for managing
+dependencies. To build from source first install go runtime and glide.
+
+Clone the repository::
+
+    $ git clone https://github.com/ubccr/treat
+    $ cd treat
+
+Resolve dependencies and build treat::
+
+    $ glide install
+    $ go test
+    $ cd cmd/treat
+    $ go build .
 
 ------------------------------------------------------------------------
 References

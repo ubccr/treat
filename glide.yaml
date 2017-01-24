@@ -1,0 +1,16 @@
+package: github.com/ubccr/treat
+homepage: https://github.com/ubccr/treat
+license: GPLv3
+import:
+- package: github.com/Sirupsen/logrus
+- package: github.com/aebruno/gofasta
+- package: github.com/aebruno/nwalgo
+- package: github.com/boltdb/bolt
+- package: github.com/carbocation/interpose
+- package: github.com/gorilla/context
+- package: github.com/gorilla/mux
+- package: github.com/gorilla/schema
+- package: github.com/gorilla/sessions
+- package: github.com/urfave/cli
+- package: github.com/willf/bitset
+- package: gopkg.in/vmihailenco/msgpack.v2

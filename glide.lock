@@ -1,0 +1,44 @@
+hash: 954c98790110c6c642ac6b69e29f2167e59178253832b0730e76358753525090
+updated: 2017-01-24T08:50:40.833829-05:00
+imports:
+- name: github.com/aebruno/gofasta
+  version: e776ef625791e00d327f7eb8fcb6ebe537c769cc
+- name: github.com/aebruno/nwalgo
+  version: 4a232086e3ad8e44b4dee2b32924f15189c41f87
+- name: github.com/boltdb/bolt
+  version: a705895fdad108f053eae7ee011ed94a0541ee13
+- name: github.com/carbocation/interpose
+  version: 723534742ba3bbda66268b735aaa41634468acc6
+- name: github.com/golang/protobuf
+  version: 8ee79997227bf9b34611aee7946ae64735e6fd93
+  subpackages:
+  - proto
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+- name: github.com/gorilla/schema
+  version: dfd60678a6033f19803293695dcd30f40ed3cd19
+- name: github.com/gorilla/securecookie
+  version: fa5329f913702981df43dcb2a380bac429c810b5
+- name: github.com/gorilla/sessions
+  version: 83c8db3bdc9be789e57e3756ffbcffd2d7d40176
+- name: github.com/Sirupsen/logrus
+  version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
+- name: github.com/urfave/cli
+  version: f1be59ff3d239f0942b201619030d302bce912cc
+- name: github.com/willf/bitset
+  version: 5c3c0fce48842b2c0bbaa99b4e61b0175d84b47c
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  subpackages:
+  - unix
+- name: gopkg.in/vmihailenco/msgpack.v2
+  version: a1382b1ce0c749733b814157c245e02cc1f41076
+  subpackages:
+  - codes
+testImports: []
