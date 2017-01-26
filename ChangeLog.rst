@@ -2,7 +2,7 @@
 ChangeLog
 ===============================================================================
 
-`v0.0.3`_ (unlreleased)
+`v0.0.3`_ (2017-01-26)
 ---------------------------
 
 * Add support for db in url (used for linking to sequences)
@@ -11,9 +11,9 @@ ChangeLog
 * Add bubble chart for edit site vs number of T's
 * Add FASTA output to search command
 * Add persistent search fields across requests
-* Updated search form 
-* Add support for knock down, tetracycline, and replicate metadata
-* Add files for downstream analysis of TREAT datasets in R and matlab
+* Updated search form design
+* Add support for sample name, knock down, tetracycline, and replicate metadata
+* Add R and matlab code for downstream analysis of TREAT datasets
 
 `v0.0.2`_ (2016-01-06)
 ---------------------------
@@ -30,4 +30,4 @@ ChangeLog
 
 .. _v0.0.1: https://github.com/ubccr/treat/releases/tag/v0.0.1
 .. _v0.0.2: https://github.com/ubccr/treat/releases/tag/v0.0.2
-.. _v0.0.3: https://github.com/ubccr/treat
+.. _v0.0.3: https://github.com/ubccr/treat/releases/tag/v0.0.3
