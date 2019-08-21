@@ -221,20 +221,11 @@ http://localhost:8080. By default, treat will listen on port 8080.
 Building from source
 ------------------------------------------------------------------------
 
-TREAT is written in go and uses `glide <https://glide.sh/>`_ for managing
-dependencies. To build from source first install go runtime and glide.
+TREAT is written in Go requires v1.11 or greater. Clone the repository::
 
-Clone the repository::
-
-    $ git clone https://github.com/ubccr/treat
-    $ cd treat
-
-Resolve dependencies and build treat::
-
-    $ glide install
-    $ go test
-    $ cd cmd/treat
-    $ go build .
+  $ git clone https://github.com/ubccr/treat
+  $ cd treat
+  $ go build .
 
 ------------------------------------------------------------------------
 References

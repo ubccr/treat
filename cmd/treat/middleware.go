@@ -18,14 +18,14 @@
 package main
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
+	"github.com/sirupsen/logrus"
 )
 
 // DbContext sets the database context for the request
-func DbContext(app *Application) http.Handler {
+func DbContext(app *Application, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := app.cookieStore.Get(r, TREAT_COOKIE_SESSION)
 
@@ -61,6 +61,7 @@ func DbContext(app *Application) http.Handler {
 			}).Error("Failed to set save session")
 		}
 
-		context.Set(r, "db", db)
+		ctx := context.WithValue(r.Context(), "db", db)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

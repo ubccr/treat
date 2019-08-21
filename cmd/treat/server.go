@@ -27,13 +27,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/nwalgo"
 	"github.com/carbocation/interpose"
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
 
@@ -110,6 +109,8 @@ func NewApplication(dbpath, tmpldir string, enableCache bool) (*Application, err
 		}
 		app.defaultDb = base
 	}
+
+	logrus.Infof("Default DB is: %s", app.defaultDb)
 
 	if len(app.dbs) == 0 {
 		return nil, fmt.Errorf("No db files found")
@@ -273,8 +274,8 @@ func (a *Application) GetDb(name string) (*Database, error) {
 }
 
 func (a *Application) GetDbFromContext(r *http.Request) (*Database, error) {
-	dbp, ok := context.GetOk(r, "db")
-	if !ok {
+	dbp := r.Context().Value("db")
+	if dbp == nil {
 		return nil, fmt.Errorf("Db not found in context")
 	}
 
@@ -378,7 +379,7 @@ func (a *Application) NewSearchFields(w http.ResponseWriter, r *http.Request, db
 
 func (a *Application) middlewareStruct() (*interpose.Middleware, error) {
 	mw := interpose.New()
-	mw.UseHandler(DbContext(a))
+	mw.Use(func(next http.Handler) http.Handler { return DbContext(a, next) })
 	mw.UseHandler(a.router())
 
 	return mw, nil

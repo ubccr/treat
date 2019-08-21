@@ -23,9 +23,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/gofasta"
 	"github.com/aebruno/nwalgo"
+	"github.com/sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
 

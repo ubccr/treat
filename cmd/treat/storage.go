@@ -25,9 +25,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/gofasta"
 	"github.com/boltdb/bolt"
+	"github.com/sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
 

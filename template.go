@@ -26,8 +26,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/gofasta"
+	"github.com/sirupsen/logrus"
 )
 
 var startPattern = regexp.MustCompile(`\s*alt_start=(\d+)\s*`)

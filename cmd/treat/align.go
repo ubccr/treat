@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/aebruno/gofasta"
+	"github.com/sirupsen/logrus"
 	"github.com/ubccr/treat"
 )
 
