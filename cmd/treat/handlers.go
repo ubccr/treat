@@ -705,7 +705,7 @@ func BubbleJson(app *Application) http.Handler {
 		bubbleMap := make(map[int]map[uint32]float64)
 
 		err = db.storage.Search(fields, func(key *treat.AlignmentKey, a *treat.Alignment) {
-			if a.EditStop >= int(tmpl.EditOffset) {
+			if a.EditStop >= tmpl.EditStop {
 				frag, err := db.storage.GetFragment(key, a.Id)
 				if err != nil || frag == nil {
 					logrus.Printf("fragment not found: %s", err)
